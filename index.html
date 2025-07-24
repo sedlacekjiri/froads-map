@@ -24,6 +24,23 @@
       margin-bottom: 1em;
       color: #333;
     }
+
+    #sidePanel {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+@media (max-width: 768px) {
+  #sidePanel {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: 40vh !important;
+    max-height: 40vh !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
   
     /* Toggle button */
     
