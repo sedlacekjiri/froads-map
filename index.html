@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
     body, html { margin:0; padding:0; height:100%; font-family:'Poppins',sans-serif; }
-    #map {
+      #map {
       position: absolute;
       top: 0;
       left: 0;
@@ -34,6 +34,7 @@
     }
 
     @media (max-width: 768px) {
+      /* your mobile map/container tweaks */
       #map {
         position: fixed;
         top: 0;
@@ -43,6 +44,7 @@
         z-index: 1;
         transition: none !important;
       }
+      /* now the updated sidePanel rules */
       #sidePanel {
         position: fixed;
         left: 0;
