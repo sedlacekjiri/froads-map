@@ -110,13 +110,13 @@ let selectedLayer = null;
 
 map.eachLayer(function(layer) {
   if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-    layer.setStyle({ color: 'orange', weight: 4 });
+    layer.setStyle({ color: 'orange', weight: 5 });
 
     layer.on('click', function () {
       if (selectedLayer && selectedLayer !== this) {
-        selectedLayer.setStyle({ color: 'orange', weight: 4 });
+        selectedLayer.setStyle({ color: 'orange', weight: 5 });
       }
-      this.setStyle({ color: 'black', weight: 4 });
+      this.setStyle({ color: 'black', weight: 6 });
       selectedLayer = this;
     });
   }
