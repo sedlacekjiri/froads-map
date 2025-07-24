@@ -128,7 +128,7 @@ let selectedLayer = null;
 
 map.eachLayer(function(layer) {
   if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-    layer.setStyle({ color: 'orange', weight: 4 });
+    layer.setStyle({ color: 'orange', weight: 5 });
 
     layer.on('click', function () {
       if (selectedLayer && selectedLayer !== this) {
