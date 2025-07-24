@@ -82,6 +82,10 @@
       border-radius: 4px;
       cursor: pointer;
       z-index: 1001;
+
+      /* make the “✕” black: */
+  color: #000;
+      eeee
     }
     #closePanel:hover {
       background: rgba(255,255,255,1);
@@ -132,9 +136,9 @@ map.eachLayer(function(layer) {
 
     layer.on('click', function () {
       if (selectedLayer && selectedLayer !== this) {
-        selectedLayer.setStyle({ color: 'orange', weight: 4 });
+        selectedLayer.setStyle({ color: 'orange', weight: 5 });
       }
-      this.setStyle({ color: 'black', weight: 4 });
+      this.setStyle({ color: 'black', weight: 6 });
       selectedLayer = this;
     });
   }
