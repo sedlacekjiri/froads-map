@@ -8,21 +8,41 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <style>
     body, html { margin:0; padding:0; height:100%; font-family:'Poppins',sans-serif; }
-    #map { position:absolute; top:0; left:0; bottom:0; width:60%; }
-    #sidePanel {
+    #map {
       position: absolute;
       top: 0;
+      left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 1;
+      transition: none !important;
+    }
+    #sidePanel {
+      position: absolute;
+      bottom: 0;
       right: 0;
-      width: 40%;
-      height: 100%;
+      width: 400px;
+      max-width: 40vw;
+      height: 100vh;
+      max-height: 100vh;
       padding: 20px;
       background: #f8f8f8;
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow: auto;
       box-sizing: border-box;
+      z-index: 10;
+      pointer-events: auto;
     }
 
     @media (max-width: 768px) {
+      #map {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 1;
+        transition: none !important;
+      }
       #sidePanel {
         position: fixed;
         left: 0;
@@ -30,17 +50,35 @@
         bottom: 0;
         width: 100vw;
         height: 40vh;
+        max-width: 100vw;
         max-height: 40vh;
+        transform: translateY(0);
+        transition: transform 0.3s cubic-bezier(.4,0,.2,1);
         z-index: 700;
         box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.3);
-        border-top-left-radius: 0px;
-        border-top-right-radius: 0px;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
         padding-bottom: 48px;
         touch-action: none;
         background: #f8f8f8;
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
+        overflow: auto;
+        pointer-events: auto;
+      }
+      #sidePanel.open {
+        transform: translateY(0);
+      }
+      #sidePanel .panel-toggle {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 6px;
+        background: #ccc;
+        border-radius: 3px;
+        cursor: pointer;
+        z-index: 1000;
+        margin-bottom: 8px;
       }
     }
     .road-label-icon div { display:inline-block; background:white; color:black; border:1px solid #000; border-radius: 40px; padding:4px 6px; font-size:12px; white-space:nowrap; font-family:'Poppins',sans-serif; }
@@ -65,63 +103,9 @@
     
     /* Markup toggle button */
     
-/* Mobile/Tablet responsive */
-@media (max-width: 768px) {
-  #map {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 1;
-  }
 
-  #sidePanel {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    /* Remove top: 0; */
-    width: 100vw;
-    height: 40vh;
-    max-height: 40vh;
-    z-index: 700;
-    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.3);
-    border-top-left-radius: 0px;
-    border-top-right-radius: 0px;
-    padding-bottom: 48px;
-    touch-action: none;
-    background: #f8f8f8;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-}
 
-    /* Show close button on sidePanel */
-    #closePanel {
-      display: none;
-    }
-    @media (max-width: 768px) {
-      #closePanel {
-        display: block;
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        background: #fff;
-        border: none;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
-        font-size: 20px;
-        cursor: pointer;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        z-index: 1001;
-        transition: background 0.2s;
-      }
-      #closePanel:hover {
-        background: #eee;
-      }
-    }
+
 
 @media (max-width: 768px) {
   .leaflet-control-attribution {
@@ -137,7 +121,7 @@
   <ul class="menu-list"><li>River Crossing</li><!-- more items --></ul>
   <div id="map"></div>
   <div id="sidePanel">
-    <button id="closePanel" title="Close panel">&times;</button>
+    <div class="panel-toggle" id="panelToggle"></div>
     <div id="panelHeader" style="display:flex;justify-content:space-between;align-items:center;"></div>
     <img id="roadImage" src="https://via.placeholder.com/300x200" alt="Road Photo" style="width:100%; border-radius:8px; margin-bottom:16px;" />
     <div id="roadDetails">
@@ -183,19 +167,56 @@ map.eachLayer(function(layer) {
 </script>
   <script>
     const minZoom = 7;
-    // Close panel functionality
-    document.addEventListener('DOMContentLoaded', function() {
-      var closeBtn = document.getElementById('closePanel');
-      var sidePanel = document.getElementById('sidePanel');
-      var mapDiv = document.getElementById('map');
-      function isMobile() {
-        return window.matchMedia('(max-width: 768px)').matches;
+    // Mobile panel slide logic
+    function isMobile() {
+      return window.matchMedia('(max-width: 768px)').matches;
+    }
+    function setPanelOpen(open) {
+      const panel = document.getElementById('sidePanel');
+      if (open) {
+        panel.classList.add('open');
+      } else {
+        panel.classList.remove('open');
       }
-      if (closeBtn && sidePanel && mapDiv) {
-        closeBtn.addEventListener('click', function() {
-          if (isMobile()) {
-            sidePanel.style.display = 'none';
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      const panel = document.getElementById('sidePanel');
+      const toggle = document.getElementById('panelToggle');
+      let isOpen = false;
+      if (isMobile()) {
+        setPanelOpen(false);
+        toggle.addEventListener('click', function() {
+          isOpen = !isOpen;
+          setPanelOpen(isOpen);
+        });
+        // Optional: swipe/drag to open/close
+        let startY = null;
+        let currentY = null;
+        let dragging = false;
+        panel.addEventListener('touchstart', function(e) {
+          if (e.target === toggle) {
+            dragging = true;
+            startY = e.touches[0].clientY;
+            currentY = startY;
           }
+        });
+        panel.addEventListener('touchmove', function(e) {
+          if (!dragging) return;
+          currentY = e.touches[0].clientY;
+        });
+        panel.addEventListener('touchend', function(e) {
+          if (!dragging) return;
+          let delta = currentY - startY;
+          if (Math.abs(delta) > 40) {
+            if (delta > 0) {
+              setPanelOpen(false);
+              isOpen = false;
+            } else {
+              setPanelOpen(true);
+              isOpen = true;
+            }
+          }
+          dragging = false;
         });
       }
     });
