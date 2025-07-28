@@ -99,15 +99,11 @@
   line-height: 26px;
   text-align: center;
   background: #fff;
-  border: 1px solid #999;
   border-bottom: none;
   padding: 0;
   margin: 0;
 }
-.leaflet-control-locate a:last-child {
-  border-bottom: 1px solid #999;
-}
-}
+
 .leaflet-control-locate svg {
   width: 18px;
   height: 18px;
@@ -441,9 +437,17 @@ map.eachLayer(function(layer) {
       map.dragging.enable();
     });
 
-    // ── 1) Define the LocateControl ──
+   // ── 0) Define your custom “You are here” icon ──
+const currentLocIcon = L.icon({
+  iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6887bd576bb49797cd2ffcc1_pin%20(1).png',
+  iconSize:   [30, 48],    // px
+  iconAnchor: [15, 48],    // bottom-center of the icon
+  popupAnchor:[0, -40]     // popup appears above the pin
+});
+
+// ── 1) Define the LocateControl ──
 const LocateControl = L.Control.extend({
-  options: { position: 'topleft' },  // under zoom buttons
+  options: { position: 'topleft' },
   onAdd(map) {
     const container = L.DomUtil.create('div',
       'leaflet-bar leaflet-control leaflet-control-locate');
@@ -464,28 +468,32 @@ const LocateControl = L.Control.extend({
     L.DomEvent.on(btn, 'click', e => {
       L.DomEvent.stop(e);
       if (!navigator.geolocation) {
-        alert('Geolocation not supported by your browser.');
-      } else {
-        map.locate({ setView: true, maxZoom: 13 });
+        return L.popup({ closeButton:false, autoClose:true })
+          .setLatLng(map.getCenter())
+          .setContent('⚠️ Geolocation not supported.')
+          .openOn(map);
       }
+      map.locate({ setView: true, maxZoom: 13 });
     });
     return container;
   }
 });
-
-// ── 2) Add it to the map ──
 map.addControl(new LocateControl());
 
-// ── 3) When location is found ──
+// ── 2) Handle successful geolocation ──
 map.on('locationfound', e => {
-  // remove old markers if any
+  // clear old marker & circle
   if (window._locMarker) {
     map.removeLayer(window._locMarker);
     map.removeLayer(window._locCircle);
   }
-  // add new marker + accuracy circle
-  window._locMarker = L.marker(e.latlng).addTo(map)
-    .bindPopup('You are here').openPopup();
+  // add new marker with your custom icon
+  window._locMarker = L.marker(e.latlng, { icon: currentLocIcon })
+    .addTo(map)
+    .bindPopup('You are here')
+    .openPopup();
+
+  // optional accuracy circle
   window._locCircle = L.circle(e.latlng, {
     radius: e.accuracy / 2,
     color: '#3388ff',
@@ -493,13 +501,12 @@ map.on('locationfound', e => {
   }).addTo(map);
 });
 
-// ── 4) Handle errors ──
+// ── 3) Handle errors with IP fallback ──
 map.on('locationerror', err => {
   console.warn('Geolocation error', err.code, err.message);
 
-  // ← replace your alert(...) with this block:
   if (err.code === 2) {
-    // Position unavailable → try IP lookup
+    // Position unavailable → IP-based fallback
     fetch('https://ipapi.co/json/')
       .then(r => r.json())
       .then(loc => {
@@ -512,17 +519,20 @@ map.on('locationerror', err => {
       .catch(() => {
         L.popup({ closeButton:false, autoClose:true })
          .setLatLng(map.getCenter())
-         .setContent('⚠️ Unable to detect your location.')
+         .setContent('⚠️ Unable to detect location.')
          .openOn(map);
       });
   } else {
-    // code 1 = permission denied, code 3 = timeout
+    // Permission denied or timeout
     L.popup({ closeButton:false, autoClose:true })
      .setLatLng(map.getCenter())
      .setContent('⚠️ ' + err.message)
      .openOn(map);
   }
 });
+
+
+
 
 </script>
 </body>
