@@ -439,8 +439,8 @@ map.eachLayer(function(layer) {
 
    // ── 0) Define your custom “You are here” icon ──
 const currentLocIcon = L.icon({
-  iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6887bd576bb49797cd2ffcc1_pin%20(1).png',
-  iconSize:   [30, 48],    // px
+  iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c04https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6888a84bbeb9c85dd41cc71c_Target_Corporation_logo_(vector).svg.png59d68784/6888a65655d2e6a8dab72b66https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6888a708780033aa8001ffbe_shooting-target.svg_location-pin.svg',
+  iconSize:   [0, 0],    // px
   iconAnchor: [15, 48],    // bottom-center of the icon
   popupAnchor:[0, -40]     // popup appears above the pin
 });
@@ -494,11 +494,12 @@ map.on('locationfound', e => {
     .openPopup();
 
   // optional accuracy circle
-  window._locCircle = L.circle(e.latlng, {
-    radius: e.accuracy / 2,
-    color: '#3388ff',
-    fillOpacity: 0.2
-  }).addTo(map);
+window._locCircle = L.circle(e.latlng, {
+  radius: e.accuracy,         // was e.accuracy/2, now doubled back to full accuracy
+  color: '#000000',           // stroke color
+  fillColor: '#000000',       // fill color
+  fillOpacity: 1              // 100% opaque
+}).addTo(map);
 });
 
 // ── 3) Handle errors with IP fallback ──
