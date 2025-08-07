@@ -215,10 +215,27 @@
     }
 
     froadData.forEach(rd => {
-      const polyline = L.polyline(rd.coords, { color: '#3bed32', weight: 4 }).addTo(map);
-      polyline.on('click', () => showPanel(rd));
-      roadLayers.push({ polyline, data: rd });
-    });
+  // Main visible line
+  const visibleLine = L.polyline(rd.coords, {
+    color: '#3bed32',
+    weight: 4,
+    className: 'road-main-line'
+  }).addTo(map);
+
+  // Clickable transparent buffer line
+  const bufferLine = L.polyline(rd.coords, {
+    color: '#000',
+    weight: 20, // big for touch
+    opacity: 0, // fully transparent
+    className: 'road-hitbox'
+  }).addTo(map);
+
+  // Both trigger same panel
+  bufferLine.on('click', () => showPanel(rd));
+  visibleLine.on('click', () => showPanel(rd));
+
+  roadLayers.push({ polyline: visibleLine, data: rd, hitbox: bufferLine });
+});
 
     function updateLabels() {
   labelGroup.clearLayers();
