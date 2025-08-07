@@ -111,21 +111,32 @@
       display: block;
     }
 
-    #vehicleFilter select,
-#vehicleSelect {
+    #gpxDownloadBtn a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#gpxDownloadBtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+#gpxDownloadBtn a:hover {
+  background: #f4f4f4;
+}
+
+
+
+    #vehicleFilter select {
   font-family: 'Poppins', sans-serif !important;
-  color: #000 !important;
-  background-color: #fff !important;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
 }
-
-#vehicleSelect option {
-  color: #000;
-  background-color: #fff;
-}
-
   </style>
 </head>
 
@@ -145,6 +156,22 @@
       <option value="defender">Defender</option>
     </select>
   </div>
+ 
+
+  <!-- Download GPX Button -->
+<div id="gpxDownloadBtn" class="leaflet-bar leaflet-control" style="position: absolute; top: 130px; left: 10px; z-index: 1000;">
+  <a href="#" title="Download GPX">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+         stroke-width="2" stroke="#333" fill="none"
+         stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14M5 12l7 7 7-7"/>
+      <path d="M5 19h14" />
+    </svg>
+  </a>
+</div>
+
+
+
 
   <div id="map"></div>
 
@@ -171,6 +198,7 @@
       attribution: '© OpenStreetMap contributors', maxZoom: 19, minZoom
     }).addTo(map);
 
+    // ---- Roads ----
     const froadData = [
       {
         name: "F214 Kerlingardalsvegur",
@@ -209,6 +237,17 @@
         watchOut: "Narrow tracks"
       }
     ];
+
+    // ---- Camping Spots ----
+const campsites = [
+  {
+    name: "Básar Campsite",
+    coords: [63.6786, -19.4895],
+    description: "Popular campsite in Þórsmörk, great for hikers.",
+    link: "https://utilegukortid.is/en/campsite/basar/",
+    icon: "https://cdn-icons-png.flaticon.com/512/684/684908.png"
+  },
+];
 
     const roadLayers = [];
     const labelGroup = L.layerGroup().addTo(map);
@@ -381,6 +420,59 @@
         fillOpacity: 0.2
       }).addTo(map);
     });
+
+    function generateGPX(data) {
+  const gpxHeader = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="F-Roads Iceland" xmlns="http://www.topografix.com/GPX/1/1">
+`;
+  const gpxFooter = `</gpx>`;
+  let gpxBody = '';
+
+  data.forEach(road => {
+    gpxBody += `<trk><name>${road.name}</name><trkseg>\n`;
+    road.coords.forEach(coord => {
+      gpxBody += `<trkpt lat="${coord[0]}" lon="${coord[1]}"></trkpt>\n`;
+    });
+    gpxBody += `</trkseg></trk>\n`;
+  });
+
+  return gpxHeader + gpxBody + gpxFooter;
+}
+
+document.getElementById('gpxDownloadBtn').addEventListener('click', function(e) {
+  e.preventDefault();
+  const gpxContent = generateGPX(froadData);
+  const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'iceland-f-roads.gpx';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+campsites.forEach(camp => {
+  const campIcon = L.icon({
+  iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6894c6b45e2515a54854a4bf_camping-tent%20(3).png',
+  iconSize: [24, 24],
+  iconAnchor: [12, 24],
+  popupAnchor: [0, -24]
+});
+
+L.marker([63.6771443, -19.4813471], { icon: campIcon, title: 'Básar Campsite' })
+  .addTo(map)
+  .bindPopup(`
+    <strong>Básar Campsite</strong><br>
+    Popular Þórsmörk campsite. <br>
+    <a href="https://utilegukortid.is/en/campsite/basar/" target="_blank">More info</a>
+  `);
+
+});
+
+
+
   </script>
 </body>
 </html>
