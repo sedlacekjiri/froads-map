@@ -111,9 +111,21 @@
       display: block;
     }
 
-    #vehicleFilter select {
+    #vehicleFilter select,
+#vehicleSelect {
   font-family: 'Poppins', sans-serif !important;
+  color: #000 !important;
+  background-color: #fff !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
+
+#vehicleSelect option {
+  color: #000;
+  background-color: #fff;
+}
+
   </style>
 </head>
 
@@ -214,28 +226,41 @@
       document.getElementById('sidePanel').classList.add('open');
     }
 
+    let selectedLayer = null;
+
     froadData.forEach(rd => {
-  // Main visible line
   const visibleLine = L.polyline(rd.coords, {
     color: '#3bed32',
     weight: 4,
     className: 'road-main-line'
   }).addTo(map);
 
-  // Clickable transparent buffer line
   const bufferLine = L.polyline(rd.coords, {
     color: '#000',
-    weight: 20, // big for touch
-    opacity: 0, // fully transparent
+    weight: 20,
+    opacity: 0,
     className: 'road-hitbox'
   }).addTo(map);
 
-  // Both trigger same panel
-  bufferLine.on('click', () => showPanel(rd));
-  visibleLine.on('click', () => showPanel(rd));
+  const onRoadClick = () => {
+    // Reset předchozí vybranou trasu
+    if (selectedLayer && selectedLayer !== visibleLine) {
+      selectedLayer.setStyle({ color: '#3bed32', weight: 4 });
+    }
+
+    // Zvýrazni aktuální trasu
+    visibleLine.setStyle({ color: '#000', weight: 6 });
+    selectedLayer = visibleLine;
+
+    showPanel(rd);
+  };
+
+  bufferLine.on('click', onRoadClick);
+  visibleLine.on('click', onRoadClick);
 
   roadLayers.push({ polyline: visibleLine, data: rd, hitbox: bufferLine });
 });
+
 
     function updateLabels() {
   labelGroup.clearLayers();
