@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>F‑Roads Iceland – Adaptive Labels</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Poppins', sans-serif;
+      overflow-x: hidden;
+    }
+    #map {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100vh;
+      z-index: 1;
+    }
+    #sidePanel {
+  position: absolute;
+  left: 0;
+  bottom: -100%;
+  width: 100%;
+  height: 40vh;
+  background: #f8f8f8;
+  padding: 20px;
+  box-sizing: border-box;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  /* Add this so contents can scroll inside */
+  overflow-y: auto;
+  transition: bottom 0.25s ease-out;
+  z-index: 700;
+  overscroll-behavior: contain;
+}
+    #sidePanel.open {
+      bottom: 0;
+      display: block;
+    }
+    #sidePanel img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+    @media (max-width: 768px) {
+      #sidePanel {
+        width: 100vw;
+        left: 0;
+        right: 0;
+        max-width: none;
+        overflow-x: hidden;
+      }
+    }
+
+    .road-label-icon div {
+      display: inline-block;
+      background: #000;
+      color: #fff;
+      border: 1px solid #fff;
+      border-radius: 5px;
+      padding: 4px 6px;
+      font-size: 12px;
+    }
+
+    .road-label-icon.dimmed div {
+  opacity: 0.4;
+  background: #aaa;
+}
+    #closePanel {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid #000;
+      font-size: 1.5em;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 8px;
+      align-self: flex-end;
+      z-index: 1;
+      color: #000;
+    }
+    .leaflet-control-locate {
+      margin-top: 10px !important;
+    }
+    .leaflet-control-locate a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .leaflet-control-locate svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    #vehicleFilter select {
+  font-family: 'Poppins', sans-serif !important;
+}
+  </style>
+</head>
+
+<body>
+  <div id="vehicleFilter" style="position:absolute;top:10px;left:60px;z-index:1000;
+       background:white;padding:10px 14px;border-radius:8px;
+       box-shadow:0 2px 5px rgba(0,0,0,0.2);display:flex;
+       align-items:center;gap:10px;">
+    <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6893c2dc9f3ada3f8c6f8a16_jeeps.png"
+         alt="Jeep icon" style="width:24px; height:auto;" />
+    <select id="vehicleSelect" style="font-size:14px; padding:4px 8px; border-radius:4px;">
+      <option value="all">Choose your 4x4 vehicle</option>
+      <option value="jimny">Suzuki Jimny</option>
+      <option value="duster">Dacia Duster</option>
+      <option value="landcruiser">Toyota Land Cruiser</option>
+      <option value="rubicon">Jeep Wrangler Rubicon</option>
+      <option value="defender">Defender</option>
+    </select>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="sidePanel">
+    <button id="closePanel">✕</button>
+    <img id="roadImage" alt="Road Photo" style="display:none;" />
+    <div id="roadDetails">
+      <h2>F‑road Details</h2>
+      <div><strong>Difficulty:</strong> <span id="infoDifficulty"></span></div>
+      <div><strong>River Crossing:</strong> <span id="infoRiver"></span></div>
+      <div><strong>Length:</strong> <span id="infoLength"></span> km</div>
+      <div><strong>Approx. Time:</strong> <span id="infoTime"></span></div>
+      <div><strong>Surface:</strong> <span id="infoSurface"></span></div>
+      <div><strong>Watch out for:</strong> <span id="infoWatch"></span></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <script>
+    const minZoom = 7;
+    const map = L.map('map').setView([63.9, -18.9], minZoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors', maxZoom: 19, minZoom
+    }).addTo(map);
+
+    const froadData = [
+      {
+        name: "F214 Kerlingardalsvegur",
+        coords: [[63.424245, -18.903451], [63.425263, -18.90534], [63.425829, -18.907292], [63.426319, -18.908279], [63.427192, -18.909245], [63.427912, -18.909352], [63.428699, -18.909073], [63.429506, -18.908966], [63.430293, -18.909202], [63.431425, -18.90961], [63.432193, -18.909459], [63.432769, -18.908966], [63.433239, -18.908043], [63.434534, -18.905254], [63.435264, -18.904267], [63.436147, -18.90388], [63.439409, -18.904095], [63.442805, -18.904267], [63.443208, -18.903966], [63.443534, -18.902636], [63.444494, -18.899503], [63.445933, -18.896585], [63.446086, -18.895168], [63.446105, -18.892937], [63.447007, -18.889804], [63.447582, -18.889032], [63.447391, -18.888045], [63.447352, -18.887208], [63.447151, -18.885598], [63.44763, -18.883689], [63.448455, -18.880878], [63.449654, -18.876801], [63.450019, -18.876157], [63.450805, -18.875492], [63.451409, -18.875213], [63.451659, -18.875299], [63.452407, -18.87605], [63.452781, -18.876028], [63.453174, -18.875535], [63.455648, -18.871265], [63.456156, -18.8706], [63.456559, -18.870406], [63.457576, -18.870127], [63.457873, -18.870213], [63.458314, -18.870857], [63.45892, -18.871511], [63.459562, -18.872627], [63.460597, -18.875245], [63.461077, -18.875846], [63.461594, -18.876146], [63.462246, -18.876017], [63.462975, -18.876275], [63.463665, -18.876489], [63.464106, -18.877262], [63.464356, -18.878592], [63.464432, -18.880523], [63.464317, -18.882519], [63.463972, -18.883849], [63.463867, -18.884686], [63.463972, -18.885437], [63.464576, -18.887282], [63.464969, -18.887969], [63.46563, -18.88827], [63.466033, -18.888506], [63.466541, -18.889042], [63.467241, -18.889278], [63.467413, -18.889514], [63.467653, -18.890308], [63.467624, -18.891038], [63.46748, -18.891488], [63.467682, -18.892926], [63.468161, -18.893012], [63.468861, -18.892926], [63.469081, -18.893183], [63.469608, -18.893677], [63.470097, -18.893913], [63.470931, -18.893848], [63.471717, -18.893848], [63.471928, -18.893634], [63.472196, -18.893076], [63.472464, -18.89284], [63.472944, -18.892797], [63.473404, -18.893054], [63.473681, -18.893441], [63.473978, -18.893419], [63.474937, -18.892883], [63.475138, -18.892475], [63.475196, -18.89196], [63.475157, -18.891638], [63.474994, -18.891316], [63.474985, -18.890802], [63.475157, -18.889922], [63.47533, -18.889578], [63.475646, -18.888956], [63.475751, -18.888463], [63.475761, -18.887908], [63.475837, -18.887339], [63.47595, -18.886964], [63.476144, -18.886813], [63.476312, -18.886722], [63.476482, -18.886733], [63.476745, -18.886931], [63.477006, -18.887307], [63.477059, -18.8875], [63.477109, -18.887961], [63.477138, -18.888331], [63.477227, -18.888707], [63.47733, -18.888938], [63.477917, -18.889292], [63.478906, -18.889699], [63.479584, -18.889908], [63.479785, -18.889978], [63.480051, -18.890102], [63.480911, -18.890466], [63.48172, -18.89082], [63.482056, -18.890842], [63.482554, -18.890681], [63.483172, -18.890391], [63.483699, -18.889952], [63.484139, -18.889512], [63.484594, -18.889308], [63.484858, -18.889276], [63.485399, -18.88919], [63.486002, -18.888739], [63.486625, -18.888095], [63.488301, -18.886583], [63.489618, -18.885392], [63.490097, -18.884877], [63.490566, -18.884094], [63.490964, -18.883278], [63.491687, -18.881626], [63.492305, -18.880006], [63.492477, -18.879695], [63.493018, -18.879212], [63.493574, -18.878504], [63.49399, -18.877764], [63.494254, -18.876905], [63.494436, -18.875736], [63.494522, -18.87492], [63.494632, -18.874695], [63.494776, -18.874663], [63.494905, -18.87477], [63.495178, -18.875146], [63.495609, -18.875671], [63.495771, -18.875757], [63.496068, -18.87565], [63.496288, -18.875392], [63.496561, -18.874856], [63.497528, -18.872775], [63.497696, -18.872152], [63.497806, -18.871348], [63.497907, -18.8708], [63.498113, -18.870243], [63.498429, -18.869953], [63.498826, -18.869921], [63.499894, -18.870007], [63.500525, -18.870007], [63.501411, -18.869524], [63.501971, -18.868998], [63.502354, -18.868386], [63.502632, -18.867668], [63.502938, -18.866488], [63.503096, -18.865736], [63.503101, -18.865286], [63.502967, -18.864664], [63.502043, -18.863516], [63.501813, -18.863269], [63.501789, -18.863044], [63.501909, -18.862936], [63.502172, -18.862861], [63.502656, -18.862743], [63.503374, -18.862904], [63.503646, -18.862668], [63.503948, -18.862046], [63.504116, -18.86152], [63.504283, -18.860758], [63.504364, -18.859739], [63.504446, -18.858419], [63.504513, -18.857883], [63.504728, -18.857464], [63.505298, -18.857089], [63.505551, -18.857121], [63.506174, -18.8574], [63.506504, -18.857561], [63.506834, -18.858376], [63.507394, -18.859246], [63.507743, -18.859857], [63.50882, -18.861306], [63.509744, -18.862732], [63.510072, -18.863291], [63.513584, -18.866274], [63.514149, -18.866746], [63.515087, -18.866552], [63.515517, -18.866724], [63.515932, -18.867846], [63.516152, -18.86893], [63.516286, -18.869949], [63.516535, -18.870808], [63.516865, -18.871526], [63.517329, -18.872535], [63.517698, -18.873651], [63.51831, -18.875689], [63.51863, -18.877041], [63.518798, -18.877352], [63.519228, -18.878328], [63.519405, -18.879122], [63.519716, -18.879863], [63.51997, -18.880807], [63.520061, -18.88173], [63.520166, -18.882341], [63.520429, -18.882835], [63.52075, -18.882813], [63.521156, -18.882534], [63.521448, -18.882491], [63.522381, -18.88276], [63.523582, -18.883135], [63.52504, -18.883296], [63.525461, -18.883511], [63.525853, -18.883897], [63.52681, -18.883339], [63.527154, -18.883296], [63.527776, -18.882695], [63.528522, -18.882223], [63.528905, -18.882438], [63.529249, -18.883253], [63.529718, -18.884841], [63.530033, -18.886343], [63.530129, -18.887566], [63.530483, -18.888188]],
+        photo: "https://via.placeholder.com/600x400?text=F214",
+        description: "Panoramic track in Kerlingardalsvegur.",
+        difficulty: "Medium",
+        riverCrossing: { exists: true, count: 2 },
+        lengthKm: 10.2,
+        approxTime: "2–3 hours",
+        surface: "Gravel",
+        watchOut: "Loose stones"
+      },
+      {
+        name: "F249 Þórsmerkurvegur",
+        coords: [[63.673894, -19.851423], [63.673918, -19.850264], [63.673946, -19.848794], [63.673447, -19.847314], [63.673442, -19.845855], [63.673328, -19.842851], [63.673276, -19.8421], [63.673166, -19.841359], [63.673185, -19.84064], [63.673304, -19.840168], [63.673257, -19.839063], [63.67349, -19.838151], [63.673399, -19.836488], [63.673504, -19.835716], [63.673418, -19.834826], [63.673623, -19.83328], [63.673575, -19.831628], [63.674027, -19.829804], [63.674427, -19.827723], [63.674646, -19.826189], [63.675226, -19.821103], [63.675731, -19.81723], [63.676206, -19.813475], [63.676734, -19.809237], [63.6779, -19.800343], [63.677838, -19.799463], [63.67869, -19.795944], [63.678752, -19.793702], [63.679213, -19.790966], [63.679446, -19.787898], [63.679194, -19.786653], [63.679066, -19.785827], [63.679032, -19.785033], [63.679208, -19.784529], [63.679727, -19.783059], [63.679751, -19.78175], [63.679841, -19.776933], [63.679974, -19.775216], [63.680264, -19.772126], [63.680317, -19.770774], [63.680412, -19.768736], [63.68045, -19.768167], [63.680593, -19.76747], [63.68055, -19.766955], [63.680379, -19.76614], [63.680364, -19.764992], [63.680379, -19.764165], [63.680079, -19.763082], [63.679722, -19.762438], [63.679636, -19.761977], [63.679822, -19.759638], [63.679917, -19.756848], [63.679912, -19.755657], [63.679817, -19.753694], [63.679741, -19.750851], [63.679513, -19.744585], [63.679403, -19.74216], [63.679651, -19.740905], [63.679755, -19.73995], [63.679698, -19.738974], [63.680245, -19.73789], [63.680264, -19.736796], [63.680631, -19.735133], [63.681106, -19.731174], [63.681425, -19.729093], [63.681725, -19.727655], [63.681991, -19.726754], [63.682129, -19.725745], [63.682238, -19.724222], [63.682728, -19.72214], [63.682976, -19.721186], [63.684474, -19.716604], [63.684997, -19.714952], [63.685492, -19.71154], [63.685906, -19.709148], [63.68611, -19.705092], [63.686253, -19.703451], [63.686491, -19.699535], [63.686452, -19.696424], [63.686419, -19.695597], [63.68659, -19.690995], [63.686947, -19.688087], [63.686961, -19.687476], [63.686814, -19.686843], [63.686472, -19.68503], [63.685768, -19.682937], [63.685511, -19.681468], [63.685211, -19.678517], [63.685097, -19.676414], [63.685192, -19.674118], [63.685211, -19.672992], [63.684721, -19.669129], [63.684189, -19.664505], [63.684288, -19.659194], [63.684774, -19.65412], [63.685192, -19.652779], [63.686055, -19.646596], [63.686569, -19.646424], [63.688091, -19.63767], [63.687844, -19.632262], [63.687425, -19.63016], [63.685656, -19.627499], [63.684648, -19.62531], [63.684495, -19.62089], [63.683772, -19.617028], [63.682783, -19.61398], [63.683829, -19.610504], [63.683829, -19.607372], [63.683563, -19.605912], [63.680842, -19.601878], [63.68031, -19.601278], [63.6801, -19.599818], [63.679377, -19.59896], [63.679758, -19.593295], [63.679339, -19.589948], [63.679101, -19.588854], [63.67874, -19.588124], [63.678692, -19.586944], [63.678007, -19.584884], [63.677588, -19.582867], [63.677246, -19.581687], [63.677103, -19.580335], [63.676979, -19.578275], [63.67678, -19.575657], [63.676504, -19.574069], [63.676152, -19.57231], [63.676085, -19.570228], [63.675819, -19.56819], [63.6756, -19.566151], [63.675419, -19.563855], [63.675457, -19.561602], [63.675371, -19.558384], [63.67521, -19.557246], [63.675562, -19.556131], [63.675647, -19.554371], [63.675628, -19.550122], [63.675819, -19.546024], [63.675838, -19.543728], [63.676199, -19.540359], [63.676884, -19.537934], [63.677684, -19.535939], [63.677988, -19.534351], [63.678074, -19.53051], [63.678521, -19.52948], [63.678445, -19.52727], [63.679234, -19.520811], [63.679387, -19.516219], [63.67932, -19.513816], [63.679672, -19.512657], [63.680157, -19.5124], [63.68049, -19.511971], [63.680366, -19.508516], [63.680262, -19.505405], [63.679986, -19.502057], [63.679834, -19.499826], [63.679491, -19.493753], [63.679396, -19.49223], [63.679158, -19.491393], [63.678844, -19.48841], [63.67874, -19.487681], [63.678787, -19.485599], [63.679035, -19.482853], [63.679348, -19.479741], [63.679339, -19.475858], [63.678778, -19.473583], [63.678797, -19.472853], [63.678787, -19.472253], [63.678901, -19.471566], [63.678702, -19.470901], [63.677978, -19.470536], [63.677569, -19.470171], [63.677303, -19.46912], [63.676799, -19.468948]],
+        photo: "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6882e6ea7ddce00706e0e280_68800f43ad3bd46b5244f74a_F249%20%C3%9Eo%CC%81rsmerkurvegur6778.jpg",
+        description: "Adventurous valley route.",
+        difficulty: "Medium",
+        riverCrossing: { exists: true, count: 3 },
+        lengthKm: 20.5,
+        approxTime: "3–4 hours",
+        surface: "Dirt and gravel",
+        watchOut: "Deep river crossings"
+      },
+      {
+        name: "Gigjokull Track",
+        coords: [[63.671952,-19.625853],[63.676581,-19.628127],[63.682352,-19.633706]],
+        photo: "https://via.placeholder.com/600x400?text=Gigjokull",
+        description: "Close glacier approach track.",
+        difficulty: "Medium-Hard",
+        riverCrossing: { exists: true, count: 1 },
+        lengthKm: 9.8,
+        approxTime: "2 hours",
+        surface: "Rocky",
+        watchOut: "Narrow tracks"
+      }
+    ];
+
+    const roadLayers = [];
+    const labelGroup = L.layerGroup().addTo(map);
+
+    function showPanel(rd) {
+      document.getElementById('roadImage').style.display = 'block';
+      document.getElementById('roadImage').src = rd.photo;
+      document.getElementById('infoDifficulty').textContent = rd.difficulty;
+      document.getElementById('infoRiver').textContent = rd.riverCrossing.exists ? rd.riverCrossing.count : 'None';
+      document.getElementById('infoLength').textContent = rd.lengthKm;
+      document.getElementById('infoTime').textContent = rd.approxTime;
+      document.getElementById('infoSurface').textContent = rd.surface;
+      document.getElementById('infoWatch').textContent = rd.watchOut;
+      document.querySelector('#roadDetails > h2').textContent = rd.name;
+      document.getElementById('sidePanel').classList.add('open');
+    }
+
+    froadData.forEach(rd => {
+      const polyline = L.polyline(rd.coords, { color: '#3bed32', weight: 4 }).addTo(map);
+      polyline.on('click', () => showPanel(rd));
+      roadLayers.push({ polyline, data: rd });
+    });
+
+    function updateLabels() {
+  labelGroup.clearLayers();
+  const zoom = map.getZoom();
+  const labelsPerRoad = Math.max(1, Math.floor((zoom - minZoom)/3) + 1);
+  roadLayers.forEach(r => {
+    const line = turf.lineString(r.data.coords.map(c => [c[1], c[0]]));
+    const len = turf.length(line, { units: 'kilometers' });
+    const step = len / labelsPerRoad;
+
+    for (let d = 0; d <= len; d += step) {
+      const pt = turf.along(line, d, { units: 'kilometers' });
+      const latlng = [pt.geometry.coordinates[1], pt.geometry.coordinates[0]];
+
+      const isDimmed = r.data.allowed === false;
+
+      L.marker(latlng, {
+        icon: L.divIcon({
+          className: 'road-label-icon' + (isDimmed ? ' dimmed' : ''),
+          html: `<div>${r.data.name.split(' ')[0]}</div>`,
+          iconAnchor: [12,12]
+        }),
+        interactive: false
+      }).addTo(labelGroup);
+    }
+  });
+}
+    map.on('zoomend moveend', updateLabels);
+    updateLabels();
+
+    document.getElementById('closePanel').addEventListener('click', () => {
+      document.getElementById('sidePanel').classList.remove('open');
+    });
+
+    document.getElementById('vehicleSelect').addEventListener('change', e => {
+  const selected = e.target.value;
+
+  const isAllowed = (diff, vehicle) => {
+    const d = diff.toLowerCase();
+    if (vehicle === 'all') return true;
+    if (vehicle === 'jimny') return d === 'easy';
+    if (vehicle === 'duster') return d === 'easy' || d === 'medium';
+    if (vehicle === 'landcruiser') return d !== 'extreme';
+    return true;
+  };
+
+  roadLayers.forEach(r => {
+    const allowed = isAllowed(r.data.difficulty, selected);
+    r.data.allowed = allowed;
+
+    if (!map.hasLayer(r.polyline)) map.addLayer(r.polyline);
+
+    r.polyline.setStyle({
+      color: allowed ? '#3bed32' : '#999',
+      opacity: allowed ? 1 : 0.4,
+      weight: 4,
+      dashArray: allowed ? null : '4'
+    });
+
+    r.polyline.off('click');
+
+    if (allowed) {
+      r.polyline.on('click', () => showPanel(r.data));
+    }
+  });
+
+  updateLabels(); // <- důležité
+});
+
+
+
+    const currentLocIcon = L.icon({
+      iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6887bd576bb49797cd2ffcc1_pin%20(1).png',
+      iconSize: [30, 42],
+      iconAnchor: [15, 42],
+      popupAnchor: [0, -40]
+    });
+
+    const LocateControl = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd(map) {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-locate');
+        const btn = L.DomUtil.create('a', '', container);
+        btn.href = '#';
+        btn.title = 'Show my location';
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+               stroke-width="2" stroke="#333" fill="none"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="22" y1="12" x2="18" y2="12"/>
+            <line x1="6" y1="12" x2="2" y2="12"/>
+            <line x1="12" y1="6" x2="12" y2="2"/>
+            <line x1="12" y1="22" x2="12" y2="18"/>
+          </svg>`;
+        L.DomEvent.on(btn, 'click', e => {
+          L.DomEvent.stop(e);
+          if (!navigator.geolocation) return alert('Geolocation not supported');
+          map.locate({ setView: true, maxZoom: 13 });
+        });
+        return container;
+      }
+    });
+    map.addControl(new LocateControl());
+
+    map.on('locationfound', e => {
+      if (window._locMarker) {
+        map.removeLayer(window._locMarker);
+        map.removeLayer(window._locCircle);
+      }
+      window._locMarker = L.marker(e.latlng, { icon: currentLocIcon })
+        .addTo(map)
+        .bindPopup('You are here')
+        .openPopup();
+      window._locCircle = L.circle(e.latlng, {
+        radius: e.accuracy/2,
+        color: '#ffc800',
+        fillOpacity: 0.2
+      }).addTo(map);
+    });
+  </script>
+</body>
+</html>
