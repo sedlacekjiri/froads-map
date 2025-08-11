@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <title>F‑Roads Iceland – Adaptive Labels</title>
+  <title>F-Roads Iceland – Adaptive Labels</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
@@ -23,34 +23,34 @@
       z-index: 1;
     }
     #sidePanel {
-  position: absolute;
-  left: 0;
-  bottom: -100%;
-  width: 100%;
-  height: 40vh;
-  background: #f8f8f8;
-  padding: 20px;
-  box-sizing: border-box;
-  box-shadow: 0 -2px 6px rgba(0,0,0,0.3);
-  display: flex;
-  flex-direction: column;
-  /* Add this so contents can scroll inside */
-  overflow-y: auto;
-  transition: bottom 0.25s ease-out;
-  z-index: 700;
-  overscroll-behavior: contain;
-}
+      position: absolute;
+      left: 0;
+      bottom: -100%;
+      width: 100%;
+      height: 40vh;
+      background: #f8f8f8;
+      padding: 20px;
+      box-sizing: border-box;
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      /* Add this so contents can scroll inside */
+      overflow-y: auto;
+      transition: bottom 0.25s ease-out;
+      z-index: 700;
+      overscroll-behavior: contain;
+    }
     #sidePanel.open {
       bottom: 0;
       display: block;
     }
     #sidePanel img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
 
     @media (max-width: 768px) {
       #sidePanel {
@@ -73,9 +73,9 @@
     }
 
     .road-label-icon.dimmed div {
-  opacity: 0.4;
-  background: #aaa;
-}
+      opacity: 0.4;
+      background: #aaa;
+    }
     #closePanel {
       position: absolute;
       top: 12px;
@@ -112,31 +112,39 @@
     }
 
     #gpxDownloadBtn a {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  cursor: pointer;
-}
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
 
-#gpxDownloadBtn svg {
-  width: 18px;
-  height: 18px;
-}
+    #gpxDownloadBtn svg {
+      width: 18px;
+      height: 18px;
+    }
 
-#gpxDownloadBtn a:hover {
-  background: #f4f4f4;
-}
+    #gpxDownloadBtn a:hover {
+      background: #f4f4f4;
+    }
 
+    #vehicleSelect {
+      background-color: #fff !important;
+      color: #000 !important;
+      font-family: 'Poppins', sans-serif !important;
+      font-size: 14px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
 
-
-    #vehicleFilter select {
-  font-family: 'Poppins', sans-serif !important;
-}
   </style>
 </head>
 
@@ -156,22 +164,18 @@
       <option value="defender">Defender</option>
     </select>
   </div>
- 
 
   <!-- Download GPX Button -->
-<div id="gpxDownloadBtn" class="leaflet-bar leaflet-control" style="position: absolute; top: 130px; left: 10px; z-index: 1000;">
-  <a href="#" title="Download GPX">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-         stroke-width="2" stroke="#333" fill="none"
-         stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 5v14M5 12l7 7 7-7"/>
-      <path d="M5 19h14" />
-    </svg>
-  </a>
-</div>
-
-
-
+  <div id="gpxDownloadBtn" class="leaflet-bar leaflet-control" style="position: absolute; top: 130px; left: 10px; z-index: 1000;">
+    <a href="#" title="Download GPX">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+           stroke-width="2" stroke="#333" fill="none"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5v14M5 12l7 7 7-7"/>
+        <path d="M5 19h14" />
+      </svg>
+    </a>
+  </div>
 
   <div id="map"></div>
 
@@ -179,7 +183,8 @@
     <button id="closePanel">✕</button>
     <img id="roadImage" alt="Road Photo" style="display:none;" />
     <div id="roadDetails">
-      <h2>F‑road Details</h2>
+      <h2>F-road Details</h2>
+      <div><span id="wx">-- °C · -- m/s</span></div>
       <div><strong>Difficulty:</strong> <span id="infoDifficulty"></span></div>
       <div><strong>River Crossing:</strong> <span id="infoRiver"></span></div>
       <div><strong>Length:</strong> <span id="infoLength"></span> km</div>
@@ -239,18 +244,28 @@
     ];
 
     // ---- Camping Spots ----
-const campsites = [
-  {
-    name: "Básar Campsite",
-    coords: [63.6786, -19.4895],
-    description: "Popular campsite in Þórsmörk, great for hikers.",
-    link: "https://utilegukortid.is/en/campsite/basar/",
-    icon: "https://cdn-icons-png.flaticon.com/512/684/684908.png"
-  },
-];
+    const campsites = [
+      {
+        name: "Básar Campsite",
+        coords: [63.6786, -19.4895],
+        description: "Popular campsite in Þórsmörk, great for hikers.",
+        link: "https://utilegukortid.is/en/campsite/basar/",
+        icon: "https://cdn-icons-png.flaticon.com/512/684/684908.png"
+      },
+    ];
 
     const roadLayers = [];
     const labelGroup = L.layerGroup().addTo(map);
+
+    // === Helper: midpoint of a road (lat, lon) using Turf ===
+    function getRoadMidLatLon(rd){
+      if (!rd.coords || !rd.coords.length) return [64.1466, -21.9426]; // fallback Reykjavík
+      const line = turf.lineString(rd.coords.map(c => [c[1], c[0]])); // [lon,lat]
+      const lenKm = turf.length(line, { units: 'kilometers' });
+      const mid = turf.along(line, lenKm / 2, { units: 'kilometers' });
+      const [lon, lat] = mid.geometry.coordinates;
+      return [lat, lon];
+    }
 
     function showPanel(rd) {
       document.getElementById('roadImage').style.display = 'block';
@@ -263,70 +278,71 @@ const campsites = [
       document.getElementById('infoWatch').textContent = rd.watchOut;
       document.querySelector('#roadDetails > h2').textContent = rd.name;
       document.getElementById('sidePanel').classList.add('open');
+
+      // 🆕 Update weather for this road's midpoint
+      const [lat, lon] = getRoadMidLatLon(rd);
+      Weather.setByCoords(lat, lon);
     }
 
     let selectedLayer = null;
 
     froadData.forEach(rd => {
-  const visibleLine = L.polyline(rd.coords, {
-    color: '#3bed32',
-    weight: 4,
-    className: 'road-main-line'
-  }).addTo(map);
+      const visibleLine = L.polyline(rd.coords, {
+        color: '#3bed32',
+        weight: 4,
+        className: 'road-main-line'
+      }).addTo(map);
 
-  const bufferLine = L.polyline(rd.coords, {
-    color: '#000',
-    weight: 20,
-    opacity: 0,
-    className: 'road-hitbox'
-  }).addTo(map);
+      const bufferLine = L.polyline(rd.coords, {
+        color: '#000',
+        weight: 20,
+        opacity: 0,
+        className: 'road-hitbox'
+      }).addTo(map);
 
-  const onRoadClick = () => {
-    // Reset předchozí vybranou trasu
-    if (selectedLayer && selectedLayer !== visibleLine) {
-      selectedLayer.setStyle({ color: '#3bed32', weight: 4 });
-    }
+      const onRoadClick = () => {
+        // Reset previous
+        if (selectedLayer && selectedLayer !== visibleLine) {
+          selectedLayer.setStyle({ color: '#3bed32', weight: 4 });
+        }
+        // Highlight current
+        visibleLine.setStyle({ color: '#000', weight: 6 });
+        selectedLayer = visibleLine;
 
-    // Zvýrazni aktuální trasu
-    visibleLine.setStyle({ color: '#000', weight: 6 });
-    selectedLayer = visibleLine;
+        showPanel(rd);
+      };
 
-    showPanel(rd);
-  };
+      bufferLine.on('click', onRoadClick);
+      visibleLine.on('click', onRoadClick);
 
-  bufferLine.on('click', onRoadClick);
-  visibleLine.on('click', onRoadClick);
-
-  roadLayers.push({ polyline: visibleLine, data: rd, hitbox: bufferLine });
-});
-
+      roadLayers.push({ polyline: visibleLine, data: rd, hitbox: bufferLine });
+    });
 
     function updateLabels() {
-  labelGroup.clearLayers();
-  const zoom = map.getZoom();
-  const labelsPerRoad = Math.max(1, Math.floor((zoom - minZoom)/3) + 1);
-  roadLayers.forEach(r => {
-    const line = turf.lineString(r.data.coords.map(c => [c[1], c[0]]));
-    const len = turf.length(line, { units: 'kilometers' });
-    const step = len / labelsPerRoad;
+      labelGroup.clearLayers();
+      const zoom = map.getZoom();
+      const labelsPerRoad = Math.max(1, Math.floor((zoom - minZoom)/3) + 1);
+      roadLayers.forEach(r => {
+        const line = turf.lineString(r.data.coords.map(c => [c[1], c[0]]));
+        const len = turf.length(line, { units: 'kilometers' });
+        const step = len / labelsPerRoad;
 
-    for (let d = 0; d <= len; d += step) {
-      const pt = turf.along(line, d, { units: 'kilometers' });
-      const latlng = [pt.geometry.coordinates[1], pt.geometry.coordinates[0]];
+        for (let d = 0; d <= len; d += step) {
+          const pt = turf.along(line, d, { units: 'kilometers' });
+          const latlng = [pt.geometry.coordinates[1], pt.geometry.coordinates[0]];
+          const isDimmed = r.data.allowed === false;
 
-      const isDimmed = r.data.allowed === false;
-
-      L.marker(latlng, {
-        icon: L.divIcon({
-          className: 'road-label-icon' + (isDimmed ? ' dimmed' : ''),
-          html: `<div>${r.data.name.split(' ')[0]}</div>`,
-          iconAnchor: [12,12]
-        }),
-        interactive: false
-      }).addTo(labelGroup);
+          L.marker(latlng, {
+            icon: L.divIcon({
+              className: 'road-label-icon' + (isDimmed ? ' dimmed' : ''),
+              html: `<div>${r.data.name.split(' ')[0]}</div>`,
+              iconAnchor: [12,12]
+            }),
+            interactive: false
+          }).addTo(labelGroup);
+        }
+      });
     }
-  });
-}
     map.on('zoomend moveend', updateLabels);
     updateLabels();
 
@@ -335,41 +351,40 @@ const campsites = [
     });
 
     document.getElementById('vehicleSelect').addEventListener('change', e => {
-  const selected = e.target.value;
+      const selected = e.target.value;
 
-  const isAllowed = (diff, vehicle) => {
-    const d = diff.toLowerCase();
-    if (vehicle === 'all') return true;
-    if (vehicle === 'jimny') return d === 'easy';
-    if (vehicle === 'duster') return d === 'easy' || d === 'medium';
-    if (vehicle === 'landcruiser') return d !== 'extreme';
-    return true;
-  };
+      const isAllowed = (diff, vehicle) => {
+        const d = diff.toLowerCase();
+        if (vehicle === 'all') return true;
+        if (vehicle === 'jimny') return d === 'easy';
+        if (vehicle === 'duster') return d === 'easy' || d === 'medium';
+        if (vehicle === 'landcruiser') return d !== 'extreme';
+        return true;
+      };
 
-  roadLayers.forEach(r => {
-    const allowed = isAllowed(r.data.difficulty, selected);
-    r.data.allowed = allowed;
+      roadLayers.forEach(r => {
+        const allowed = isAllowed(r.data.difficulty, selected);
+        r.data.allowed = allowed;
 
-    if (!map.hasLayer(r.polyline)) map.addLayer(r.polyline);
+        if (!map.hasLayer(r.polyline)) map.addLayer(r.polyline);
 
-    r.polyline.setStyle({
-      color: allowed ? '#3bed32' : '#999',
-      opacity: allowed ? 1 : 0.4,
-      weight: 4,
-      dashArray: allowed ? null : '4'
+        r.polyline.setStyle({
+          color: allowed ? '#3bed32' : '#999',
+          opacity: allowed ? 1 : 0.4,
+          weight: 4,
+          dashArray: allowed ? null : '4'
+        });
+
+        r.polyline.off('click');
+
+        if (allowed) {
+          // keep panel behaviour + weather
+          r.polyline.on('click', () => showPanel(r.data));
+        }
+      });
+
+      updateLabels(); // <- important to refresh label style
     });
-
-    r.polyline.off('click');
-
-    if (allowed) {
-      r.polyline.on('click', () => showPanel(r.data));
-    }
-  });
-
-  updateLabels(); // <- důležité
-});
-
-
 
     const currentLocIcon = L.icon({
       iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6887bd576bb49797cd2ffcc1_pin%20(1).png',
@@ -422,57 +437,122 @@ const campsites = [
     });
 
     function generateGPX(data) {
-  const gpxHeader = `<?xml version="1.0" encoding="UTF-8"?>
+      const gpxHeader = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="F-Roads Iceland" xmlns="http://www.topografix.com/GPX/1/1">
 `;
-  const gpxFooter = `</gpx>`;
-  let gpxBody = '';
+      const gpxFooter = `</gpx>`;
+      let gpxBody = '';
 
-  data.forEach(road => {
-    gpxBody += `<trk><name>${road.name}</name><trkseg>\n`;
-    road.coords.forEach(coord => {
-      gpxBody += `<trkpt lat="${coord[0]}" lon="${coord[1]}"></trkpt>\n`;
+      data.forEach(road => {
+        gpxBody += `<trk><name>${road.name}</name><trkseg>\n`;
+        road.coords.forEach(coord => {
+          gpxBody += `<trkpt lat="${coord[0]}" lon="${coord[1]}"></trkpt>\n`;
+        });
+        gpxBody += `</trkseg></trk>\n`;
+      });
+
+      return gpxHeader + gpxBody + gpxFooter;
+    }
+
+    document.getElementById('gpxDownloadBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      const gpxContent = generateGPX(froadData);
+      const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'iceland-f-roads.gpx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     });
-    gpxBody += `</trkseg></trk>\n`;
-  });
 
-  return gpxHeader + gpxBody + gpxFooter;
-}
+    campsites.forEach(camp => {
+      const campIcon = L.icon({
+        iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6894c6b45e2515a54854a4bf_camping-tent%20(3).png',
+        iconSize: [30, 30],
+        iconAnchor: [12, 24],
+        popupAnchor: [0, -24]
+      });
 
-document.getElementById('gpxDownloadBtn').addEventListener('click', function(e) {
-  e.preventDefault();
-  const gpxContent = generateGPX(froadData);
-  const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'iceland-f-roads.gpx';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
+      L.marker([63.6771443, -19.4813471], { icon: campIcon, title: 'Básar Campsite' })
+        .addTo(map)
+        .bindPopup(`
+          <strong>Básar Campsite</strong><br>
+          Popular Þórsmörk campsite. <br>
+          <a href="https://utilegukortid.is/en/campsite/basar/" target="_blank">More info</a>
+        `);
+    });
 
-campsites.forEach(camp => {
-  const campIcon = L.icon({
-  iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6894c6b45e2515a54854a4bf_camping-tent%20(3).png',
-  iconSize: [24, 24],
-  iconAnchor: [12, 24],
-  popupAnchor: [0, -24]
-});
+    // ---------- Utils ----------
+    function round(n, p=1){ return Math.round(n * 10**p) / 10**p; }
+    function degToCompass(deg){
+      const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+      return dirs[Math.round((((deg%360)+360)%360)/22.5)%16];
+    }
 
-L.marker([63.6771443, -19.4813471], { icon: campIcon, title: 'Básar Campsite' })
-  .addTo(map)
-  .bindPopup(`
-    <strong>Básar Campsite</strong><br>
-    Popular Þórsmörk campsite. <br>
-    <a href="https://utilegukortid.is/en/campsite/basar/" target="_blank">More info</a>
-  `);
+    // ---------- Renderer into #wx (simple text) ----------
+    function renderWxText({T, F, Ddeg}){
+      const el = document.getElementById('wx');
+      if (!el) return;
+      const Dtxt = Ddeg!=null ? ' ' + degToCompass(Ddeg) : '';
+      el.textContent = `${T!=null?round(T,1):'--'} °C · ${F!=null?round(F,1):'--'} m/s${Dtxt}`;
+    }
 
-});
+    // ---------- Open-Meteo (m/s) ----------
+    async function fetchCurrentWeatherMS(lat, lon){
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+                  `&current_weather=true&windspeed_unit=ms`;
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const cw = data.current_weather;
+      if (!cw) throw new Error('No current_weather');
+      return {
+        T: cw.temperature,
+        F: cw.windspeed,
+        Ddeg: cw.winddirection,
+        timeISO: cw.time
+      };
+    }
 
+    // ---------- Weather mini-lib (auto refresh) ----------
+    const Weather = (() => {
+      let timer = null;
+      const REFRESH_MS = 10*60*1000; // 10 min
+      let last = { lat:null, lon:null };
 
+      async function update(lat, lon){
+        const el = document.getElementById('wx');
+        if (el) { el.textContent = '…'; el.title = ''; }
+        try{
+          const w = await fetchCurrentWeatherMS(lat, lon);
+          renderWxText(w);
+          if (el && w.timeISO) {
+            const dt = new Date(w.timeISO);
+            el.title = `Updated: ${dt.toLocaleString('en-IS', { timeZone: 'Atlantic/Reykjavik' })}`;
+          }
+        }catch(e){
+          console.error('Weather fetch failed:', e);
+          if (el){ el.textContent = '-- °C · -- m/s'; el.title = 'Weather fetch failed'; }
+        }
+      }
+      
 
+      function start(lat, lon){
+        if (timer) clearInterval(timer);
+        last = { lat, lon };
+        update(lat, lon);
+        timer = setInterval(()=>update(last.lat, last.lon), REFRESH_MS);
+      }
+
+      function setByCoords(lat, lon){ start(lat, lon); }
+
+      return { setByCoords, _updateNow: ()=>last.lat!=null&&update(last.lat,last.lon) };
+    })();
+
+    // No default weather on load; it updates when a road is clicked.
   </script>
 </body>
 </html>
