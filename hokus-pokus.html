@@ -9,146 +9,109 @@
 
   <style>
     body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: 'Poppins', sans-serif;
-      overflow-x: hidden;
+      margin: 0; padding: 0; height: 100%;
+      font-family: 'Poppins', sans-serif; overflow-x: hidden;
     }
-    #map {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100vh;
-      z-index: 1;
-    }
+    #map { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1; }
+
+    /* ---- Side panel ---- */
     #sidePanel {
-      position: absolute;
-      left: 0;
-      bottom: -100%;
-      width: 100%;
-      height: 40vh;
-      background: #f8f8f8;
-      padding: 20px;
-      box-sizing: border-box;
+      position: absolute; left: 0; bottom: -100%; width: 100%; height: 40vh;
+      background: #f8f8f8; padding: 20px; box-sizing: border-box;
       box-shadow: 0 -2px 6px rgba(0,0,0,0.3);
-      display: flex;
-      flex-direction: column;
-      /* Add this so contents can scroll inside */
-      overflow-y: auto;
-      transition: bottom 0.25s ease-out;
-      z-index: 700;
-      overscroll-behavior: contain;
+      display: flex; flex-direction: column; overflow-y: auto;
+      transition: bottom 0.25s ease-out; z-index: 700; overscroll-behavior: contain;
     }
-    #sidePanel.open {
-      bottom: 0;
-      display: block;
-    }
+    #sidePanel.open { bottom: 0; display: block; }
     #sidePanel img {
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-      border-radius: 8px;
-      margin-bottom: 16px;
+      width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 16px;
     }
 
     @media (max-width: 768px) {
-      #sidePanel {
-        width: 100vw;
-        left: 0;
-        right: 0;
-        max-width: none;
-        overflow-x: hidden;
-      }
+      #sidePanel { width: 100vw; left: 0; right: 0; max-width: none; overflow-x: hidden; }
     }
 
     .road-label-icon div {
-      display: inline-block;
-      background: #000;
-      color: #fff;
-      border: 1px solid #fff;
-      border-radius: 5px;
-      padding: 4px 6px;
-      font-size: 12px;
+      display: inline-block; background: #000; color: #fff; border: 1px solid #fff; border-radius: 5px;
+      padding: 4px 6px; font-size: 12px;
+    }
+    .road-label-icon.dimmed div { opacity: 0.4; background: #aaa; }
+
+    #closePanel {
+      position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.9); border: 1px solid #000;
+      font-size: 1.5em; padding: 4px 8px; border-radius: 4px; cursor: pointer; margin-bottom: 8px; align-self: flex-end;
+      z-index: 1; color: #000;
     }
 
-    .road-label-icon.dimmed div {
-      opacity: 0.4;
-      background: #aaa;
-    }
-    #closePanel {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: rgba(255,255,255,0.9);
-      border: 1px solid #000;
-      font-size: 1.5em;
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-bottom: 8px;
-      align-self: flex-end;
-      z-index: 1;
-      color: #000;
-    }
-    .leaflet-control-locate {
-      margin-top: 10px !important;
-    }
+    /* Locate control (current position) */
+    .leaflet-control-locate { margin-top: 10px !important; }
     .leaflet-control-locate a {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 34px;
-      height: 34px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: #fff;
+      border: 1px solid #ccc; border-radius: 4px; cursor: pointer;
     }
-    .leaflet-control-locate svg {
-      width: 18px;
-      height: 18px;
-      display: block;
-    }
+    .leaflet-control-locate svg { width: 18px; height: 18px; display: block; }
 
     #gpxDownloadBtn a {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 34px;
-      height: 34px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: #fff;
+      border: 1px solid #ccc; border-radius: 4px; cursor: pointer;
     }
-
-    #gpxDownloadBtn svg {
-      width: 18px;
-      height: 18px;
-    }
-
-    #gpxDownloadBtn a:hover {
-      background: #f4f4f4;
-    }
+    #gpxDownloadBtn svg { width: 18px; height: 18px; }
+    #gpxDownloadBtn a:hover { background: #f4f4f4; }
 
     #vehicleSelect {
-      background-color: #fff !important;
-      color: #000 !important;
-      font-family: 'Poppins', sans-serif !important;
-      font-size: 14px;
-      padding: 4px 8px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
+      background-color: #fff !important; color: #000 !important;
+      font-family: 'Poppins', sans-serif !important; font-size: 14px;
+      padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
     }
 
+    /* Weather in red */
+    #wx { color: #e23b3b; }
+
+    /* ---- River crossings UI ---- */
+    #rc-section { margin-top: 12px; }
+    #rc-title { font-weight: 600; margin: 10px 0 6px; display:flex; align-items:center; gap:8px; }
+    #rc-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .rc-item {
+      display: grid; grid-template-columns: 30px 1fr auto;
+      align-items: center; gap: 10px; padding: 8px 10px;
+      border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;
+    }
+    .rc-name { font-weight: 600; }
+    .rc-metrics { font-size: 12px; color:#374151; }
+    .rc-right { display:flex; align-items:center; gap:8px; }
+    .rc-badge { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; }
+    .rc-badge.easy    { color:#166534; background:#dcfce7; border-color:#86efac; }
+    .rc-badge.medium  { color:#92400e; background:#ffedd5; border-color:#fed7aa; }
+    .rc-badge.hard    { color:#7f1d1d; background:#fee2e2; border-color:#fecaca; }
+    .rc-badge.extreme { color:#7c2d12; background:#ffedd5; border-color:#fdba74; box-shadow:0 0 0 2px #f59e0b inset; }
+
+    /* Icon container */
+    .rc-icon { width:28px; height:28px; display:inline-grid; place-items:center; }
+    .rc-icon svg { width:28px; height:28px; display:block; }
+
+    .rc-btn {
+      border:1px solid #111; background:#fff; color:#111; border-radius:6px;
+      padding:4px 8px; font-size:12px; cursor:pointer;
+    }
+    .rc-btn:hover { background:#f3f4f6; }
+
+    /* Info icon next to section title */
+    .info-chip {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:16px; height:16px; margin-left:0; vertical-align:middle; cursor:help;
+      color:#0ea5e9;
+    }
+    .info-chip svg { width:16px; height:16px; display:block; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
   </style>
 </head>
 
 <body>
+  <!-- Vehicle filter -->
   <div id="vehicleFilter" style="position:absolute;top:10px;left:60px;z-index:1000;
        background:white;padding:10px 14px;border-radius:8px;
        box-shadow:0 2px 5px rgba(0,0,0,0.2);display:flex;
@@ -185,12 +148,30 @@
     <div id="roadDetails">
       <h2>F-road Details</h2>
       <div><span id="wx">-- °C · -- m/s</span></div>
+
       <div><strong>Difficulty:</strong> <span id="infoDifficulty"></span></div>
-      <div><strong>River Crossing:</strong> <span id="infoRiver"></span></div>
+
+      <div>
+        <strong>River Crossing</strong>
+        <!-- info icon with tooltip (ponecháno, přidané i k sekci níže) -->
+        <span class="info-chip" title="NOTE: River depth can change at any time due to weather. Values are only estimates. Do not rely solely on this app.">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="12" y1="16.5" x2="12" y2="10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="7.5" r="1.2" fill="currentColor"/>
+          </svg>
+          <span class="sr-only">NOTE: River depth can change at any time due to weather. Values are only estimates.</span>
+        </span>:
+        <span id="infoRiver"></span>
+      </div>
+
       <div><strong>Length:</strong> <span id="infoLength"></span> km</div>
       <div><strong>Approx. Time:</strong> <span id="infoTime"></span></div>
       <div><strong>Surface:</strong> <span id="infoSurface"></span></div>
       <div><strong>Watch out for:</strong> <span id="infoWatch"></span></div>
+
+      <!-- River crossings section is injected below -->
+      <!-- <div id="rc-section">...</div> -->
     </div>
   </div>
 
@@ -203,7 +184,52 @@
       attribution: '© OpenStreetMap contributors', maxZoom: 19, minZoom
     }).addTo(map);
 
-    // ---- Roads ----
+    /* ---- Current Position control (restored) ---- */
+    const LocateControl = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd: function () {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-locate');
+        const a = L.DomUtil.create('a', '', container);
+        a.href = '#';
+        a.title = 'Current position';
+        a.innerHTML = `
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="2" fill="#2c7be5"/>
+            <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="7" fill="none" stroke="#333" stroke-width="1.5"/>
+          </svg>`;
+        L.DomEvent.on(a, 'click', L.DomEvent.stop)
+                  .on(a, 'click', () => locateOnce());
+        return container;
+      }
+    });
+    map.addControl(new LocateControl());
+
+    let myLocMarker = null, myLocCircle = null;
+    function locateOnce(){
+      if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude, lon = pos.coords.longitude, acc = pos.coords.accuracy || 30;
+          const latlng = [lat, lon];
+          if (!myLocMarker) {
+            myLocMarker = L.marker(latlng, { title:'You are here' }).addTo(map);
+          } else {
+            myLocMarker.setLatLng(latlng);
+          }
+          if (!myLocCircle) {
+            myLocCircle = L.circle(latlng, { radius: acc, color:'#136aec', fillColor:'#136aec', fillOpacity:0.15, weight:2 }).addTo(map);
+          } else {
+            myLocCircle.setLatLng(latlng); myLocCircle.setRadius(acc);
+          }
+          map.flyTo(latlng, Math.max(map.getZoom(), 13), { duration: 0.6 });
+        },
+        (err) => { console.warn(err); alert('Could not get location'); },
+        { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+      );
+    }
+
+    // ---- Roads (sample) ----
     const froadData = [
       {
         name: "F214 Kerlingardalsvegur",
@@ -215,7 +241,11 @@
         lengthKm: 10.2,
         approxTime: "2–3 hours",
         surface: "Gravel",
-        watchOut: "Loose stones"
+        watchOut: "Loose stones",
+        crossings: [
+          { id:"F214-X1", name:"Kerlingardalsá", coord:[63.4465, -18.8963], depth_m_est:0.3, difficulty:"Easy",   note:"Štěrkové dno, dobrý nájezd." },
+          { id:"F214-X2", alongKm:6.2, depth_m_est:0.5, difficulty:"Medium", note:"Po dešti vyšší průtok." }
+        ]
       },
       {
         name: "F249 Þórsmerkurvegur",
@@ -227,7 +257,12 @@
         lengthKm: 20.5,
         approxTime: "3–4 hours",
         surface: "Dirt and gravel",
-        watchOut: "Deep river crossings"
+        watchOut: "Deep river crossings",
+        crossings: [
+          { id:"F249-X1", alongKm:2.8, depth_m_est:0.4, difficulty:"Medium", note:"Širší, držet stopu u pravého břehu." },
+          { id:"F249-X2", alongKm:9.1, depth_m_est:0.6, difficulty:"Hard",   note:"Doporučen vyšší průjezd, pozor na kameny." },
+          { id:"F249-X3", coord:[63.6839, -19.6109], depth_m_est:0.3, difficulty:"Easy", note:"Přehledné, stabilní dno." }
+        ]
       },
       {
         name: "Gigjokull Track",
@@ -239,7 +274,10 @@
         lengthKm: 9.8,
         approxTime: "2 hours",
         surface: "Rocky",
-        watchOut: "Narrow tracks"
+        watchOut: "Narrow tracks",
+        crossings: [
+          { id:"GJ-X1", alongKm:3.2, depth_m_est:0.35, difficulty:"Medium", note:"Úzké nájezdy." }
+        ]
       }
     ];
 
@@ -256,22 +294,126 @@
 
     const roadLayers = [];
     const labelGroup = L.layerGroup().addTo(map);
+    let crossingLayer = L.layerGroup().addTo(map);
 
-    // === Helper: midpoint of a road (lat, lon) using Turf ===
+    // midpoint (lat, lon)
     function getRoadMidLatLon(rd){
-      if (!rd.coords || !rd.coords.length) return [64.1466, -21.9426]; // fallback Reykjavík
-      const line = turf.lineString(rd.coords.map(c => [c[1], c[0]])); // [lon,lat]
+      if (!rd.coords || !rd.coords.length) return [64.1466, -21.9426];
+      const line = turf.lineString(rd.coords.map(c => [c[1], c[0]]));
       const lenKm = turf.length(line, { units: 'kilometers' });
       const mid = turf.along(line, lenKm / 2, { units: 'kilometers' });
       const [lon, lat] = mid.geometry.coordinates;
       return [lat, lon];
     }
 
+    /* ---- River crossings helpers ---- */
+    function colorForDifficulty(diff='Medium'){
+      const d=String(diff).toLowerCase();
+      if(d==='easy') return '#16a34a';
+      if(d==='hard') return '#dc2626';
+      if(d==='extreme') return '#f59e0b';
+      return '#d97706';
+    }
+
+    // Blue circle WITHOUT outline + smaller centered white waves
+    function crossingIcon(/* diff unused now */) {
+      const html = `
+        <div class="rc-icon">
+          <svg viewBox="0 0 28 28" aria-hidden="true">
+            <circle cx="14" cy="14" r="12" fill="#1d4ed8"/>
+            <path d="M6 11.2c2.0-1.0 4.0-1.0 6.0 0s4.0 1.0 6.0 0" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 14.0c2.0-1.0 4.0-1.0 6.0 0s4.0 1.0 6.0 0" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 16.8c2.0-1.0 4.0-1.0 6.0 0s4.0 1.0 6.0 0" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>`;
+      return L.divIcon({ html, className: '', iconSize: [28,28], iconAnchor:[14,14] });
+    }
+
+    function resolveCrossingCoord(rd, x){
+      if (x.coord && x.coord.length===2) return x.coord;                 // [lat,lon]
+      if (typeof x.alongKm==='number'){
+        const line = turf.lineString(rd.coords.map(c=>[c[1],c[0]]));     // [lon,lat]
+        const pt = turf.along(line, x.alongKm, {units:'kilometers'});
+        return [pt.geometry.coordinates[1], pt.geometry.coordinates[0]];
+      }
+      return getRoadMidLatLon(rd);
+    }
+
+    function ensureRiverSection(){
+      const details = document.getElementById('roadDetails');
+      let sec = document.getElementById('rc-section');
+      if (!sec){
+        sec = document.createElement('div');
+        sec.id = 'rc-section';
+        sec.innerHTML = `
+          <div id="rc-title">
+            River crossings
+            <span class="info-chip" title="NOTE: River depth can change at any time due to weather. Values are only estimates. Do not rely solely on this app.">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/>
+                <line x1="12" y1="16.5" x2="12" y2="10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="12" cy="7.5" r="1.2" fill="currentColor"/>
+              </svg>
+              <span class="sr-only">NOTE: River depth can change at any time due to weather. Values are only estimates.</span>
+            </span>
+          </div>
+          <ul id="rc-list"></ul>`;
+        const after = document.querySelector('#infoRiver')?.closest('div');
+        if (after && after.parentNode===details) after.insertAdjacentElement('afterend', sec);
+        else details.appendChild(sec);
+      }
+      return sec;
+    }
+
+    function renderRiverCrossings(rd){
+      ensureRiverSection();
+      const list = document.getElementById('rc-list');
+      list.innerHTML=''; crossingLayer.clearLayers();
+      const crossings = Array.isArray(rd.crossings) ? rd.crossings : [];
+      if (!crossings.length){
+        list.innerHTML = `<li class="rc-item" style="grid-template-columns:1fr;"><div class="rc-name">No recorded crossings</div></li>`;
+        return;
+      }
+      crossings.forEach((x,i)=>{
+        const pos = resolveCrossingCoord(rd,x);
+        const marker = L.marker(pos,{ icon: crossingIcon() }).addTo(crossingLayer);
+
+        const title = x.name || `Crossing #${i+1}`;
+        const depth = (x.depth_m_est!=null) ? `${x.depth_m_est} m` : '—';
+        const diff  = x.difficulty || 'Unknown';
+        const popupHtml = `<strong>${title}</strong><br/>Difficulty: ${diff}<br/>Depth: ${depth}${x.note?`<br/><em>${x.note}</em>`:''}`;
+        marker.bindPopup(popupHtml);
+
+        const li = document.createElement('li');
+        li.className='rc-item';
+        li.innerHTML = `
+          <div>${crossingIcon().options.html}</div>
+          <div>
+            <div class="rc-name">${title}</div>
+            <div class="rc-metrics">Depth: <strong>${depth}</strong>${x.note?` · <em>${x.note}</em>`:''}</div>
+          </div>
+          <div class="rc-right">
+            <span class="rc-badge ${String(diff).toLowerCase()}">${diff}</span>
+            <button class="rc-btn" data-idx="${i}">Zoom</button>
+          </div>`;
+        list.appendChild(li);
+
+        li.querySelector('.rc-btn').addEventListener('click', ()=>{
+          map.flyTo(pos, Math.max(map.getZoom(), 13), { duration: 0.8 });
+          marker.openPopup();
+        });
+      });
+    }
+
     function showPanel(rd) {
       document.getElementById('roadImage').style.display = 'block';
       document.getElementById('roadImage').src = rd.photo;
       document.getElementById('infoDifficulty').textContent = rd.difficulty;
-      document.getElementById('infoRiver').textContent = rd.riverCrossing.exists ? rd.riverCrossing.count : 'None';
+
+      const rcCount = Array.isArray(rd.crossings) ? rd.crossings.length
+                     : (rd.riverCrossing?.count ?? 0);
+      document.getElementById('infoRiver').textContent = rcCount ? rcCount : 'None';
+
       document.getElementById('infoLength').textContent = rd.lengthKm;
       document.getElementById('infoTime').textContent = rd.approxTime;
       document.getElementById('infoSurface').textContent = rd.surface;
@@ -279,36 +421,29 @@
       document.querySelector('#roadDetails > h2').textContent = rd.name;
       document.getElementById('sidePanel').classList.add('open');
 
-      // 🆕 Update weather for this road's midpoint
+      // Weather midpoint
       const [lat, lon] = getRoadMidLatLon(rd);
       Weather.setByCoords(lat, lon);
+
+      // River crossings
+      renderRiverCrossings(rd);
     }
 
     let selectedLayer = null;
 
     froadData.forEach(rd => {
       const visibleLine = L.polyline(rd.coords, {
-        color: '#3bed32',
-        weight: 4,
-        className: 'road-main-line'
+        color: '#3bed32', weight: 4, className: 'road-main-line'
       }).addTo(map);
 
       const bufferLine = L.polyline(rd.coords, {
-        color: '#000',
-        weight: 20,
-        opacity: 0,
-        className: 'road-hitbox'
+        color: '#000', weight: 20, opacity: 0, className: 'road-hitbox'
       }).addTo(map);
 
       const onRoadClick = () => {
-        // Reset previous
-        if (selectedLayer && selectedLayer !== visibleLine) {
-          selectedLayer.setStyle({ color: '#3bed32', weight: 4 });
-        }
-        // Highlight current
+        if (selectedLayer && selectedLayer!==visibleLine) selectedLayer.setStyle({ color: '#3bed32', weight: 4 });
         visibleLine.setStyle({ color: '#000', weight: 6 });
         selectedLayer = visibleLine;
-
         showPanel(rd);
       };
 
@@ -348,6 +483,8 @@
 
     document.getElementById('closePanel').addEventListener('click', () => {
       document.getElementById('sidePanel').classList.remove('open');
+      crossingLayer.clearLayers();
+      if (selectedLayer) selectedLayer.setStyle({ color: '#3bed32', weight: 4 });
     });
 
     document.getElementById('vehicleSelect').addEventListener('change', e => {
@@ -376,113 +513,21 @@
         });
 
         r.polyline.off('click');
-
-        if (allowed) {
-          // keep panel behaviour + weather
-          r.polyline.on('click', () => showPanel(r.data));
-        }
+        if (allowed) r.polyline.on('click', () => showPanel(r.data));
       });
 
-      updateLabels(); // <- important to refresh label style
+      updateLabels();
     });
 
-    const currentLocIcon = L.icon({
-      iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6887bd576bb49797cd2ffcc1_pin%20(1).png',
-      iconSize: [30, 42],
-      iconAnchor: [15, 42],
-      popupAnchor: [0, -40]
-    });
-
-    const LocateControl = L.Control.extend({
-      options: { position: 'topleft' },
-      onAdd(map) {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-locate');
-        const btn = L.DomUtil.create('a', '', container);
-        btn.href = '#';
-        btn.title = 'Show my location';
-        btn.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-               stroke-width="2" stroke="#333" fill="none"
-               stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="22" y1="12" x2="18" y2="12"/>
-            <line x1="6" y1="12" x2="2" y2="12"/>
-            <line x1="12" y1="6" x2="12" y2="2"/>
-            <line x1="12" y1="22" x2="12" y2="18"/>
-          </svg>`;
-        L.DomEvent.on(btn, 'click', e => {
-          L.DomEvent.stop(e);
-          if (!navigator.geolocation) return alert('Geolocation not supported');
-          map.locate({ setView: true, maxZoom: 13 });
-        });
-        return container;
-      }
-    });
-    map.addControl(new LocateControl());
-
-    map.on('locationfound', e => {
-      if (window._locMarker) {
-        map.removeLayer(window._locMarker);
-        map.removeLayer(window._locCircle);
-      }
-      window._locMarker = L.marker(e.latlng, { icon: currentLocIcon })
-        .addTo(map)
-        .bindPopup('You are here')
-        .openPopup();
-      window._locCircle = L.circle(e.latlng, {
-        radius: e.accuracy/2,
-        color: '#ffc800',
-        fillOpacity: 0.2
-      }).addTo(map);
-    });
-
-    function generateGPX(data) {
-      const gpxHeader = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="F-Roads Iceland" xmlns="http://www.topografix.com/GPX/1/1">
-`;
-      const gpxFooter = `</gpx>`;
-      let gpxBody = '';
-
-      data.forEach(road => {
-        gpxBody += `<trk><name>${road.name}</name><trkseg>\n`;
-        road.coords.forEach(coord => {
-          gpxBody += `<trkpt lat="${coord[0]}" lon="${coord[1]}"></trkpt>\n`;
-        });
-        gpxBody += `</trkseg></trk>\n`;
-      });
-
-      return gpxHeader + gpxBody + gpxFooter;
-    }
-
-    document.getElementById('gpxDownloadBtn').addEventListener('click', function(e) {
-      e.preventDefault();
-      const gpxContent = generateGPX(froadData);
-      const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'iceland-f-roads.gpx';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
-
+    // ---- Campsite example ----
     campsites.forEach(camp => {
       const campIcon = L.icon({
         iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6894c6b45e2515a54854a4bf_camping-tent%20(3).png',
-        iconSize: [30, 30],
-        iconAnchor: [12, 24],
-        popupAnchor: [0, -24]
+        iconSize: [30, 30], iconAnchor: [12, 24], popupAnchor: [0, -24]
       });
-
       L.marker([63.6771443, -19.4813471], { icon: campIcon, title: 'Básar Campsite' })
         .addTo(map)
-        .bindPopup(`
-          <strong>Básar Campsite</strong><br>
-          Popular Þórsmörk campsite. <br>
-          <a href="https://utilegukortid.is/en/campsite/basar/" target="_blank">More info</a>
-        `);
+        .bindPopup(`<strong>Básar Campsite</strong><br>Popular Þórsmörk campsite.<br><a href="https://utilegukortid.is/en/campsite/basar/" target="_blank">More info</a>`);
     });
 
     // ---------- Utils ----------
@@ -492,7 +537,7 @@
       return dirs[Math.round((((deg%360)+360)%360)/22.5)%16];
     }
 
-    // ---------- Renderer into #wx (simple text) ----------
+    // ---------- Weather text renderer ----------
     function renderWxText({T, F, Ddeg}){
       const el = document.getElementById('wx');
       if (!el) return;
@@ -500,7 +545,7 @@
       el.textContent = `${T!=null?round(T,1):'--'} °C · ${F!=null?round(F,1):'--'} m/s${Dtxt}`;
     }
 
-    // ---------- Open-Meteo (m/s) ----------
+    // ---------- Open-Meteo ----------
     async function fetchCurrentWeatherMS(lat, lon){
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
                   `&current_weather=true&windspeed_unit=ms`;
@@ -509,18 +554,13 @@
       const data = await res.json();
       const cw = data.current_weather;
       if (!cw) throw new Error('No current_weather');
-      return {
-        T: cw.temperature,
-        F: cw.windspeed,
-        Ddeg: cw.winddirection,
-        timeISO: cw.time
-      };
+      return { T: cw.temperature, F: cw.windspeed, Ddeg: cw.winddirection, timeISO: cw.time };
     }
 
-    // ---------- Weather mini-lib (auto refresh) ----------
+    // ---------- Weather mini-lib ----------
     const Weather = (() => {
       let timer = null;
-      const REFRESH_MS = 10*60*1000; // 10 min
+      const REFRESH_MS = 10*60*1000;
       let last = { lat:null, lon:null };
 
       async function update(lat, lon){
@@ -538,21 +578,15 @@
           if (el){ el.textContent = '-- °C · -- m/s'; el.title = 'Weather fetch failed'; }
         }
       }
-      
-
       function start(lat, lon){
         if (timer) clearInterval(timer);
         last = { lat, lon };
         update(lat, lon);
         timer = setInterval(()=>update(last.lat, last.lon), REFRESH_MS);
       }
-
       function setByCoords(lat, lon){ start(lat, lon); }
-
       return { setByCoords, _updateNow: ()=>last.lat!=null&&update(last.lat,last.lon) };
     })();
-
-    // No default weather on load; it updates when a road is clicked.
   </script>
 </body>
 </html>
