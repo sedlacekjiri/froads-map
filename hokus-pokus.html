@@ -80,6 +80,16 @@
     .wx-wind-speed .unit{ margin-left:4px; font-size:12px; font-weight:700; color:#e23b3b; opacity:.9; }
     .wx-wind-dir{ font-size:12px; color:#374151; opacity:.9; }
 
+    .wx-precip{
+      display:flex; align-items:center; gap:8px;
+      padding:4px 8px; border-radius:8px; background:#fff;
+      border:1px solid #e5e7eb;
+    }
+    .wx-precip-icon svg{ width:22px; height:22px; display:block; color:#2563eb; }
+    .wx-precip-val{ font-weight:800; color:#111; font-size:14px; line-height:1; }
+    .wx-precip-val .unit{ margin-left:4px; font-size:12px; font-weight:700; color:#6b7280; }
+
+
     /* ---- River crossings UI ---- */
     #rc-section{ margin-top:12px; }
     #rc-title{ font-weight:600; margin:10px 0 6px; display:flex; align-items:center; gap:8px; }
@@ -178,35 +188,56 @@ Lepší oddělení sekce info */
 
       <!-- Weather card -->
       <div id="wxCard" class="wx-card" title="">
-        <div class="wx-temp">
-          <div id="wxIcon" class="wx-icon" aria-hidden="true"></div>
-          <div class="wx-temp-num">
-            <span id="wxT">--</span><span class="unit">°C</span>
-          </div>
-        </div>
+  
+  <!-- Teplota -->
+  <div class="wx-temp">
+    <div id="wxIcon" class="wx-icon" aria-hidden="true"></div>
+    <div class="wx-temp-num">
+      <span id="wxT">--</span><span class="unit">°C</span>
+    </div>
+  </div>
 
-        <div class="wx-sep" aria-hidden="true"></div>
+  <div class="wx-sep" aria-hidden="true"></div>
 
-        <div class="wx-wind">
-          <div class="wx-compass" aria-label="Wind direction">
-            <svg viewBox="0 0 44 44" role="img" aria-label="Wind compass">
-              <circle cx="22" cy="22" r="20" fill="#f8fafc" stroke="#dbeafe" stroke-width="1.5"/>
-              <line x1="22" y1="2"  x2="22" y2="6"  stroke="#9ca3af" stroke-width="1"/>
-              <line x1="22" y1="38" x2="22" y2="42" stroke="#9ca3af" stroke-width="1"/>
-              <line x1="2"  y1="22" x2="6"  y2="22" stroke="#9ca3af" stroke-width="1"/>
-              <line x1="38" y1="22" x2="42" y2="22" stroke="#9ca3af" stroke-width="1"/>
-              <g id="wxArrow" class="arrow">
-                <polygon points="22,7 18.5,17.5 25.5,17.5" fill="#e23b3b"/>
-                <line x1="22" y1="17.5" x2="22" y2="31" stroke="#e23b3b" stroke-width="2" stroke-linecap="round"/>
-              </g>
-            </svg>
-          </div>
-          <div class="wx-wind-info">
-            <div class="wx-wind-speed"><span id="wxF">--</span><span class="unit">m/s</span></div>
-            <div class="wx-wind-dir" id="wxDtxt">--</div>
-          </div>
-        </div>
-      </div>
+  <!-- Vítr -->
+  <div class="wx-wind">
+    <div class="wx-compass" aria-label="Wind direction">
+      <svg viewBox="0 0 44 44" role="img" aria-label="Wind compass">
+        <circle cx="22" cy="22" r="20" fill="#f8fafc" stroke="#dbeafe" stroke-width="1.5"/>
+        <line x1="22" y1="2"  x2="22" y2="6"  stroke="#9ca3af" stroke-width="1"/>
+        <line x1="22" y1="38" x2="22" y2="42" stroke="#9ca3af" stroke-width="1"/>
+        <line x1="2"  y1="22" x2="6"  y2="22" stroke="#9ca3af" stroke-width="1"/>
+        <line x1="38" y1="22" x2="42" y2="22" stroke="#9ca3af" stroke-width="1"/>
+        <g id="wxArrow" class="arrow">
+          <polygon points="22,7 18.5,17.5 25.5,17.5" fill="#e23b3b"/>
+          <line x1="22" y1="17.5" x2="22" y2="31" stroke="#e23b3b" stroke-width="2" stroke-linecap="round"/>
+        </g>
+      </svg>
+    </div>
+    <div class="wx-wind-info">
+      <div class="wx-wind-speed"><span id="wxF">--</span><span class="unit">m/s</span></div>
+      <div class="wx-wind-dir" id="wxDtxt">--</div>
+    </div>
+  </div>
+
+  <div class="wx-sep" aria-hidden="true"></div>
+
+  <!-- Srážky -->
+  <div class="wx-precip" title="Precipitation (mm/h)">
+    <div class="wx-precip-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 3C10 6 6 10 6 13.5A6 6 0 0 0 18 13.5C18 10 14 6 12 3z"
+              fill="currentColor"/>
+      </svg>
+    </div>
+    <div class="wx-precip-val">
+      <span id="wxP">--</span><span class="unit">mm/h</span>
+    </div>
+  </div>
+
+</div>
+
+      
       <!-- Hidden fallback text (kept) -->
       <span id="wx" style="display:none">-- °C · -- m/s</span>
 
@@ -339,7 +370,6 @@ Lepší oddělení sekce info */
         approxTime:"2 hours",
         surface:"Rocky",
         watchOut:"Narrow tracks",
-        crossings:[ { id:"GJ-X1", alongKm:3.2, depth_m_est:0.35, difficulty:"Medium", note:"Úzké nájezdy." } ]
       }
     ];
 
@@ -641,22 +671,25 @@ Lepší oddělení sekce info */
     }
 
     /* ---------- Weather fetch + renderer ---------- */
-    function renderWxCard({ T, F, Ddeg, code, isDay, timeISO }){
-      const elT=document.getElementById('wxT');
-      const elF=document.getElementById('wxF');
-      const elD=document.getElementById('wxDtxt');
-      const elArrow=document.getElementById('wxArrow');
-      const elIcon=document.getElementById('wxIcon');
-      const card=document.getElementById('wxCard');
+    function renderWxCard({ T, F, Ddeg, code, isDay, timeISO, Pmm }){
+  const elT=document.getElementById('wxT');
+  const elF=document.getElementById('wxF');
+  const elD=document.getElementById('wxDtxt');
+  const elArrow=document.getElementById('wxArrow');
+  const elIcon=document.getElementById('wxIcon');
+  const card=document.getElementById('wxCard');
+  const elP=document.getElementById('wxP'); // ✚
 
-      if(elT) elT.textContent=(T!=null)?round(T,1):'--';
-      if(elF) elF.textContent=(F!=null)?round(F,1):'--';
-      if(elD) elD.textContent=(Ddeg!=null)?degToCompass(Ddeg):'--';
-      if(elArrow && Ddeg!=null) elArrow.style.transform=`rotate(${Ddeg}deg)`;
-      if(elIcon) elIcon.innerHTML = weatherIconSvg(code, isDay);
-      if(card && timeISO){
-        card.title=`Updated: ${new Date(timeISO).toLocaleString('en-IS',{ timeZone:'Atlantic/Reykjavik' })}`;
-      }
+  if(elT) elT.textContent=(T!=null)?round(T,1):'--';
+  if(elF) elF.textContent=(F!=null)?round(F,1):'--';
+  if(elD) elD.textContent=(Ddeg!=null)?degToCompass(Ddeg):'--';
+  if(elArrow && Ddeg!=null) elArrow.style.transform=`rotate(${Ddeg}deg)`;
+  if(elIcon) elIcon.innerHTML = weatherIconSvg(code, isDay);
+  if(card && timeISO){
+    try{ card.title=`Updated: ${new Date(timeISO).toLocaleString('en-IS',{ timeZone:'Atlantic/Reykjavik' })}`; }catch(e){}
+  }
+  // ✚ srážky
+  if(elP) elP.textContent = (Pmm!=null) ? round(Pmm,1) : '--';
 
       // Hidden fallback text
       const fallback=document.getElementById('wx');
@@ -667,14 +700,44 @@ Lepší oddělení sekce info */
     }
 
     async function fetchCurrentWeatherMS(lat,lon){
-      const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&windspeed_unit=ms`;
-      const res=await fetch(url,{ cache:'no-store' });
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const data=await res.json();
-      const cw=data.current_weather;
-      if(!cw) throw new Error('No current_weather');
-      return { T:cw.temperature, F:cw.windspeed, Ddeg:cw.winddirection, code:cw.weathercode, isDay:cw.is_day, timeISO:cw.time };
-    }
+  const url = `https://api.open-meteo.com/v1/forecast` +
+              `?latitude=${lat}&longitude=${lon}` +
+              `&current_weather=true&windspeed_unit=ms` +
+              `&hourly=precipitation&timezone=auto`;
+  const res = await fetch(url, { cache:'no-store' });
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const data = await res.json();
+
+  const cw = data.current_weather;
+  if(!cw) throw new Error('No current_weather');
+
+  // Najdeme srážky v hodinovém poli co nejblíž času current_weather.time
+  let P = null;
+  if (data.hourly && Array.isArray(data.hourly.time) && Array.isArray(data.hourly.precipitation)) {
+    const tIdx = (() => {
+      const target = new Date(cw.time).getTime();
+      let best = 0, bestDiff = Infinity;
+      for (let i=0; i<data.hourly.time.length; i++){
+        const diff = Math.abs(new Date(data.hourly.time[i]).getTime() - target);
+        if (diff < bestDiff){ bestDiff = diff; best = i; }
+      }
+      return best;
+    })();
+    const val = data.hourly.precipitation[tIdx];
+    P = (typeof val === 'number') ? Math.max(0, val) : null; // mm
+  }
+
+  return {
+    T: cw.temperature,
+    F: cw.windspeed,
+    Ddeg: cw.winddirection,
+    code: cw.weathercode,
+    isDay: cw.is_day,
+    timeISO: cw.time,
+    Pmm: P // mm/h (nejbližší hodina)
+  };
+}
+
 
     const Weather=(()=>{
       let timer=null; const REFRESH_MS=10*60*1000; let last={ lat:null, lon:null };
