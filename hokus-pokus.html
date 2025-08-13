@@ -66,13 +66,13 @@
     }
     .wx-temp{ display:flex; align-items:center; gap:10px; }
     .wx-icon svg{ width:28px; height:28px; display:block; color:#111; }
-    .wx-temp-num{ font-size:28px; line-height:1; font-weight:700; color:#e23b3b; }
+    .wx-temp-num{ font-size:16px; line-height:1; font-weight:700; color:#e23b3b; }
     .wx-temp-num .unit{ margin-left:3px; font-size:14px; font-weight:600; color:#e23b3b; opacity:.9; }
 
     .wx-sep{ width:1px; align-self:stretch; background:linear-gradient(180deg,#e5e7eb,transparent 70%); }
 
     .wx-wind{ display:flex; align-items:center; gap:10px; }
-    .wx-compass svg{ width:44px; height:44px; display:block; }
+    .wx-compass svg{ width:30px; height:30px; display:block; }
     .wx-compass .arrow{ transform-origin:22px 22px; transition:transform .25s ease; }
 
     .wx-wind-info{ display:flex; flex-direction:column; line-height:1.1; }
@@ -105,16 +105,38 @@
     .rc-btn{ border:1px solid #111; background:#fff; color:#111; border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer; }
     .rc-btn:hover{ background:#f3f4f6; }
 
-    /* Info icon */
-    .info-chip{
-      display:inline-flex; align-items:center; justify-content:center;
-      width:16px; height:16px; cursor:help; color:#0ea5e9;
-    }
-    .info-chip svg{ width:16px; height:16px; display:block; }
-    .sr-only{
-      position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
-      clip:rect(0,0,0,0); white-space:nowrap; border:0;
-    }
+
+    .info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin: 10px 0;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  font-size: 14px;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #111;
+  min-width: 110px; /* sjednocení zarovnání */
+}
+
+Lepší oddělení sekce info */
+#roadDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-title {
+  display: block;
+  margin: 15px 0;
+}
+
+
   </style>
 </head>
 
@@ -188,25 +210,38 @@
       <!-- Hidden fallback text (kept) -->
       <span id="wx" style="display:none">-- °C · -- m/s</span>
 
-      <div><strong>Difficulty:</strong> <span id="infoDifficulty"></span></div>
-
       <div>
-        <strong>River Crossing</strong>
-        <span class="info-chip" title="NOTE: River depth can change at any time due to weather. Values are only estimates. Do not rely solely on this app.">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/>
-            <line x1="12" y1="16.5" x2="12" y2="10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="12" cy="7.5" r="1.2" fill="currentColor"/>
-          </svg>
-          <span class="sr-only">NOTE: River depth can change at any time due to weather. Values are only estimates.</span>
-        </span>:
+        <strong>River Crossings:</strong>
         <span id="infoRiver"></span>
       </div>
 
-      <div><strong>Length:</strong> <span id="infoLength"></span> km</div>
-      <div><strong>Approx. Time:</strong> <span id="infoTime"></span></div>
-      <div><strong>Surface:</strong> <span id="infoSurface"></span></div>
-      <div><strong>Watch out for:</strong> <span id="infoWatch"></span></div>
+      <strong class="info-title">Informations:</strong>
+
+      <div class="info-row">
+        <span class="info-label">Difficulty:</span>
+        <span id="infoDifficulty"></span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Length:</span>
+        <span id="infoLength"></span> km
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Approx. Time:</span>
+        <span id="infoTime"></span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Surface:</span>
+        <span id="infoSurface"></span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Watch out for:</span>
+        <span id="infoWatch"></span>
+      </div>
+
 
       <!-- River crossings section is injected below -->
     </div>
@@ -262,11 +297,11 @@
     /* ---- Roads (sample) ---- */
     const froadData = [
       {
-        name:"F214 Kerlingardalsvegur",
+        name:"214 Kerlingardalsvegur",
         coords:[[63.424245,-18.903451],[63.425263,-18.90534],[63.425829,-18.907292],[63.426319,-18.908279],[63.427192,-18.909245],[63.427912,-18.909352],[63.428699,-18.909073],[63.429506,-18.908966],[63.430293,-18.909202],[63.431425,-18.90961],[63.432193,-18.909459],[63.432769,-18.908966],[63.433239,-18.908043],[63.434534,-18.905254],[63.435264,-18.904267],[63.436147,-18.90388],[63.439409,-18.904095],[63.442805,-18.904267],[63.443208,-18.903966],[63.443534,-18.902636],[63.444494,-18.899503],[63.445933,-18.896585],[63.446086,-18.895168],[63.446105,-18.892937],[63.447007,-18.889804],[63.447582,-18.889032],[63.447391,-18.888045],[63.447352,-18.887208],[63.447151,-18.885598],[63.44763,-18.883689],[63.448455,-18.880878],[63.449654,-18.876801],[63.450019,-18.876157],[63.450805,-18.875492],[63.451409,-18.875213],[63.451659,-18.875299],[63.452407,-18.87605],[63.452781,-18.876028],[63.453174,-18.875535],[63.455648,-18.871265],[63.456156,-18.8706],[63.456559,-18.870406],[63.457576,-18.870127],[63.457873,-18.870213],[63.458314,-18.870857],[63.45892,-18.871511],[63.459562,-18.872627],[63.460597,-18.875245],[63.461077,-18.875846],[63.461594,-18.876146],[63.462246,-18.876017],[63.462975,-18.876275],[63.463665,-18.876489],[63.464106,-18.877262],[63.464356,-18.878592],[63.464432,-18.880523],[63.464317,-18.882519],[63.463972,-18.883849],[63.463867,-18.884686],[63.463972,-18.885437],[63.464576,-18.887282],[63.464969,-18.887969],[63.46563,-18.88827],[63.466033,-18.888506],[63.466541,-18.889042],[63.467241,-18.889278],[63.467413,-18.889514],[63.467653,-18.890308],[63.467624,-18.891038],[63.46748,-18.891488],[63.467682,-18.892926],[63.468161,-18.893012],[63.468861,-18.892926],[63.469081,-18.893183],[63.469608,-18.893677],[63.470097,-18.893913],[63.470931,-18.893848],[63.471717,-18.893848],[63.471928,-18.893634],[63.472196,-18.893076],[63.472464,-18.89284],[63.472944,-18.892797],[63.473404,-18.893054],[63.473681,-18.893441],[63.473978,-18.893419],[63.474937,-18.892883],[63.475138,-18.892475],[63.475196,-18.89196],[63.475157,-18.891638],[63.474994,-18.891316],[63.474985,-18.890802],[63.475157,-18.889922],[63.47533,-18.889578],[63.475646,-18.888956],[63.475751,-18.888463],[63.475761,-18.887908],[63.475837,-18.887339],[63.47595,-18.886964],[63.476144,-18.886813],[63.476312,-18.886722],[63.476482,-18.886733],[63.476745,-18.886931],[63.477006,-18.887307],[63.477059,-18.8875],[63.477109,-18.887961],[63.477138,-18.888331],[63.477227,-18.888707],[63.47733,-18.888938],[63.477917,-18.889292],[63.478906,-18.889699],[63.479584,-18.889908],[63.479785,-18.889978],[63.480051,-18.890102],[63.480911,-18.890466],[63.48172,-18.89082],[63.482056,-18.890842],[63.482554,-18.890681],[63.483172,-18.890391],[63.483699,-18.889952],[63.484139,-18.889512],[63.484594,-18.889308],[63.484858,-18.889276],[63.485399,-18.88919],[63.486002,-18.888739],[63.486625,-18.888095],[63.488301,-18.886583],[63.489618,-18.885392],[63.490097,-18.884877],[63.490566,-18.884094],[63.490964,-18.883278],[63.491687,-18.881626],[63.492305,-18.880006],[63.492477,-18.879695],[63.493018,-18.879212],[63.493574,-18.878504],[63.49399,-18.877764],[63.494254,-18.876905],[63.494436,-18.875736],[63.494522,-18.87492],[63.494632,-18.874695],[63.494776,-18.874663],[63.494905,-18.87477],[63.495178,-18.875146],[63.495609,-18.875671],[63.495771,-18.875757],[63.496068,-18.87565],[63.496288,-18.875392],[63.496561,-18.874856],[63.497528,-18.872775],[63.497696,-18.872152],[63.497806,-18.871348],[63.497907,-18.8708],[63.498113,-18.870243],[63.498429,-18.869953],[63.498826,-18.869921],[63.499894,-18.870007],[63.500525,-18.870007],[63.501411,-18.869524],[63.501971,-18.868998],[63.502354,-18.868386],[63.502632,-18.867668],[63.502938,-18.866488],[63.503096,-18.865736],[63.503101,-18.865286],[63.502967,-18.864664],[63.502043,-18.863516],[63.501813,-18.863269],[63.501789,-18.863044],[63.501909,-18.862936],[63.502172,-18.862861],[63.502656,-18.862743],[63.503374,-18.862904],[63.503646,-18.862668],[63.503948,-18.862046],[63.504116,-18.86152],[63.504283,-18.860758],[63.504364,-18.859739],[63.504446,-18.858419],[63.504513,-18.857883],[63.504728,-18.857464],[63.505298,-18.857089],[63.505551,-18.857121],[63.506174,-18.8574],[63.506504,-18.857561],[63.506834,-18.858376],[63.507394,-18.859246],[63.507743,-18.859857],[63.50882,-18.861306],[63.509744,-18.862732],[63.510072,-18.863291],[63.513584,-18.866274],[63.514149,-18.866746],[63.515087,-18.866552],[63.515517,-18.866724],[63.515932,-18.867846],[63.516152,-18.86893],[63.516286,-18.869949],[63.516535,-18.870808],[63.516865,-18.871526],[63.517329,-18.872535],[63.517698,-18.873651],[63.51831,-18.875689],[63.51863,-18.877041],[63.518798,-18.877352],[63.519228,-18.878328],[63.519405,-18.879122],[63.519716,-18.879863],[63.51997,-18.880807],[63.520061,-18.88173],[63.520166,-18.882341],[63.520429,-18.882835],[63.52075,-18.882813],[63.521156,-18.882534],[63.521448,-18.882491],[63.522381,-18.88276],[63.523582,-18.883135],[63.52504,-18.883296],[63.525461,-18.883511],[63.525853,-18.883897],[63.52681,-18.883339],[63.527154,-18.883296],[63.527776,-18.882695],[63.528522,-18.882223],[63.528905,-18.882438],[63.529249,-18.883253],[63.529718,-18.884841],[63.530033,-18.886343],[63.530129,-18.887566],[63.530483,-18.888188]],
-        photo:"https://via.placeholder.com/600x400?text=F214",
+        photo:"https://cdn.prod.website-files.com/687ebffd20183c0459d68784/689d0c3cafeed8d2e6bdc4c5_67dd88d60e704796874d4ff9_%C3%9Eakgil%202.jpg",
         description:"Panoramic track in Kerlingardalsvegur.",
-        difficulty:"Medium",
+        difficulty:"Easy",
         riverCrossing:{ exists:true, count:2 },
         lengthKm:10.2,
         approxTime:"2–3 hours",
@@ -296,7 +331,7 @@
       {
         name:"Gigjokull Track",
         coords:[[63.671952,-19.625853],[63.676581,-19.628127],[63.682352,-19.633706]],
-        photo:"https://via.placeholder.com/600x400?text=Gigjokull",
+        photo:"https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6893ead8d16cec3d5b40e35b_68801cd49a022c1a2198c6ad_gigjokull%20track%20thorsmrok7175.jpg",
         description:"Close glacier approach track.",
         difficulty:"Medium-Hard",
         riverCrossing:{ exists:true, count:1 },
@@ -331,18 +366,20 @@
 
     /* ---- River crossings helpers ---- */
     // Blue circle without outline + centered small white waves
-    function crossingIcon(){
-      const html=`
-        <div class="rc-icon">
-          <svg viewBox="0 0 28 28" aria-hidden="true">
-            <circle cx="14" cy="14" r="12" fill="#1d4ed8"/>
-            <path d="M6 11.2c2.0-1.0 4.0-1.0 6.0 0s4.0 1.0 6.0 0" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 14.0c2.0-1.0 4.0-1.0 6.0 0s4.0 1.0 6.0 0" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 16.8c2.0-1.0 4.0-1.0 6.0 0s4.0 1.0 6.0 0" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>`;
-      return L.divIcon({ html, className:'', iconSize:[28,28], iconAnchor:[14,14] });
-    }
+   function crossingIcon(){
+  const html=`
+    <div class="rc-icon">
+      <svg viewBox="0 0 28 28" aria-hidden="true">
+        <circle cx="14" cy="14" r="12" fill="#1d4ed8"/>
+        <g transform="translate(0,0)">
+          <path d="M8 11.2c2-1 4-1 6 0s4 1 6 0" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 14c2-1 4-1 6 0s4 1 6 0" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 16.8c2-1 4-1 6 0s4 1 6 0" stroke="#ffffff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+    </div>`;
+  return L.divIcon({ html, className:'', iconSize:[28,28], iconAnchor:[14,14] });
+}
 
     function resolveCrossingCoord(rd,x){
       if(x.coord && x.coord.length===2) return x.coord; // [lat,lon]
@@ -361,17 +398,7 @@
         sec=document.createElement('div');
         sec.id='rc-section';
         sec.innerHTML=`
-          <div id="rc-title">
-            River crossings
-            <span class="info-chip" title="NOTE: River depth can change at any time due to weather. Values are only estimates. Do not rely solely on this app.">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/>
-                <line x1="12" y1="16.5" x2="12" y2="10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <circle cx="12" cy="7.5" r="1.2" fill="currentColor"/>
-              </svg>
-              <span class="sr-only">NOTE: River depth can change at any time due to weather. Values are only estimates.</span>
-            </span>
-          </div>
+      
           <ul id="rc-list"></ul>`;
         const after=document.querySelector('#infoRiver')?.closest('div');
         if(after && after.parentNode===details) after.insertAdjacentElement('afterend', sec);
@@ -426,7 +453,6 @@
       document.getElementById('infoDifficulty').textContent=rd.difficulty;
 
       const rcCount=Array.isArray(rd.crossings) ? rd.crossings.length : (rd.riverCrossing?.count ?? 0);
-      document.getElementById('infoRiver').textContent=rcCount ? rcCount : 'None';
 
       document.getElementById('infoLength').textContent=rd.lengthKm;
       document.getElementById('infoTime').textContent=rd.approxTime;
@@ -520,12 +546,38 @@
     /* ---- Campsite example ---- */
     campsites.forEach(camp=>{
       const campIcon=L.icon({
-        iconUrl:'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/6894c6b45e2515a54854a4bf_camping-tent%20(3).png',
-        iconSize:[24,24], iconAnchor:[12,24], popupAnchor:[0,-24]
+        iconUrl:'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/689d0b24443379bb01061e52_tent%20(10).png',
+        iconSize:[30,30], iconAnchor:[12,30], popupAnchor:[0,-30]
       });
       L.marker([63.6771443, -19.4813471], { icon:campIcon, title:'Básar Campsite' })
         .addTo(map)
         .bindPopup(`<strong>Básar Campsite</strong><br>Popular Þórsmörk campsite.<br><a href="https://utilegukortid.is/en/campsite/basar/" target="_blank">More info</a>`);
+    });
+    
+    /* ---- Hut example ---- */  
+    const huts = [
+      {
+        name: "Example Hut",
+        lat: 63.6849449,
+        lng: -19.5126214,
+        desc: "Mountain hut in the highlands.",
+        link: "https://example.com/hut-info"
+      }
+    ];
+
+    huts.forEach(hut => {
+      const hutIcon = L.icon({
+        iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/689d0a3c12784f92cf6a0fe9_hut.png', // můžeš změnit na lepší ikonu chaty
+        iconSize: [24, 24],
+        iconAnchor: [12, 24],
+        popupAnchor: [0, -24]
+      });
+
+      L.marker([hut.lat, hut.lng], { icon: hutIcon, title: hut.name })
+        .addTo(map)
+        .bindPopup(
+          `<strong>${hut.name}</strong><br>${hut.desc}<br><a href="${hut.link}" target="_blank">More info</a>`
+        );
     });
 
     /* ---------- Utils ---------- */
