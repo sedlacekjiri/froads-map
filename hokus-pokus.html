@@ -987,5 +987,17 @@ function closeGallery(){
   window.closeGallery = closeGallery;
 })();
   </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // 1) Přesuň overlay přímo pod <body>, kdyby byl omylem uvnitř #sidePanel apod.
+  const ov = document.getElementById('galleryOverlay');
+  if (ov && ov.parentElement !== document.body) {
+    document.body.appendChild(ov);
+  }
+});
+</script>
+
+
 </body>
 </html>
