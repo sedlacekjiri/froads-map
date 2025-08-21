@@ -224,7 +224,8 @@ Lepší oddělení sekce info */
 /* Obrázek se přizpůsobí – žádné ořezávání, výška max 80vh */
 .gal-slide img{
   display:block;
-  width:100%;               /* vyplní šířku kontejneru */
+  width:100%;
+  border-radius:12px;               /* vyplní šířku kontejneru */
   height:auto;              /* ponechá poměr stran */
   object-fit:contain;       /* bez ořezu */
 }
@@ -261,6 +262,36 @@ body.gallery-open #vehicleFilter { display:none !important; }
 body.gallery-open #gpxDownloadBtn { display:none !important; }
 /* Pokud máš další Leaflet ovladače, schovej celý control container */
 body.gallery-open .leaflet-control-container { display:none !important; }
+
+/* Overlay – opravdu navrchu, fullscreen */
+#galleryOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 1);
+  z-index: 2147483647; /* maximum prakticky všude */
+  display: none;
+  flex-direction: column;
+}
+#galleryOverlay.open{ display:flex; }
+
+/* Když je galerie otevřená, zruš possible 'transform' na hlavních blocích,
+   aby 'position: fixed' overlaye neuvízl v jejich stacking contextu (iframe/Webflow bug). */
+body.gallery-open #map,
+body.gallery-open #sidePanel,
+body.gallery-open #vehicleFilter,
+body.gallery-open #gpxDownloadBtn {
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
+}
+
+/* A rovnou schovej konfliktní UI nad mapou */
+body.gallery-open #vehicleFilter,
+body.gallery-open #gpxDownloadBtn,
+body.gallery-open .leaflet-control-container {
+  display: none !important;
+}
+
   </style>
 </head>
 
