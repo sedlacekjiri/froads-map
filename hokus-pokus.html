@@ -299,7 +299,8 @@ body.gallery-open .leaflet-control-container {
   display: none !important;
 }
 
-/* ===== Campsite popup – UI card v Poppins ===== */
+/* ===== Unified POI Popup (Campsites + Huts) ===== */
+/* Leaflet shell */
 .leaflet-container .poi-popup .leaflet-popup-content-wrapper{
   padding:0;
   border:1px solid #e5e7eb;
@@ -316,7 +317,7 @@ body.gallery-open .leaflet-control-container {
   box-shadow:1px 1px 0 0 #e5e7eb;
 }
 
-/* Close styl jako ostatní tlačítka */
+/* Close button – mírný radius, ladí s UI */
 .leaflet-container .poi-popup a.leaflet-popup-close-button{
   position:absolute; right:8px; top:8px;
   width:28px; height:28px; line-height:26px;
@@ -326,37 +327,46 @@ body.gallery-open .leaflet-control-container {
 }
 .leaflet-container .poi-popup a.leaflet-popup-close-button:hover{ background:#f3f4f6; }
 
-/* Vlastní card */
+/* Card layout */
 .poi-card{ background:#fff; border-radius:14px; overflow:hidden; }
-.poi-cover{ width:100%; height:140px; object-fit:cover; display:block; }
+.poi-cover{ width:100%; height:180px; object-fit:cover; display:block; }
 .poi-body{ padding:12px 14px; }
-.poi-title{ font-weight:700; font-size:14px; color:#111; margin:0 0 6px; }
-.poi-desc{ font-size:12px; color:#374151; margin:0 0 10px; }
-.poi-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.poi-btn{
+
+.poi-title{
+  font-weight:700; font-size:15px; color:#111; margin:0 0 6px;
+}
+.poi-desc{
+  font-size:13px; color:#374151; margin:0 0 10px;
+}
+
+/* Actions – CTA vpravo */
+.poi-actions{
+  display:flex; justify-content:flex-end; align-items:center; gap:8px; flex-wrap:wrap;
+}
+
+/* CTA button (enforces black text) */
+.poi-btn,
+.poi-btn:link,
+.poi-btn:visited{
   display:inline-flex; align-items:center; gap:6px;
-  padding:6px 10px; border:1px solid #111; border-radius:8px;
-  background:#fff; color:#111; font-weight:600; font-size:12px; text-decoration:none;
+  padding:6px 10px;
+  border:1px solid #111; border-radius:8px;
+  background:#fff; color:#111 !important;
+  font-weight:600; font-size:13px; text-decoration:none !important;
 }
 .poi-btn:hover{ background:#f3f4f6; }
 .poi-btn svg{ width:16px; height:16px; display:block; }
 
-/* Force black link text in campsite popup CTA */
-.leaflet-container .poi-popup .poi-btn,
-.leaflet-container .poi-popup .poi-btn:link,
-.leaflet-container .poi-popup .poi-btn:visited {
-  color: #111 !important;
-  text-decoration: none !important;
-}
+/* Neutralize generic anchor colors inside popup */
+.leaflet-container .poi-popup a{ color:inherit; }
 
-.leaflet-container .poi-popup .poi-btn:hover,
-.leaflet-container .poi-popup .poi-btn:active {
-  color: #111 !important;
-  background: #f3f4f6;
+/* Small screens – trochu kompaktnější */
+@media (max-width: 420px){
+  .poi-cover{ height:150px; }
+  .poi-title{ font-size:14px; }
+  .poi-desc{ font-size:12px; }
+  .poi-btn{ font-size:12px; padding:6px 8px; }
 }
-
-/* (Optional) neutralize generic popup link colors just in case */
-.leaflet-container .poi-popup a { color: inherit; }
 
 
   </style>
@@ -930,31 +940,68 @@ campsites.forEach(camp=>{
 });
 
 
-    /* ---- Hut example ---- */  
     const huts = [
-      {
-        name: "Example Hut",
-        lat: 63.6849449,
-        lng: -19.5126214,
-        desc: "Mountain hut in the highlands.",
-        link: "https://example.com/hut-info"
-      }
-    ];
+  {
+    name: "Example Hut",
+    lat: 63.6849449,
+    lng: -19.5126214,
+    desc: "Mountain hut in the highlands.",
+    link: "https://example.com/hut-info",
+    photo: "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ae0ff249c12184e1865dd2_68801a4989de05ba76b8416f_Langidalur%20thorsmrok7035-p-800.jpg"
+  }
+];
 
-    huts.forEach(hut => {
-      const hutIcon = L.icon({
-        iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/689d0a3c12784f92cf6a0fe9_hut.png', // můžeš změnit na lepší ikonu chaty
-        iconSize: [24, 24],
-        iconAnchor: [12, 24],
-        popupAnchor: [0, -24]
-      });
+if (typeof map !== 'undefined' && Array.isArray(huts)) {
+  window.hutsLayer = window.hutsLayer || L.layerGroup().addTo(map);
 
-      L.marker([hut.lat, hut.lng], { icon: hutIcon, title: hut.name })
-        .addTo(map)
-        .bindPopup(
-          `<strong>${hut.name}</strong><br>${hut.desc}<br><a href="${hut.link}" target="_blank">More info</a>`
-        );
+  const hutIcon = L.icon({
+    iconUrl: 'https://cdn.prod.website-files.com/687ebffd20183c0459d68784/689d0a3c12784f92cf6a0fe9_hut.png',
+    iconSize: [24, 24],
+    iconAnchor: [12, 24],
+    popupAnchor: [0, -24]
+  });
+
+  huts.forEach(hut => {
+    if (!hut.lat || !hut.lng) return;
+
+    const cover = hut.photo || 'https://images.unsplash.com/photo-1523413651479-597eb2da0ad9?q=80&w=1200&auto=format&fit=crop';
+
+    const html = `
+      <div class="poi-card">
+        <img class="poi-cover" src="${cover}" alt="${hut.name}" />
+        <div class="poi-body">
+          <h3 class="poi-title">${hut.name}</h3>
+          <p class="poi-desc">${hut.desc || ''}</p>
+          <div class="poi-actions">
+            ${hut.link ? `
+              <a class="poi-btn" href="${hut.link}" target="_blank" rel="noopener">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none">
+                  <path d="M7 13l6-6M9 5h6v6" stroke="#111" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                More info
+              </a>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+
+    L.marker([hut.lat, hut.lng], {
+      icon: hutIcon,
+      title: hut.name
+    })
+    .addTo(window.hutsLayer)
+    .bindPopup(html, {
+      className: 'poi-popup',
+      maxWidth: 380,
+      minWidth: 260,
+      autoPan: true,
+      autoPanPadding: [20, 20],
+      closeButton: true
     });
+  });
+}
+
 
     /* ---------- Utils ---------- */
     function round(n,p=1){ return Math.round(n * 10**p) / 10**p; }
