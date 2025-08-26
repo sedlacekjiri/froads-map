@@ -394,6 +394,69 @@ body.gallery-open .leaflet-control-container {
   border-color: #fecaca;
 }
 
+#updatesPanel {
+  position:absolute;
+  left:0; bottom:-100%;
+  width:100%; height:40vh;
+  background:#f8f8f8;
+  padding:20px;
+  box-sizing:border-box;
+  box-shadow:0 -2px 6px rgba(0,0,0,.3);
+  transition:bottom .25s ease-out;
+  z-index:1000;
+  overflow-y:auto;
+}
+#updatesPanel.open { bottom:0; }
+
+#updatesPanel h2 { margin-top:0; font-size:18px; }
+
+#closeUpdates {
+  position:absolute; top:12px; right:12px;
+  background:#fff; border:1px solid #111; border-radius:4px;
+  font-size:1.2em; padding:2px 8px; cursor:pointer;
+}
+#closeUpdates:hover { background:#f3f4f6; }
+
+.updates-list { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.update-item {
+  padding:10px;
+  border:1px solid #e5e7eb; border-radius:8px;
+  background:#fff;
+}
+.update-item.warning { border-left:4px solid #dc2626; }
+.update-item.info    { border-left:4px solid #2563eb; }
+.update-item.notice  { border-left:4px solid #92400e; }
+.update-time { font-size:12px; color:#6b7280; margin-bottom:4px; }
+
+#updatesBtn {
+  position: absolute;
+  top: 180px; /* posuň podle potřeby */
+  left: 10px;
+  z-index: 1000;
+}
+
+#updatesBtn a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  background: #facc15;       /* žlutý background */
+  border-radius: 6px;        /* lehce zaoblené */
+  cursor: pointer;
+}
+
+#updatesBtn .updates-icon {
+  font-weight: 900;
+  font-size: 18px;
+  color: #000;               /* černá ikonka */
+  font-family: 'Poppins', sans-serif;
+  line-height: 1;
+}
+
+#updatesBtn a:hover {
+  background: #fcd34d;       /* světlejší žlutá při hoveru */
+}
 
 
   </style>
@@ -429,6 +492,23 @@ body.gallery-open .leaflet-control-container {
   
 
   <div id="map"></div>
+
+  <div id="updatesPanel" class="updates">
+  <button id="closeUpdates">✕</button>
+  <h2>Updates</h2>
+  <ul id="updatesList" class="updates-list">
+    <!-- vyplní JS -->
+  </ul>
+</div>
+
+<div id="updatesBtn" class="leaflet-bar">
+  <a href="#" title="View updates">
+    <span class="updates-icon">!</span>
+  </a>
+</div>
+
+
+
 
   <div id="sidePanel">
     <button id="closePanel">✕</button>
@@ -598,6 +678,8 @@ body.gallery-open .leaflet-control-container {
         { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
       );
     }
+
+    
 
     /* ---- Roads (sample) ---- */
     const froadData = [
@@ -824,6 +906,9 @@ body.gallery-open .leaflet-control-container {
  
 
     function showPanel(rd){
+
+  const upd = document.getElementById('updatesPanel');
+  if (upd) upd.classList.remove('open');    
   const wrapper = document.getElementById('roadImageWrapper');
   const img = document.getElementById('roadImage');
 
@@ -1253,6 +1338,46 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
+<script>const updates = [
+  {
+    type: 'warning',
+    time: '21:32',
+    text: 'Please notice that due to weather and extreme water level, the southern highlands, including Fjallabak south and north, as well as the Laki area. Travellers are strongly advised not to travel in the area.'
+  }
+];
+
+function renderUpdates(){
+  const list = document.getElementById('updatesList');
+  list.innerHTML = '';
+  updates.forEach(u=>{
+    const li = document.createElement('li');
+    li.className = `update-item ${u.type}`;
+    li.innerHTML = `
+      <div class="update-time">${u.time}</div>
+      <div class="update-text">${u.text}</div>
+    `;
+    list.appendChild(li);
+  });
+}
+
+function openUpdatesPanel(){
+  renderUpdates();
+  document.getElementById('updatesPanel').classList.add('open');
+}
+
+document.getElementById('closeUpdates').addEventListener('click', ()=>{
+  document.getElementById('updatesPanel').classList.remove('open');
+});
+
+// 🔥 spustí se hned po načtení
+openUpdatesPanel();
+
+document.getElementById('updatesBtn').addEventListener('click', (e) => {
+  e.preventDefault();
+  openUpdatesPanel(); // funkce, kterou už máš
+});
+
+</script>
 
 </body>
 </html>
