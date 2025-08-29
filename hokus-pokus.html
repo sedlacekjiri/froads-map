@@ -474,12 +474,43 @@ body.gallery-open .leaflet-control-container {
          alt="Jeep icon" style="width:24px; height:auto;" />
     <select id="vehicleSelect" style="font-size:14px; padding:4px 8px; border-radius:4px;">
       <option value="all">Choose your 4x4 vehicle</option>
-      <option value="jimny">Suzuki Jimny</option>
-      <option value="duster">Dacia Duster</option>
-      <option value="landcruiser">Toyota Land Cruiser</option>
-      <option value="rubicon">Jeep Wrangler Rubicon</option>
-      <option value="defender">Defender</option>
-    </select>
+  
+  <!-- Compact SUVs -->
+  <option value="jimny">Suzuki Jimny</option>
+  <option value="duster">Dacia Duster</option>
+  <option value="sportage">Kia Sportage</option>
+  <option value="tucson">Hyundai Tucson</option>
+  <option value="rav4">Toyota RAV4</option>
+
+  <!-- Mid-size SUVs -->
+  <option value="outlander">Mitsubishi Outlander</option>
+  <option value="xtrail">Nissan X-Trail</option>
+  <option value="forester">Subaru Forester</option>
+  <option value="cx5">Mazda CX-5</option>
+
+  <!-- Large SUVs & Offroad -->
+  <option value="landcruiser">Toyota Land Cruiser</option>
+  <option value="hilux">Toyota Hilux</option>
+  <option value="wrangler">Jeep Wrangler</option>
+  <option value="renegade">Jeep Renegade</option>
+  <option value="defender">Land Rover Defender</option>
+  <option value="discovery">Land Rover Discovery</option>
+  <option value="grenadier">INEOS Grenadier</option>
+
+  <!-- Luxury -->
+  <option value="xc90">Volvo XC90</option>
+  <option value="x5">BMW X5</option>
+  <option value="gle">Mercedes GLE</option>
+  <option value="gclass">Mercedes G-Class</option>
+  <option value="q7">Audi Q7</option>
+
+  <!-- Campers -->
+  <option value="duster-rooftent">Dacia Duster + Rooftop Tent</option>
+  <option value="hilux-camper">Toyota Hilux Camper</option>
+  <option value="transporter-4x4">VW Transporter 4x4 Camper</option>
+  <option value="sprinter-4x4">Mercedes Sprinter 4x4 Camper</option>
+</select>
+
   </div>
 
   <!-- Download GPX Button -->
@@ -948,43 +979,47 @@ body.gallery-open .leaflet-control-container {
       const bufferLine=L.polyline(rd.coords,{ color:'#000', weight:20, opacity:0, className:'road-hitbox' }).addTo(map);
 
       const onRoadClick=()=>{
-        if(selectedLayer && selectedLayer!==visibleLine) selectedLayer.setStyle({ color:'#3bed32', weight:4 });
-        visibleLine.setStyle({ color:'#000', weight:6 });
-        selectedLayer=visibleLine;
-        showPanel(rd);
-      };
-      bufferLine.on('click', onRoadClick);
-      visibleLine.on('click', onRoadClick);
+  if(selectedLayer && selectedLayer!==visibleLine) selectedLayer.setStyle({ color:'#3bed32', weight:4 });
+  visibleLine.setStyle({ color:'#000', weight:6 });
+  selectedLayer=visibleLine;
+  showPanel(rd);
+};
+bufferLine.on('click', onRoadClick);
+visibleLine.on('click', onRoadClick);
 
-      roadLayers.push({ polyline:visibleLine, data:rd, hitbox:bufferLine });
+// ⬇️ ULOŽIT si handler do struktury:
+roadLayers.push({ polyline:visibleLine, data:rd, hitbox:bufferLine, onRoadClick });
       
     });
 
     function updateLabels(){
-      labelGroup.clearLayers();
-      const zoom=map.getZoom();
-      const labelsPerRoad=Math.max(1, Math.floor((zoom - minZoom)/3) + 1);
-      roadLayers.forEach(r=>{
-        const line=turf.lineString(r.data.coords.map(c=>[c[1],c[0]]));
-        const len=turf.length(line,{units:'kilometers'});
-        const step=len/labelsPerRoad;
+  labelGroup.clearLayers();                         // smazat všechny staré labely
+  const zoom = map.getZoom();
+  const labelsPerRoad = Math.max(1, Math.floor((zoom - minZoom)/3) + 1);
 
-        for(let d=0; d<=len; d+=step){
-          const pt=turf.along(line,d,{units:'kilometers'});
-          const latlng=[pt.geometry.coordinates[1], pt.geometry.coordinates[0]];
-          const isDimmed=r.data.allowed===false;
+  roadLayers.forEach(r=>{
+    // ⬅️ klíčová podmínka: pro nevhodné cesty nevytvářej vůbec žádné labely
+    if (r.data.allowed === false) return;
 
-          L.marker(latlng,{
-            icon:L.divIcon({
-              className:'road-label-icon' + (isDimmed?' dimmed':''),
-              html:`<div>${r.data.name.split(' ')[0]}</div>`,
-              iconAnchor:[12,12]
-            }),
-            interactive:false
-          }).addTo(labelGroup);
-        }
-      });
+    const line = turf.lineString(r.data.coords.map(c=>[c[1],c[0]]));
+    const len  = turf.length(line,{units:'kilometers'});
+    const step = len/labelsPerRoad;
+
+    for(let d=0; d<=len; d+=step){
+      const pt = turf.along(line,d,{units:'kilometers'});
+      const latlng = [pt.geometry.coordinates[1], pt.geometry.coordinates[0]];
+
+      L.marker(latlng,{
+        icon: L.divIcon({
+          className: 'road-label-icon',            // už žádné ' dimmed'
+          html: `<div>${r.data.name.split(' ')[0]}</div>`,
+          iconAnchor: [12,12]
+        }),
+        interactive:false
+      }).addTo(labelGroup);
     }
+  });
+}
     map.on('zoomend moveend', updateLabels);
     updateLabels();
 
@@ -995,30 +1030,102 @@ body.gallery-open .leaflet-control-container {
     });
 
     document.getElementById('vehicleSelect').addEventListener('change', e=>{
-      const selected=e.target.value;
-      const isAllowed=(diff,vehicle)=>{
-        const d=diff.toLowerCase();
-        if(vehicle==='all') return true;
-        if(vehicle==='jimny') return d==='easy';
-        if(vehicle==='duster') return d==='easy' || d==='medium';
-        if(vehicle==='landcruiser') return d!=='extreme';
-        return true;
-      };
-      roadLayers.forEach(r=>{
-        const allowed=isAllowed(r.data.difficulty, selected);
-        r.data.allowed=allowed;
-        if(!map.hasLayer(r.polyline)) map.addLayer(r.polyline);
-        r.polyline.setStyle({
-          color:allowed?'#3bed32':'#999',
-          opacity:allowed?1:.4,
-          weight:4,
-          dashArray:allowed?null:'4'
-        });
-        r.polyline.off('click');
-        if(allowed) r.polyline.on('click', ()=> showPanel(r.data));
-      });
-      updateLabels();
-    });
+  const selected = e.target.value;
+
+  const isAllowed = (diff, vehicle) => {
+  const d = diff.toLowerCase();
+
+  if (vehicle === 'all') return true;
+
+  switch (vehicle) {
+    // ✅ Kompaktní 4x4 – jen EASY
+    case 'jimny':
+    case 'renegade':
+    case 'sportage':
+    case 'tucson':
+    case 'rav4':
+    case 'outlander':
+    case 'xtrail':
+    case 'forester':
+    case 'cx5':
+      return d === 'easy';
+
+    // ✅ Střední SUV – zvládnou EASY + MEDIUM
+    case 'duster':
+      return d === 'easy' || d === 'medium';
+
+    // ✅ Velká offroad auta – zvládnou vše kromě EXTREME
+    case 'landcruiser':
+    case 'hilux':
+    case 'wrangler':
+    case 'defender':
+    case 'discovery':
+    case 'grenadier':
+      return d !== 'extreme';
+
+    // ✅ Luxusní SUV – většinou na asfalt + lehčí gravel, takže jen EASY
+    case 'xc90':
+    case 'x5':
+    case 'gle':
+    case 'gclass':
+    case 'q7':
+      return d === 'easy';
+
+    // ✅ Campervany 4x4 – obvykle jen EASY nebo výjimečně MEDIUM (Hilux Camper)
+    case 'duster-rooftent':
+    case 'transporter-4x4':
+    case 'sprinter-4x4':
+      return d === 'easy';
+
+    case 'hilux-camper':
+      return d === 'easy' || d === 'medium';
+
+    default:
+      return true;
+  }
+};
+
+
+  roadLayers.forEach(r=>{
+    const allowed = isAllowed(r.data.difficulty, selected);
+    r.data.allowed = allowed;
+
+    // vždy zruš staré click handlery (na obou vrstvách)
+    r.polyline.off('click');
+    r.hitbox?.off?.('click');
+
+    if (allowed) {
+      // vrať vrstvy do mapy (pokud už tam nejsou)
+      if (!map.hasLayer(r.polyline)) map.addLayer(r.polyline);
+      if (r.hitbox && !map.hasLayer(r.hitbox)) map.addLayer(r.hitbox);
+
+      // pokud není zrovna vybraná, nastav "základní" zelený styl
+      if (selectedLayer !== r.polyline) {
+        r.polyline.setStyle({ color:'#3bed32', weight:4, opacity:1, dashArray:null });
+      }
+
+      // zpátky připoj PŮVODNÍ highlight klik (na obě vrstvy)
+      if (r.onRoadClick) {
+        r.polyline.on('click', r.onRoadClick);
+        r.hitbox?.on?.('click', r.onRoadClick);
+      }
+    } else {
+      // úplně skryj z mapy (i hitbox)
+      if (map.hasLayer(r.polyline)) map.removeLayer(r.polyline);
+      if (r.hitbox && map.hasLayer(r.hitbox)) map.removeLayer(r.hitbox);
+
+      // když jsi zrovna měl vybranou tuhle cestu, odvyber ji
+      if (selectedLayer === r.polyline) {
+        selectedLayer = null;
+        // volitelně: zavři panel
+        // document.getElementById('sidePanel').classList.remove('open');
+      }
+    }
+  });
+
+  // okamžitě přegeneruj labely, není třeba zoomovat
+  updateLabels();
+});
 
 
     /* ---- Campsite example ---- */
@@ -1344,12 +1451,12 @@ document.addEventListener('DOMContentLoaded', function(){
 <script>const updates = [
   {
     type: 'warning',
-    time: '21:32',
+    time: '21:32, Today',
     text: 'Please notice that due to weather and extreme water level, the southern highlands, including Fjallabak south and north, as well as the Laki area. Travellers are strongly advised not to travel in the area.'
   },
   {
     type: 'info',
-    time: '14:10',
+    time: '14:10, 2 days ago',
     text: 'F249 Þórsmerkurvegur is open, but river levels are above average. Drive with caution.'
   },
   {
