@@ -414,6 +414,7 @@ body.gallery-open .leaflet-control-container {
   position:absolute; top:12px; right:12px;
   background:#fff; border:1px solid #111; border-radius:4px;
   font-size:1.2em; padding:2px 8px; cursor:pointer;
+  color:#111; /* černá ikonka/text */
 }
 #closeUpdates:hover { background:#f3f4f6; }
 
@@ -554,6 +555,49 @@ html, body { font-family: 'Poppins', sans-serif; }
 /* Když je modal otevřený: lock scroll + schovej mapové ovladače, ať „nelezou přes“ */
 body.modal-open{ overflow:hidden; }
 body.modal-open .leaflet-control-container{ display:none !important; }
+
+/* ===== Weather/Rain alert badge (v side panelu) ===== */
+#weatherAlertBadge{
+  position:absolute;
+  top:56px;                 /* pod #roadStatusBadge (ten má top:12px) */
+  left:12px;
+  display:none;             /* default skryté – ukáže se přes JS */
+  padding:4px 10px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:600;
+  text-transform:none;
+  border:1px solid transparent;
+  z-index:2;
+  background:#fff;          /* fallback */
+}
+
+/* Level 1 – advisory (3–7 mm/24h) */
+#weatherAlertBadge.level1{
+  color:#92400e;
+  background:#ffedd5;
+  border-color:#fed7aa;
+}
+
+/* Level 2 – caution (8–19 mm/24h) */
+#weatherAlertBadge.level2{
+  color:#7c2d12;
+  background:#fde68a;
+  border-color:#fcd34d;
+}
+
+/* Level 3 – warning (≥20 mm/24h) */
+#weatherAlertBadge.level3{
+  color:#991b1b;
+  background:#fee2e2;
+  border-color:#fecaca;
+  box-shadow:0 0 0 2px rgba(220,38,38,.18) inset;
+}
+
+/* droplet ikonka uvnitř badge */
+#weatherAlertBadge .ico{
+  width:14px; height:14px; margin-right:6px; display:inline-block; vertical-align:-2px;
+}
 
 
   </style>
@@ -820,10 +864,10 @@ body.modal-open .leaflet-control-container{ display:none !important; }
         a.href='#'; a.title='Current position';
         a.innerHTML = `
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="2" fill="#2c7be5"/>
-            <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
-            <circle cx="12" cy="12" r="7" fill="none" stroke="#333" stroke-width="1.5"/>
-          </svg>`;
+    <circle cx="12" cy="12" r="2.5" fill="#111"/>
+    <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="12" cy="12" r="7" fill="none" stroke="#111" stroke-width="1.5"/>
+  </svg>`;
         L.DomEvent.on(a,'click',L.DomEvent.stop).on(a,'click',()=> locateOnce());
         return container;
       }
