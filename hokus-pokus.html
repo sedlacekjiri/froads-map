@@ -462,6 +462,106 @@ body.gallery-open .leaflet-control-container {
   stroke: #000;
 }
 
+/* --- Info button vedle vehicle filtru --- */
+#vfInfoBtn{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:24px; height:24px; border-radius:50%;
+  border:1px solid #111; background:#fff; color:#111;
+  cursor:pointer; font-weight:700; font-size:14px; line-height:1;
+}
+#vfInfoBtn:hover{ background:#f3f4f6; }
+
+/* --- Právní pop-up (modal) --- */
+/* řádek s filtrem + ikona */
+#vehicleFilterRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+#vehicleFilter { flex: 1; }
+
+#vfInfoBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+#vfInfoBtn img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  display: block;
+}
+
+#vfInfoBtn:focus {
+  outline: none; /* odstraní modrý outline při kliknutí */
+}
+
+
+/* backdrop */
+#legalModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  display: none;
+  z-index: 2000;
+}
+
+/* modal */
+#legalModal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: min(500px, 90vw);
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 16px;
+  display: none;
+  z-index: 2001;
+}
+
+#legalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+#legalBody { font-size: 14px; line-height: 1.4; }
+#legalBody ul { margin: 8px 0 0 18px; }
+
+#legalModal, #legalModal * {
+  font-family: 'Poppins', sans-serif;
+}
+
+#legalFooter {
+  margin-top: 12px;
+  text-align: right;
+}
+
+#legalClose, #legalAccept {
+  border: 1px solid #111;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+#legalAccept {
+  background: #111;
+  color: #fff;
+}
+
+
+
   </style>
 </head>
 
@@ -474,7 +574,8 @@ body.gallery-open .leaflet-control-container {
          alt="Jeep icon" style="width:24px; height:auto;" />
     <select id="vehicleSelect" style="font-size:14px; padding:4px 8px; border-radius:4px;">
       <option value="all">Choose your 4x4 vehicle</option>
-  
+      
+    
   <!-- Compact SUVs -->
   <option value="jimny">Suzuki Jimny</option>
   <option value="duster">Dacia Duster</option>
@@ -510,6 +611,42 @@ body.gallery-open .leaflet-control-container {
   <option value="transporter-4x4">VW Transporter 4x4 Camper</option>
   <option value="sprinter-4x4">Mercedes Sprinter 4x4 Camper</option>
 </select>
+
+<button id="vfInfoBtn" type="button" title="Information / Disclaimer" aria-haspopup="dialog" aria-label="Important safety notice">
+  <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68b1ab8d2ffb232f31f2a9cf_warning.png" alt="" />
+</button>
+
+</div>
+
+<!-- Modal (disclaimer) -->
+<div id="legalModalBackdrop"></div>
+<div id="legalModal">
+  <div id="legalHeader">
+    <span>Important Disclaimer</span>
+    <button id="legalClose">Close</button>
+  </div>
+  <div id="legalBody">
+    <p>
+      The vehicle selection and road recommendations shown here are only
+      <strong>general suggestions</strong> based on common road difficulty levels.
+      Actual road conditions can change quickly due to weather, river flow,
+      snow, closures, or other factors.
+    </p>
+    <ul>
+      <li>Driving on F-roads is entirely <strong>at your own risk</strong> and the driver takes full responsibility.</li>
+      <li>Always check the official road conditions (<em>road.is</em>) and the weather forecast before driving.</li>
+      <li>Do not attempt river crossings unless you and your vehicle are fully capable.</li>
+      <li>Respect road signs, closures, and the rules of your rental company.</li>
+    </ul>
+    <p style="margin-top:8px;">
+      The creators of this map do not take any responsibility for damages,
+      accidents, or fines resulting from the use of these recommendations.
+    </p>
+  </div>
+  <div id="legalFooter">
+    <button id="legalAccept">I Understand</button>
+  </div>
+
 
   </div>
 
@@ -1496,6 +1633,29 @@ document.getElementById('updatesBtn').addEventListener('click', (e) => {
   e.preventDefault();
   openUpdatesPanel(); // funkce, kterou už máš
 });
+
+// elements
+const infoBtn = document.getElementById('vfInfoBtn');
+const modal = document.getElementById('legalModal');
+const backdrop = document.getElementById('legalModalBackdrop');
+const closeBtn = document.getElementById('legalClose');
+const acceptBtn = document.getElementById('legalAccept');
+
+function openModal() {
+  modal.style.display = 'block';
+  backdrop.style.display = 'block';
+}
+function closeModal() {
+  modal.style.display = 'none';
+  backdrop.style.display = 'none';
+}
+
+// eventy
+infoBtn.addEventListener('click', openModal);
+closeBtn.addEventListener('click', closeModal);
+acceptBtn.addEventListener('click', closeModal);
+backdrop.addEventListener('click', closeModal);
+
 
 </script>
 
