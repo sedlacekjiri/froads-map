@@ -1109,13 +1109,41 @@ body.modal-open .leaflet-control-container{ display:none !important; }
       renderRiverCrossings(rd);
     }
 
+    // --- Road colors helper ---
+const ROAD_COLORS = {
+  open:   '#3bed32',  // tvoje původní zelená
+  closed: '#dc2626',  // červená (ladí s CLOSED badge)
+  selected: '#000000' // černá (po kliku)
+};
+
+function isRoadClosed(rd){
+  // bereme jako "closed", když je open explicitně false nebo status === 'closed'
+  return rd?.isOpen === false || String(rd?.status).toLowerCase() === 'closed';
+}
+
+function baseRoadColor(rd){
+  return isRoadClosed(rd) ? ROAD_COLORS.closed : ROAD_COLORS.open;
+}
+
+// když rušíš zvýraznění vybrané čáry, vrať jí její "základní" barvu podle isOpen
+function resetPolylineStyle(polyline){
+  const r = roadLayers.find(x => x.polyline === polyline);
+  if (!r) return;
+  r.polyline.setStyle({ color: baseRoadColor(r.data), weight: 4, opacity: 1, dashArray: null });
+}
+
+
     let selectedLayer=null;
     froadData.forEach(rd=>{
-      const visibleLine=L.polyline(rd.coords,{ color:'#3bed32', weight:4, className:'road-main-line' }).addTo(map);
+      const visibleLine = L.polyline(rd.coords, {
+  color: baseRoadColor(rd),
+  weight: 4,
+  className: 'road-main-line'
+}).addTo(map);
       const bufferLine=L.polyline(rd.coords,{ color:'#000', weight:20, opacity:0, className:'road-hitbox' }).addTo(map);
 
       const onRoadClick=()=>{
-  if(selectedLayer && selectedLayer!==visibleLine) selectedLayer.setStyle({ color:'#3bed32', weight:4 });
+  if (selectedLayer && selectedLayer !== visibleLine) resetPolylineStyle(selectedLayer);
   visibleLine.setStyle({ color:'#000', weight:6 });
   selectedLayer=visibleLine;
   showPanel(rd);
@@ -1162,7 +1190,7 @@ roadLayers.push({ polyline:visibleLine, data:rd, hitbox:bufferLine, onRoadClick 
     document.getElementById('closePanel').addEventListener('click', ()=>{
       document.getElementById('sidePanel').classList.remove('open');
       crossingLayer.clearLayers();
-      if(selectedLayer) selectedLayer.setStyle({ color:'#3bed32', weight:4 });
+      if (selectedLayer) resetPolylineStyle(selectedLayer);
     });
 
     document.getElementById('vehicleSelect').addEventListener('change', e=>{
@@ -1237,8 +1265,9 @@ roadLayers.push({ polyline:visibleLine, data:rd, hitbox:bufferLine, onRoadClick 
 
       // pokud není zrovna vybraná, nastav "základní" zelený styl
       if (selectedLayer !== r.polyline) {
-        r.polyline.setStyle({ color:'#3bed32', weight:4, opacity:1, dashArray:null });
-      }
+  r.polyline.setStyle({ color: baseRoadColor(r.data), weight: 4, opacity: 1, dashArray: null });
+}
+
 
       // zpátky připoj PŮVODNÍ highlight klik (na obě vrstvy)
       if (r.onRoadClick) {
@@ -1638,8 +1667,15 @@ document.getElementById('updatesBtn').addEventListener('click', (e) => {
   const el = document.getElementById('currentTime');
   function tick(){
     const now = new Date();
-    const d = now.toLocaleDateString('cs-CZ', { day:'2-digit', month:'2-digit', year:'numeric' });
-    const t = now.toLocaleTimeString('cs-CZ', { hour:'2-digit', minute:'2-digit' });
+    const d = now.toLocaleDateString('en-GB', { 
+  day:'2-digit', month:'2-digit', year:'numeric',
+  timeZone: 'Atlantic/Reykjavik'
+});
+const t = now.toLocaleTimeString('en-GB', { 
+  hour:'2-digit', minute:'2-digit',
+  timeZone: 'Atlantic/Reykjavik'
+});
+
     if (el) el.textContent = `${d} · ${t}`;
   }
   tick(); setInterval(tick, 1000);
