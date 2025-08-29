@@ -462,104 +462,98 @@ body.gallery-open .leaflet-control-container {
   stroke: #000;
 }
 
-/* --- Info button vedle vehicle filtru --- */
-#vfInfoBtn{
-  display:inline-flex; align-items:center; justify-content:center;
-  width:24px; height:24px; border-radius:50%;
+html, body { font-family: 'Poppins', sans-serif; }
+
+/* ===== Bottom-left card (subtle) ===== */
+#bottomInfoBox{
+  position:fixed; left:12px; bottom:12px;
+  display:flex; flex-direction:column; gap:4px; align-items:flex-start;
+  padding:8px 10px;
+  background:rgba(255,255,255,0.72);
+  border:1px solid rgba(17,17,17,.08);
+  border-radius:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,.10);
+  z-index: 650; /* pod modalem, nad mapou */
+  font-family:'Poppins',sans-serif; color:#111;
+  backdrop-filter: blur(4px);
+}
+#currentTime{
+  font-size:12px; font-weight:600; opacity:.75;
+}
+
+/* nenápadný odkaz místo výrazného tlačítka */
+#openDisclaimer{
+  appearance:none;
+  border:none;
+  background:transparent;
+  color:#111;                 /* černý text */
+  cursor:pointer;
+  padding:0; margin:0;
+  font-size:12px;
+  font-weight:500;
+  text-decoration:underline;  /* vypadá jako odkaz */
+  opacity:.6;
+  transition:opacity .15s ease, color .15s ease;
+}
+#openDisclaimer:hover{
+  opacity:1;
+  color:#333;                 /* na hover jen trochu tmavší/šedší */
+}
+
+
+/* ===== Modal nad VŠÍM (překryje mapu, ikony, side panel, atd.) ===== */
+#legalModalBackdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.45);
+  opacity:0; visibility:hidden; transition:opacity .2s ease;
+  z-index: 2147483646; /* téměř maximum */
+}
+#legalModalBackdrop.open{ opacity:1; visibility:visible; }
+
+#legalModal{
+  position:fixed; left:50%; top:50%;
+  transform:translate(-50%,-50%) scale(.97);
+  width:min(640px, 92vw); max-height:85vh; overflow:auto;
+  background:#fff; color:#111; font-family:'Poppins',sans-serif;
+  border:1px solid #e5e7eb; border-radius:14px;
+  box-shadow:0 24px 60px rgba(0,0,0,.25);
+  opacity:0; visibility:hidden; transition:opacity .2s ease, transform .2s ease;
+  z-index: 2147483647; /* nad vším */
+  display:flex; flex-direction:column;
+}
+#legalModal.open{ opacity:1; visibility:visible; transform:translate(-50%,-50%) scale(1); }
+
+/* Close (jediný) */
+#legalClose.closeBtn{
+  position:absolute; top:12px; right:12px;
   border:1px solid #111; background:#fff; color:#111;
-  cursor:pointer; font-weight:700; font-size:14px; line-height:1;
+  width:32px; height:32px; border-radius:8px;
+  display:inline-grid; place-items:center; cursor:pointer; font-size:18px;
 }
-#vfInfoBtn:hover{ background:#f3f4f6; }
+#legalClose.closeBtn:hover{ background:#f3f4f6; }
 
-/* --- Právní pop-up (modal) --- */
-/* řádek s filtrem + ikona */
-#vehicleFilterRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 6px 0;
+/* Content spacing */
+#legalContent{ padding:24px 24px 0; }
+#legalContent h2{ margin:0 0 14px; font-size:20px; font-weight:600; }
+#legalContent p{ margin:10px 0; font-size:14px; line-height:1.5; }
+#legalContent ul{ margin:10px 0 10px 22px; font-size:14px; line-height:1.5; }
+
+/* Footer s modrým CTA */
+#legalFooter{
+  padding:16px 24px; border-top:1px solid #eee;
+  display:flex; justify-content:flex-end;
 }
-#vehicleFilter { flex: 1; }
-
-#vfInfoBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
+#legalAccept{
+  background:#2a61ff; color:#fff; border:none;
+  padding:10px 18px; border-radius:8px;
+  font-size:14px; font-weight:600; cursor:pointer;
+  box-shadow:0 4px 12px rgba(42,97,255,.35);
+  transition:filter .15s ease;
 }
+#legalAccept:hover{ filter:brightness(1.08); }
 
-#vfInfoBtn img {
-  width: 30px;
-  height: 30px;
-  object-fit: contain;
-  display: block;
-}
-
-#vfInfoBtn:focus {
-  outline: none; /* odstraní modrý outline při kliknutí */
-}
-
-
-/* backdrop */
-#legalModalBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.4);
-  display: none;
-  z-index: 2000;
-}
-
-/* modal */
-#legalModal {
-  position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  width: min(500px, 90vw);
-  background: #fff;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  padding: 16px;
-  display: none;
-  z-index: 2001;
-}
-
-#legalHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-
-#legalBody { font-size: 14px; line-height: 1.4; }
-#legalBody ul { margin: 8px 0 0 18px; }
-
-#legalModal, #legalModal * {
-  font-family: 'Poppins', sans-serif;
-}
-
-#legalFooter {
-  margin-top: 12px;
-  text-align: right;
-}
-
-#legalClose, #legalAccept {
-  border: 1px solid #111;
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-}
-#legalAccept {
-  background: #111;
-  color: #fff;
-}
-
+/* Když je modal otevřený: lock scroll + schovej mapové ovladače, ať „nelezou přes“ */
+body.modal-open{ overflow:hidden; }
+body.modal-open .leaflet-control-container{ display:none !important; }
 
 
   </style>
@@ -574,8 +568,7 @@ body.gallery-open .leaflet-control-container {
          alt="Jeep icon" style="width:24px; height:auto;" />
     <select id="vehicleSelect" style="font-size:14px; padding:4px 8px; border-radius:4px;">
       <option value="all">Choose your 4x4 vehicle</option>
-      
-    
+  
   <!-- Compact SUVs -->
   <option value="jimny">Suzuki Jimny</option>
   <option value="duster">Dacia Duster</option>
@@ -612,43 +605,49 @@ body.gallery-open .leaflet-control-container {
   <option value="sprinter-4x4">Mercedes Sprinter 4x4 Camper</option>
 </select>
 
-<button id="vfInfoBtn" type="button" title="Information / Disclaimer" aria-haspopup="dialog" aria-label="Important safety notice">
-  <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68b1ab8d2ffb232f31f2a9cf_warning.png" alt="" />
-</button>
+  </div>
 
+<!-- Bottom-left info box (subtle) -->
+<div id="bottomInfoBox">
+  <div id="currentTime"></div>
+  <button id="openDisclaimer" type="button" title="Important Disclaimer">Safety notice</button>
 </div>
 
-<!-- Modal (disclaimer) -->
-<div id="legalModalBackdrop"></div>
-<div id="legalModal">
-  <div id="legalHeader">
-    <span>Important Disclaimer</span>
-    <button id="legalClose">Close</button>
-  </div>
-  <div id="legalBody">
+<!-- Backdrop + Modal (white theme) -->
+<div id="legalModalBackdrop" aria-hidden="true"></div>
+<div id="legalModal" role="dialog" aria-modal="true" aria-labelledby="legalTitle">
+  <button id="legalClose" class="closeBtn" aria-label="Close">✕</button>
+
+  <div id="legalContent">
+    <h2 id="legalTitle">Important Disclaimer</h2>
     <p>
       The vehicle selection and road recommendations shown here are only
       <strong>general suggestions</strong> based on common road difficulty levels.
-      Actual road conditions can change quickly due to weather, river flow,
-      snow, closures, or other factors.
+      Actual conditions can change quickly due to weather, river flow, snow, or closures.
     </p>
     <ul>
       <li>Driving on F-roads is entirely <strong>at your own risk</strong> and the driver takes full responsibility.</li>
-      <li>Always check the official road conditions (<em>road.is</em>) and the weather forecast before driving.</li>
+      <li>Always check official road conditions (<em>road.is</em>) and the weather forecast before driving.</li>
       <li>Do not attempt river crossings unless you and your vehicle are fully capable.</li>
-      <li>Respect road signs, closures, and the rules of your rental company.</li>
+      <li>Respect road signs, closures, and your rental company’s rules.</li>
     </ul>
-    <p style="margin-top:8px;">
-      The creators of this map do not take any responsibility for damages,
-      accidents, or fines resulting from the use of these recommendations.
+    <p>
+      The creators of this map accept no responsibility for damages, accidents, or fines resulting from the use of these recommendations.
     </p>
   </div>
+
   <div id="legalFooter">
-    <button id="legalAccept">I Understand</button>
+    <button id="legalAccept" type="button">I Understand</button>
   </div>
+</div>
 
 
-  </div>
+
+
+
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 
   <!-- Download GPX Button -->
   <div id="gpxDownloadBtn" class="leaflet-bar leaflet-control" style="position:absolute; top:130px; left:10px; z-index:1000;">
@@ -1634,27 +1633,62 @@ document.getElementById('updatesBtn').addEventListener('click', (e) => {
   openUpdatesPanel(); // funkce, kterou už máš
 });
 
-// elements
-const infoBtn = document.getElementById('vfInfoBtn');
-const modal = document.getElementById('legalModal');
-const backdrop = document.getElementById('legalModalBackdrop');
-const closeBtn = document.getElementById('legalClose');
-const acceptBtn = document.getElementById('legalAccept');
+// === Čas do bottom-left boxu (CS formát) ===
+(function(){
+  const el = document.getElementById('currentTime');
+  function tick(){
+    const now = new Date();
+    const d = now.toLocaleDateString('cs-CZ', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const t = now.toLocaleTimeString('cs-CZ', { hour:'2-digit', minute:'2-digit' });
+    if (el) el.textContent = `${d} · ${t}`;
+  }
+  tick(); setInterval(tick, 1000);
+})();
 
-function openModal() {
-  modal.style.display = 'block';
-  backdrop.style.display = 'block';
-}
-function closeModal() {
-  modal.style.display = 'none';
-  backdrop.style.display = 'none';
-}
+// === Modal open/close – 1x Close, bílé UI, nepřekrývá side panel ===
+(function(){
+  const openBtn  = document.getElementById('openDisclaimer');
+  const backdrop = document.getElementById('legalModalBackdrop');
+  const modal    = document.getElementById('legalModal');
+  const closeBtn = document.getElementById('legalClose');
+  const sidePanel= document.getElementById('sidePanel');
 
-// eventy
-infoBtn.addEventListener('click', openModal);
-closeBtn.addEventListener('click', closeModal);
-acceptBtn.addEventListener('click', closeModal);
-backdrop.addEventListener('click', closeModal);
+  function placeModal(){
+    // Pokud je side panel otevřený, drž modal vizuálně nad ním (v bezpečné zóně)
+    const spOpen = sidePanel && sidePanel.classList.contains('open');
+    const vh = window.innerHeight;
+    let top = vh/2; // výchozí střed
+
+    if (spOpen) {
+      const spRect = sidePanel.getBoundingClientRect();
+      const safeHeight = Math.max(260, vh - spRect.height - 24);
+      top = 12 + safeHeight/2; // 12px odsazení shora
+      modal.style.transform = 'translate(-50%, 0) scale(1)';
+      modal.style.top = `${Math.round(top)}px`;
+    } else {
+      modal.style.transform = 'translate(-50%, -50%) scale(1)';
+      modal.style.top = '50%';
+    }
+  }
+
+  function openModal(){
+    placeModal();
+    backdrop.classList.add('open');
+    modal.classList.add('open');
+  }
+  function closeModal(){
+    modal.classList.remove('open');
+    backdrop.classList.remove('open');
+  }
+
+  openBtn?.addEventListener('click', openModal);
+  closeBtn?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', (e)=>{ if(e.target===backdrop) closeModal(); });
+  window.addEventListener('resize', ()=>{ if(modal.classList.contains('open')) placeModal(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modal.classList.contains('open')) closeModal(); });
+})();
+
+
 
 
 </script>
