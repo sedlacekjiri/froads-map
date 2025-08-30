@@ -329,7 +329,7 @@ body.gallery-open .leaflet-control-container {
 
 /* Card layout */
 .poi-card{ background:#fff; border-radius:14px; overflow:hidden; }
-.poi-cover{ width:100%; height:180px; object-fit:cover; display:block; }
+.poi-cover{ width:100%; height:140px; object-fit:cover; display:block; }
 .poi-body{ padding:12px 14px; }
 
 .poi-title{
@@ -348,14 +348,23 @@ body.gallery-open .leaflet-control-container {
 .poi-btn,
 .poi-btn:link,
 .poi-btn:visited{
-  display:inline-flex; align-items:center; gap:6px;
-  padding:6px 10px;
-  border:1px solid #111; border-radius:8px;
-  background:#fff; color:#111 !important;
-  font-weight:600; font-size:13px; text-decoration:none !important;
+  display: block;                 /* místo inline-flex, zabere celý řádek */
+  width: 100%;
+  margin: 0 auto;                 /* vycentruje díky auto marginům */
+  padding: 10px 14px;             /* příjemný vnitřní spacing */
+  border: 1px solid #111;
+  border-radius: 8px;
+  background: #fff;
+  color: #111 !important;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;             /* text doprostřed */
+  text-decoration: none !important;
+  box-sizing: border-box;         /* jistota že padding se počítá do šířky */
 }
 .poi-btn:hover{ background:#f3f4f6; }
-.poi-btn svg{ width:16px; height:16px; display:block; }
+.poi-btn svg{ width:16px; height:16px; display:inline-block; vertical-align:middle; }
+
 
 /* Neutralize generic anchor colors inside popup */
 .leaflet-container .poi-popup a{ color:inherit; }
@@ -1381,7 +1390,6 @@ campsites.forEach(camp=>{
     name: "Example Hut",
     lat: 63.6849449,
     lng: -19.5126214,
-    desc: "Mountain hut in the highlands.",
     link: "https://example.com/hut-info",
     photo: "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ae0ff249c12184e1865dd2_68801a4989de05ba76b8416f_Langidalur%20thorsmrok7035-p-800.jpg"
   }
