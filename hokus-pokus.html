@@ -585,6 +585,36 @@ body.modal-open .leaflet-control-container{ display:none !important; }
   z-index: 2;
 }
 
+/* ===== Current location – oranžový bod + bílý obrys + pulz ===== */
+
+/* divIcon wrapper – neklikatelný */
+.leaflet-marker-icon.me-dot { pointer-events: none !important; }
+
+/* samotný bod (můžeš zvětšit na 18–20px) */
+.me-dot__core{
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid #fff;          /* bílý obrys */
+  background: #f97316;             /* oranžová (Tailwind orange-500) */
+  box-shadow: 0 0 0 2px rgba(249,115,22,.35); /* jemná aura */
+  animation: meBlink 1s ease-in-out infinite; /* pulz opacity */
+}
+
+@keyframes meBlink{
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .2; }
+}
+
+/* větší „accuracy“ kruh – pulzuje fill-opacity (Leaflet path v SVG) */
+.leaflet-interactive.me-accuracy{
+  animation: meFill 1s ease-in-out infinite;
+}
+@keyframes meFill{
+  0%,100% { fill-opacity: .25; }
+  50%     { fill-opacity: .10; }
+}
+
 
 
   </style>
@@ -844,42 +874,56 @@ body.modal-open .leaflet-control-container{ display:none !important; }
     }).addTo(map);
 
     /* ---- Current Position control ---- */
-    const LocateControl = L.Control.extend({
-      options:{ position:'topleft' },
-      onAdd:function(){
-        const container = L.DomUtil.create('div','leaflet-bar leaflet-control leaflet-control-locate');
-        const a = L.DomUtil.create('a','',container);
-        a.href='#'; a.title='Current position';
-        a.innerHTML = `
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="2.5" fill="#111"/>
-    <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>
-    <circle cx="12" cy="12" r="7" fill="none" stroke="#111" stroke-width="1.5"/>
-  </svg>`;
-        L.DomEvent.on(a,'click',L.DomEvent.stop).on(a,'click',()=> locateOnce());
-        return container;
-      }
-    });
-    map.addControl(new LocateControl());
+const LocateControl = L.Control.extend({
+  options:{ position:'topleft' },
+  onAdd:function(){
+    const container = L.DomUtil.create('div','leaflet-bar leaflet-control leaflet-control-locate');
+    const a = L.DomUtil.create('a','',container);
+    a.href='#'; a.title='Current position';
+    a.innerHTML = `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="2.5" fill="#111"/>
+        <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="12" cy="12" r="7" fill="none" stroke="#111" stroke-width="1.5"/>
+      </svg>`;
+    L.DomEvent.on(a,'click',L.DomEvent.stop).on(a,'click',()=> locateOnce());
+    return container;
+  }
+});
+map.addControl(new LocateControl());
 
-    let myLocMarker=null, myLocCircle=null;
-    function locateOnce(){
-      if(!navigator.geolocation){ alert('Geolocation not supported'); return; }
-      navigator.geolocation.getCurrentPosition(
-        (pos)=>{
-          const lat=pos.coords.latitude, lon=pos.coords.longitude, acc=pos.coords.accuracy||30;
-          const latlng=[lat,lon];
-          if(!myLocMarker){ myLocMarker=L.marker(latlng,{title:'You are here'}).addTo(map); }
-          else{ myLocMarker.setLatLng(latlng); }
-          if(!myLocCircle){
-            myLocCircle=L.circle(latlng,{radius:acc,color:'#136aec',fillColor:'#136aec',fillOpacity:.15,weight:2}).addTo(map);
-          }else{ myLocCircle.setLatLng(latlng); myLocCircle.setRadius(acc); }
-          map.flyTo(latlng, Math.max(map.getZoom(), 13), { duration:.6 });
-        },
-        (err)=>{ console.warn(err); alert('Could not get location'); },
-        { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
-      );
-    }
+let myLocMarker = null, myLocCircle = null;
+
+function locateOnce(){
+  if(!navigator.geolocation){ alert('Geolocation not supported'); return; }
+  navigator.geolocation.getCurrentPosition(
+    (pos)=>{
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const acc = pos.coords.accuracy || 30;
+      const latlng = [lat, lon];
+
+      // 1) ORANŽOVÝ BOD (divIcon), žádný default „pin“
+      const icon = L.divIcon({
+        className: 'me-dot',
+        html: '<div class="me-dot__core"></div>',
+        iconSize: [0,0],
+        iconAnchor: [0,0]
+      });
+      if (!myLocMarker){
+        myLocMarker = L.marker(latlng, { icon, interactive:false, keyboard:false }).addTo(map);
+      } else {
+        myLocMarker.setLatLng(latlng);
+      }
+
+      // 3) Kamera – trochu přiblížit (min zoom 13)
+      map.flyTo(latlng, Math.max(map.getZoom() || 0, 13), { duration:.6 });
+    },
+    (err)=>{ console.warn(err); alert('Could not get location'); },
+    { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+  );
+}
+
 
     
 
@@ -1829,6 +1873,63 @@ const t = now.toLocaleTimeString('en-GB', {
   });
 })();
 
+// ===== Vehicle filter: abecední řazení (All nahoře) =====
+(function sortVehicleFilterInit(){
+  const SELECT_ID = 'vehicleSelect';
+
+  function isAllOption(opt){
+    if (!opt) return false;
+    const v = String(opt.value || '').toLowerCase();
+    const t = String(opt.textContent || '').toLowerCase();
+    return v === 'all' || t.includes('all vehicles') || t.trim() === 'all';
+  }
+
+  function sortVehicleSelect(){
+    const sel = document.getElementById(SELECT_ID);
+    if (!sel) return;
+
+    // zapamatuj si výběr
+    const prev = sel.value;
+
+    // všechny přímé <option> (bez optgroup)
+    const options = Array.from(sel.querySelectorAll(':scope > option'));
+
+    // odděl „All“ od ostatních
+    const allOpts   = options.filter(isAllOption);
+    const otherOpts = options.filter(o => !isAllOption(o));
+
+    // setřiď podle textu – bez ohledu na velikost písmen/diakritiku
+    otherOpts.sort((a,b)=> a.textContent.localeCompare(b.textContent, undefined, { sensitivity:'base' }));
+
+    // slož zpět
+    sel.innerHTML = '';
+    [...allOpts, ...otherOpts].forEach(o => sel.appendChild(o));
+
+    // obnov původní výběr, případně zvol „All“
+    if (Array.from(sel.options).some(o => o.value === prev)) {
+      sel.value = prev;
+    } else if (allOpts[0]) {
+      sel.value = allOpts[0].value;
+    }
+
+    // vystřel change, pokud na něj navazuješ logiku mapy/filtru
+    sel.dispatchEvent(new Event('change', { bubbles:true }));
+  }
+
+  // Spusť po načtení DOMu
+  document.addEventListener('DOMContentLoaded', sortVehicleSelect);
+
+  // Kdyby se options měnily dynamicky, přerovnej znovu
+  const mo = new MutationObserver((muts)=>{
+    if (muts.some(m => [...m.addedNodes, ...m.removedNodes].some(n => n.nodeName === 'OPTION'))) {
+      sortVehicleSelect();
+    }
+  });
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const sel = document.getElementById(SELECT_ID);
+    if (sel) mo.observe(sel, { childList:true });
+  });
+})();
 
 
 
