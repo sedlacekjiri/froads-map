@@ -556,50 +556,26 @@ html, body { font-family: 'Poppins', sans-serif; }
 body.modal-open{ overflow:hidden; }
 body.modal-open .leaflet-control-container{ display:none !important; }
 
+/* ==== High Water Alert Badge – levý spodní roh obrázku ==== */
+.high-water-badge {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
 
+  display: inline-flex;
+  align-items: center;
 
-/* ===== Weather/Rain alert badge (v side panelu) ===== */
-#weatherAlertBadge{
-  position:absolute;
-  top:56px;                 /* pod #roadStatusBadge (ten má top:12px) */
-  left:12px;
-  display:none;             /* default skryté – ukáže se přes JS */
-  padding:4px 10px;
-  border-radius:10px;
-  font-size:13px;
-  font-weight:600;
-  text-transform:none;
-  border:1px solid transparent;
-  z-index:2;
-  background:#fff;          /* fallback */
+  padding: 6px 12px;
+  border-radius: 10px;
+  font: 600 13px/1.3 'Poppins', sans-serif;
+
+  background: #fde68a;     /* nice yellow background */
+  color: #991b1b;          /* strong red text */
+  border: 1px solid #fcd34d;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  z-index: 2;
 }
 
-/* Level 1 – advisory (3–7 mm/24h) */
-#weatherAlertBadge.level1{
-  color:#92400e;
-  background:#ffedd5;
-  border-color:#fed7aa;
-}
-
-/* Level 2 – caution (8–19 mm/24h) */
-#weatherAlertBadge.level2{
-  color:#7c2d12;
-  background:#fde68a;
-  border-color:#fcd34d;
-}
-
-/* Level 3 – warning (≥20 mm/24h) */
-#weatherAlertBadge.level3{
-  color:#991b1b;
-  background:#fee2e2;
-  border-color:#fecaca;
-  box-shadow:0 0 0 2px rgba(220,38,38,.18) inset;
-}
-
-/* droplet ikonka uvnitř badge */
-#weatherAlertBadge .ico{
-  width:14px; height:14px; margin-right:6px; display:inline-block; vertical-align:-2px;
-}
 
 
   </style>
@@ -688,10 +664,6 @@ body.modal-open .leaflet-control-container{ display:none !important; }
 </div>
 
 
-
-
-
-
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 
@@ -731,6 +703,9 @@ body.modal-open .leaflet-control-container{ display:none !important; }
     <div id="roadStatusBadge" class="open">OPEN</div>
     <div id="roadImageWrapper" style="display:none;">
   <img id="roadImage" alt="Road Photo"/>
+  <div class="high-water-badge">
+  Caution: High Water Possible
+</div>
   <button id="spGalleryBtn" type="button" title="Gallery">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
       <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="#111" stroke-width="1.6"/>
@@ -739,6 +714,8 @@ body.modal-open .leaflet-control-container{ display:none !important; }
     </svg>
     <span>Gallery</span>
   </button>
+
+  
   
   <div id="galleryOverlay">
   <div id="galleryHeader">
@@ -1097,7 +1074,7 @@ body.modal-open .leaflet-control-container{ display:none !important; }
           <div>${crossingIcon().options.html}</div>
           <div>
             <div class="rc-name">${title}</div>
-            <div class="rc-metrics">Depth: <strong>${depth}</strong>${x.note?` · <em>${x.note}</em>`:''}</div>
+            <div class="rc-metrics">Aprox.Depth: <strong>${depth}</strong>${x.note?` · <em>${x.note}</em>`:''}</div>
           </div>
           <div class="rc-right">
             <span class="rc-badge ${String(diff).toLowerCase()}">${diff}</span>
@@ -1152,7 +1129,11 @@ body.modal-open .leaflet-control-container{ display:none !important; }
 
       const [lat,lon]=getRoadMidLatLon(rd);
       Weather.setByCoords(lat,lon);
-      renderRiverCrossings(rd);
+      fetchCurrentWeatherMS(lat, lon)
+  .then(w => updateHighWaterBadge(rd, w))
+  .catch(() => updateHighWaterBadge(rd, null));
+
+renderRiverCrossings(rd);
     }
 
     // --- Road colors helper ---
@@ -1547,11 +1528,15 @@ if (typeof map !== 'undefined' && Array.isArray(huts)) {
       }
     }
 
-    async function fetchCurrentWeatherMS(lat,lon){
-  const url = `https://api.open-meteo.com/v1/forecast` +
-              `?latitude=${lat}&longitude=${lon}` +
-              `&current_weather=true&windspeed_unit=ms` +
-              `&hourly=precipitation&timezone=auto`;
+    async function fetchCurrentWeatherMS(lat, lon){
+  const url = `https://api.open-meteo.com/v1/forecast`
+            + `?latitude=${lat}&longitude=${lon}`
+            + `&current_weather=true&windspeed_unit=ms`
+            + `&hourly=precipitation`
+            + `&past_days=2`
+            + `&forecast_days=1`
+            + `&timezone=Atlantic%2FReykjavik`;
+
   const res = await fetch(url, { cache:'no-store' });
   if(!res.ok) throw new Error('HTTP '+res.status);
   const data = await res.json();
@@ -1559,20 +1544,23 @@ if (typeof map !== 'undefined' && Array.isArray(huts)) {
   const cw = data.current_weather;
   if(!cw) throw new Error('No current_weather');
 
-  // Najdeme srážky v hodinovém poli co nejblíž času current_weather.time
-  let P = null;
-  if (data.hourly && Array.isArray(data.hourly.time) && Array.isArray(data.hourly.precipitation)) {
-    const tIdx = (() => {
-      const target = new Date(cw.time).getTime();
-      let best = 0, bestDiff = Infinity;
-      for (let i=0; i<data.hourly.time.length; i++){
-        const diff = Math.abs(new Date(data.hourly.time[i]).getTime() - target);
-        if (diff < bestDiff){ bestDiff = diff; best = i; }
-      }
-      return best;
-    })();
-    const val = data.hourly.precipitation[tIdx];
-    P = (typeof val === 'number') ? Math.max(0, val) : null; // mm
+  let P = null, sum24 = null;
+
+  if (data.hourly?.time?.length && data.hourly?.precipitation?.length){
+    const times = data.hourly.time.map(t => new Date(t).getTime());
+    const arr   = data.hourly.precipitation.map(v => (typeof v === 'number') ? Math.max(0, v) : 0);
+    const target = new Date(cw.time).getTime();
+
+    // index nejbližší hodině k "teď"
+    let idx = 0, best = Infinity;
+    for (let i=0; i<times.length; i++){
+      const diff = Math.abs(times[i] - target);
+      if (diff < best){ best = diff; idx = i; }
+    }
+
+    P = arr[idx] ?? null;                      // aktuální mm/h
+    const from24 = Math.max(0, idx - 24);      // posledních 24 hodin
+    sum24 = arr.slice(from24, idx).reduce((s,v)=>s+v, 0);
   }
 
   return {
@@ -1582,9 +1570,34 @@ if (typeof map !== 'undefined' && Array.isArray(huts)) {
     code: cw.weathercode,
     isDay: cw.is_day,
     timeISO: cw.time,
-    Pmm: P // mm/h (nejbližší hodina)
+    Pmm: P,                // mm/h
+    precipSum24: sum24     // ⬅️ nově: součet mm za posledních 24 h
   };
 }
+
+function roadHasCrossings(rd){
+  return !!(rd?.crossings?.length || rd?.riverCrossing?.exists || rd?.hasFords);
+}
+
+function shouldShowHighWaterBadge(rd, weather){
+  if (!weather) return false;
+  const sum24 = Number(weather.precipSum24) || 0;
+  return roadHasCrossings(rd) && sum24 >= 8;   // TVŮJ PRÁH
+}
+
+function updateHighWaterBadge(rd, weather){
+  const el = document.querySelector('#roadImageWrapper .high-water-badge');
+  if (!el) return; // badge v HTML už máš
+  if (shouldShowHighWaterBadge(rd, weather)) {
+    el.style.display = 'inline-flex';
+    el.title = `Last 24h precipitation: ${Math.round(weather.precipSum24)} mm`;
+  } else {
+    el.style.display = 'none';
+    el.title = '';
+  }
+}
+
+
 
 
     const Weather=(()=>{
