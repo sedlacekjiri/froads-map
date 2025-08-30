@@ -472,6 +472,35 @@ body.gallery-open .leaflet-control-container {
   stroke: #000;
 }
 
+/* SOS – 112 (hned pod Updates) */
+#sosBtn{
+  position: absolute;
+  top: 228px;          /* 180 + 35 výška + 8 mezera = 223 */
+  left: 9px;
+  z-index: 1000;
+}
+
+#sosBtn a{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  background: #ef4444;           /* červená */
+  color: #fff;                   /* bílý text */
+  font: 700 13px/1 'Poppins', sans-serif;
+  border-radius: 6px;
+  border: 1px solid #ef4444;     /* tmavší červená hrana */
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#sosBtn a:hover{
+  background: #f05252;           /* světlejší červená */
+}
+
+
 html, body { font-family: 'Poppins', sans-serif; }
 
 /* ===== Bottom-left card (subtle) ===== */
@@ -734,6 +763,10 @@ body.modal-open .leaflet-control-container{ display:none !important; }
   </a>
 </div>
 
+<!-- SOS 112 button (hned pod Updates) -->
+<div id="sosBtn">
+  <a href="tel:112" aria-label="Call emergency number 112">112</a>
+</div>
 
 
 
@@ -1188,6 +1221,8 @@ function locateOnce(){
 
 renderRiverCrossings(rd);
     }
+
+    
 
     // --- Road colors helper ---
 const ROAD_COLORS = {
