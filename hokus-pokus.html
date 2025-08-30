@@ -556,6 +556,8 @@ html, body { font-family: 'Poppins', sans-serif; }
 body.modal-open{ overflow:hidden; }
 body.modal-open .leaflet-control-container{ display:none !important; }
 
+
+
 /* ===== Weather/Rain alert badge (v side panelu) ===== */
 #weatherAlertBadge{
   position:absolute;
@@ -1727,46 +1729,56 @@ const t = now.toLocaleTimeString('en-GB', {
 
 // === Modal open/close – 1x Close, bílé UI, nepřekrývá side panel ===
 (function(){
-  const openBtn  = document.getElementById('openDisclaimer');
+  const body     = document.body;
   const backdrop = document.getElementById('legalModalBackdrop');
   const modal    = document.getElementById('legalModal');
-  const closeBtn = document.getElementById('legalClose');
-  const sidePanel= document.getElementById('sidePanel');
-
-  function placeModal(){
-    // Pokud je side panel otevřený, drž modal vizuálně nad ním (v bezpečné zóně)
-    const spOpen = sidePanel && sidePanel.classList.contains('open');
-    const vh = window.innerHeight;
-    let top = vh/2; // výchozí střed
-
-    if (spOpen) {
-      const spRect = sidePanel.getBoundingClientRect();
-      const safeHeight = Math.max(260, vh - spRect.height - 24);
-      top = 12 + safeHeight/2; // 12px odsazení shora
-      modal.style.transform = 'translate(-50%, 0) scale(1)';
-      modal.style.top = `${Math.round(top)}px`;
-    } else {
-      modal.style.transform = 'translate(-50%, -50%) scale(1)';
-      modal.style.top = '50%';
-    }
-  }
+  const trigger  = document.getElementById('openDisclaimer');
 
   function openModal(){
-    placeModal();
+    if (!backdrop || !modal) return;
+    body.classList.add('modal-open');
     backdrop.classList.add('open');
     modal.classList.add('open');
   }
   function closeModal(){
+    if (!backdrop || !modal) return;
     modal.classList.remove('open');
     backdrop.classList.remove('open');
+    body.classList.remove('modal-open');
   }
 
-  openBtn?.addEventListener('click', openModal);
-  closeBtn?.addEventListener('click', closeModal);
-  backdrop?.addEventListener('click', (e)=>{ if(e.target===backdrop) closeModal(); });
-  window.addEventListener('resize', ()=>{ if(modal.classList.contains('open')) placeModal(); });
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modal.classList.contains('open')) closeModal(); });
+  // Delegovaný posluchač: funguje i když je modal re-renderován
+  document.addEventListener('click', (e)=>{
+    const t = e.target;
+
+    // otevření
+    if (t.closest('#openDisclaimer')) {
+      e.preventDefault();
+      openModal();
+      return;
+    }
+
+    // zavření přes křížek nebo „I Understand“
+    if (t.closest('#legalClose') || t.closest('#legalAccept')) {
+      e.preventDefault();
+      closeModal();
+      return;
+    }
+
+    // klik na backdrop mimo modal zavře
+    if (backdrop && t === backdrop) {
+      closeModal();
+    }
+  });
+
+  // ESC zavře
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape' && modal?.classList.contains('open')) {
+      closeModal();
+    }
+  });
 })();
+
 
 
 
