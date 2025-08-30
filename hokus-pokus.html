@@ -426,7 +426,7 @@ body.gallery-open .leaflet-control-container {
 }
 .update-item.warning { border-left:4px solid #dc2626; }
 .update-item.info    { border-left:4px solid #2563eb; }
-.update-item.notice  { border-left:4px solid #92400e; }
+.update-item.notice  { border-left:4px solid #ffe600; }
 .update-time { font-size:12px; color:#6b7280; margin-bottom:4px; }
 
 #updatesBtn {
@@ -1672,32 +1672,49 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
-<script>const updates = [
-  {
-    type: 'warning',
-    time: '21:32, Today',
-    text: 'Please notice that due to weather and extreme water level, the southern highlands, including Fjallabak south and north, as well as the Laki area. Travellers are strongly advised not to travel in the area.'
-  },
-  {
-    type: 'info',
-    time: '14:10, 2 days ago',
-    text: 'F249 Þórsmerkurvegur is open, but river levels are above average. Drive with caution.'
-  },
-  {
-    type: 'notice',
-    time: '14:10',
-    text: 'F249 Þórsmerkurvegur is open, but river levels are above average. Drive with caution.'
-  },
+<script>
+const UPDATES = [
+  { type:'warning', time:'21:32, 30.8.2025', text:'Please notice that due to weather and extreme water level, the southern highlands, including Fjallabak south and north, as well as the Laki area. Travellers are strongly advised not to travel in the area.' },
+  { type:'info',    time:'14:10, 20.8.2025', text:'F249 Þórsmerkurvegur is open, but river levels are above average. Drive with caution.' },
+  { type:'notice',  time:'09:05, 27.8.2025', text:'General reminder: Always check road.is before traveling on F-roads.' },
 ];
+
+function parseUpdateTime(str){
+  const m = String(str).match(/^\s*(\d{1,2}):(\d{2})\s*,\s*(\d{1,2})\.(\d{1,2})\.(\d{4})\s*$/);
+  if (!m) return null;
+  const hh=+m[1], mm=+m[2], d=+m[3], mon=+m[4], y=+m[5];
+  return new Date(Date.UTC(y, mon-1, d, hh, mm));
+}
+function pad2(n){ return (n<10?'0':'')+n; }
+function formatRelativeLabel(dateUtc){
+  if (!(dateUtc instanceof Date)) return '--';
+  const now=new Date();
+  const todayMid = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const dateMid  = Date.UTC(dateUtc.getUTCFullYear(), dateUtc.getUTCMonth(), dateUtc.getUTCDate());
+  const diffDays = Math.floor((todayMid - dateMid)/86400000);
+  const hhmm = `${pad2(dateUtc.getUTCHours())}:${pad2(dateUtc.getUTCMinutes())}`;
+  if (diffDays===0) return `Today · ${hhmm}`;
+  if (diffDays===1) return `Yesterday · ${hhmm}`;
+  return `${diffDays} days ago · ${hhmm}`;
+}
 
 function renderUpdates(){
   const list = document.getElementById('updatesList');
+  if (!list) return;
   list.innerHTML = '';
-  updates.forEach(u=>{
+  const items = [...UPDATES].sort((a,b)=>{
+    const da = parseUpdateTime(a.time)?.getTime() ?? 0;
+    const db = parseUpdateTime(b.time)?.getTime() ?? 0;
+    return db - da;
+  });
+  items.forEach(u=>{
+    const when = parseUpdateTime(u.time);
     const li = document.createElement('li');
-    li.className = `update-item ${u.type}`;
+    li.className = `update-item ${u.type||'info'}`;
     li.innerHTML = `
-      <div class="update-time">${u.time}</div>
+      <div class="update-time" title="${when ? when.toUTCString().replace('GMT','UTC') : ''}">
+        ${when ? formatRelativeLabel(when) : u.time}
+      </div>
       <div class="update-text">${u.text}</div>
     `;
     list.appendChild(li);
@@ -1706,20 +1723,32 @@ function renderUpdates(){
 
 function openUpdatesPanel(){
   renderUpdates();
-  document.getElementById('updatesPanel').classList.add('open');
+  document.getElementById('updatesPanel')?.classList.add('open');
+}
+function closeUpdatesPanel(){
+  document.getElementById('updatesPanel')?.classList.remove('open');
 }
 
-document.getElementById('closeUpdates').addEventListener('click', ()=>{
-  document.getElementById('updatesPanel').classList.remove('open');
+document.addEventListener('DOMContentLoaded', ()=>{
+  const AUTO_OPEN_ON_LOAD = true; // ← nastav na false, pokud nechceš auto-open
+
+  // zapojení tlačítek (podle tvého HTML může být #updatesBtn nebo #updatesBtn a > a)
+  const btnWrap = document.getElementById('updatesBtn');
+  const btn = btnWrap?.querySelector('a') || btnWrap; 
+  btn?.addEventListener('click', (e)=>{ e.preventDefault(); openUpdatesPanel(); });
+
+  document.getElementById('closeUpdates')?.addEventListener('click', closeUpdatesPanel);
+
+  // první render
+  renderUpdates();
+
+  // AUTO-OPEN hned po načtení (to ti chybělo)
+  if (AUTO_OPEN_ON_LOAD) openUpdatesPanel();
+
+  // přepočet relativních štítků každou minutu
+  setInterval(renderUpdates, 60*1000);
 });
 
-// 🔥 spustí se hned po načtení
-openUpdatesPanel();
-
-document.getElementById('updatesBtn').addEventListener('click', (e) => {
-  e.preventDefault();
-  openUpdatesPanel(); // funkce, kterou už máš
-});
 
 // === Čas do bottom-left boxu (CS formát) ===
 (function(){
