@@ -689,8 +689,6 @@ body.modal-open .leaflet-control-container{ display:none !important; }
   <option value="q7">Audi Q7</option>
 
   <!-- Campers -->
-  <option value="duster-rooftent">Dacia Duster + Rooftop Tent</option>
-  <option value="hilux-camper">Toyota Hilux Camper</option>
   <option value="transporter-4x4">VW Transporter 4x4 Camper</option>
   <option value="sprinter-4x4">Mercedes Sprinter 4x4 Camper</option>
 </select>
@@ -745,6 +743,8 @@ body.modal-open .leaflet-control-container{ display:none !important; }
       </svg>
     </a>
   </div>
+
+  
   
 
   <div id="map"></div>
@@ -973,10 +973,7 @@ function locateOnce(){
         approxTime:"2–3 hours",
         surface:"Gravel",
         watchOut:"Loose stones",
-        crossings:[
-          { id:"F214-X1", name:"Kerlingardalsá", coord:[63.4465,-18.8963], depth_m_est:0.3, difficulty:"Easy", note:"Štěrkové dno, dobrý nájezd." },
-          { id:"F214-X2", alongKm:6.2, depth_m_est:0.5, difficulty:"Medium", note:"Po dešti vyšší průtok." }
-        ]
+
       },
       {
         name:"F249 Þórsmerkurvegur",
@@ -1351,13 +1348,9 @@ roadLayers.push({ polyline:visibleLine, data:rd, hitbox:bufferLine, onRoadClick 
       return d === 'easy';
 
     // ✅ Campervany 4x4 – obvykle jen EASY nebo výjimečně MEDIUM (Hilux Camper)
-    case 'duster-rooftent':
     case 'transporter-4x4':
     case 'sprinter-4x4':
       return d === 'easy';
-
-    case 'hilux-camper':
-      return d === 'easy' || d === 'medium';
 
     default:
       return true;
@@ -1524,6 +1517,8 @@ if (typeof map !== 'undefined' && Array.isArray(huts)) {
     });
   });
 }
+
+
 
 
     /* ---------- Utils ---------- */
@@ -1966,9 +1961,246 @@ const t = now.toLocaleTimeString('en-GB', {
   });
 })();
 
+/* ===== GPX export (robustní skener mapy): trasy → <trk>, camps/huts → <wpt> ===== */
+(function(){
+  const btn = document.querySelector('#gpxDownloadBtn a');
+  if (!btn) return;
 
+  btn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    try{
+      const gpx = buildGPX();
+      downloadGPX(gpx, 'froads-export.gpx');
+    }catch(err){
+      console.error('GPX export failed:', err);
+      alert('GPX export failed: ' + err.message);
+    }
+  });
 
+  /* ---------- Helpers ---------- */
+  function xmlEscape(s){
+    return String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  }
+  const fix6 = n => Number(n).toFixed(6);
 
+  function downloadGPX(text, filename){
+    const blob = new Blob([text], { type:'application/gpx+xml;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+  }
+
+  // ploché [[lat,lon],…] z Polyline/MultiPolyline
+  function latlngsFromPolyline(layer){
+    const out=[];
+    const walk = (lls)=>{
+      if (!lls) return;
+      if (Array.isArray(lls) && lls.length){
+        if (lls[0] && typeof lls[0].lat === 'number'){
+          for (const ll of lls) out.push([ll.lat, ll.lng]);
+        } else {
+          for (const sub of lls) walk(sub);
+        }
+      }
+    };
+    try{ walk(layer.getLatLngs()); }catch{}
+    return out;
+  }
+
+  function norm(s){ return String(s||'').toLowerCase(); }
+  function looksLikeCamp(p){
+    const t = norm(p?.type||p?.category||p?.kind||'');
+    const n = norm(p?.name||p?.title||'');
+    return t.includes('camp') || t.includes('campsite') || n.includes('camp');
+  }
+  function looksLikeHut(p){
+    const t = norm(p?.type||p?.category||p?.kind||'');
+    const n = norm(p?.name||p?.title||'');
+    return t.includes('hut') || t.includes('cabin') || n.includes('hut') || n.includes('cabin');
+  }
+
+  function getNameFrom(layer){
+    const p = layer?.feature?.properties || layer?.options?.properties || {};
+    return (
+      p.name || p.title ||
+      layer?.options?.name || layer?.options?.title ||
+      layer?.data?.name || 'Unnamed road'
+    );
+  }
+
+  function getLatLngFromMarker(mk){
+    try{
+      const ll = mk.getLatLng ? mk.getLatLng() : null;
+      if (ll && isFinite(ll.lat) && isFinite(ll.lng)) return [ll.lat, ll.lng];
+    }catch{}
+    return null;
+  }
+
+  /* ---------- ROUTES (Tracks) ---------- */
+  function collectTracks(){
+    const routes = [];
+
+    // 1) zkus explicitní window.roadLayers
+    if (Array.isArray(window.roadLayers)){
+      for (const r of window.roadLayers){
+        let coords = [];
+        if (Array.isArray(r?.data?.coords) && r.data.coords.length){
+          coords = r.data.coords
+            .filter(p => Array.isArray(p) && p.length>=2 && isFinite(p[0]) && isFinite(p[1]))
+            .map(p => [Number(p[0]), Number(p[1])]);
+        }
+        if (!coords.length && typeof r.getLatLngs === 'function'){
+          coords = latlngsFromPolyline(r);
+        }
+        if (!coords.length && r?.layer && typeof r.layer.getLatLngs === 'function'){
+          coords = latlngsFromPolyline(r.layer);
+        }
+        if (coords.length){
+          routes.push({ name: getNameFrom(r), coords });
+        }
+      }
+    }
+
+    // 2) projdi celou mapu (najdi všechny polyliny, vynech polygon)
+    if (window.map && typeof map.eachLayer === 'function'){
+      map.eachLayer(l=>{
+        if (l instanceof L.Polyline && !(l instanceof L.Polygon)){
+          const coords = latlngsFromPolyline(l);
+          if (coords.length){
+            routes.push({ name: getNameFrom(l), coords });
+          }
+        }
+      });
+    }
+
+    // deduplikace podle jména + délky
+    const uniq = [];
+    const seen = new Set();
+    for (const r of routes){
+      const key = r.name + '|' + r.coords.length;
+      if (!seen.has(key)){ seen.add(key); uniq.push(r); }
+    }
+    return uniq;
+  }
+
+  /* ---------- POI (Waypoints) ---------- */
+  function collectWaypoints(){
+    const wpts=[];
+
+    // 1) campsites/huts z globálních polí (pokud existují)
+    if (Array.isArray(window.campsites)){
+      for (const c of window.campsites){
+        const name = c?.name || c?.title;
+        const ll =
+          (Array.isArray(c?.coords) ? c.coords :
+          (isFinite(c?.lat)&&isFinite(c?.lon) ? [c.lat, c.lon] : null)) ||
+          (c?.marker ? getLatLngFromMarker(c.marker) : null) ||
+          (c?.layer ? getLatLngFromMarker(c.layer) : null);
+        if (name && ll) wpts.push({ name, ll, type:'camp' });
+      }
+    }
+    if (Array.isArray(window.huts)){
+      for (const h of window.huts){
+        const name = h?.name || h?.title;
+        const ll =
+          (Array.isArray(h?.coords) ? h.coords :
+          (isFinite(h?.lat)&&isFinite(h?.lon) ? [h.lat, h.lon] : null)) ||
+          (h?.marker ? getLatLngFromMarker(h.marker) : null) ||
+          (h?.layer ? getLatLngFromMarker(h.layer) : null);
+        if (name && ll) wpts.push({ name, ll, type:'hut' });
+      }
+    }
+
+    // 2) projdi mapu – najdi markery, které vypadají jako camp/hut
+    if (window.map && typeof map.eachLayer === 'function'){
+      map.eachLayer(l=>{
+        // GeoJSON Feature Layer s Pointem
+        if (l?.feature?.geometry?.type === 'Point'){
+          const p = l.feature.properties || {};
+          const name = p.name || p.title;
+          const ll = getLatLngFromMarker(l);
+          if (name && ll){
+            if (looksLikeCamp(p)) wpts.push({ name, ll, type:'camp' });
+            else if (looksLikeHut(p)) wpts.push({ name, ll, type:'hut' });
+          }
+        }
+        // Marker/CircleMarker s properties
+        else if (l instanceof L.Marker || l instanceof L.CircleMarker){
+          const p = l.options?.properties || l.feature?.properties || {};
+          const name = p.name || p.title || l.options?.name || l.options?.title;
+          const ll = getLatLngFromMarker(l);
+          if (name && ll){
+            if (looksLikeCamp(p)) wpts.push({ name, ll, type:'camp' });
+            else if (looksLikeHut(p)) wpts.push({ name, ll, type:'hut' });
+          }
+        }
+      });
+    }
+
+    // deduplikace podle jména
+    const unique = [];
+    const seen = new Set();
+    for (const w of wpts){
+      const key = (w.type||'') + '|' + w.name;
+      if (!seen.has(key)){ seen.add(key); unique.push(w); }
+    }
+    return unique;
+  }
+
+  /* ---------- GPX builder ---------- */
+  function buildGPX(){
+    const metaTime = new Date().toISOString();
+
+    const wpts = collectWaypoints();
+    const trks = collectTracks();
+
+    // slož XML
+    const wptXml = wpts.map(w=>{
+      const [la,lo] = w.ll;
+      return `  <wpt lat="${fix6(la)}" lon="${fix6(lo)}">
+    <name>${xmlEscape(w.name)}</name>
+    <type>${w.type}</type>
+  </wpt>`;
+    }).join('\n');
+
+    const trkXml = trks.map(rt=>{
+      const trkpts = rt.coords.map(([la,lo])=>`      <trkpt lat="${fix6(la)}" lon="${fix6(lo)}"></trkpt>`).join('\n');
+      return `  <trk>
+    <name>${xmlEscape(rt.name)}</name>
+    <trkseg>
+${trkpts}
+    </trkseg>
+  </trk>`;
+    }).join('\n');
+
+    // DEBUG info do konzole, ať hned vidíš, co našel
+    console.log('[GPX export] tracks:', trks.length, ' waypoints:', wpts.length);
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="F-Roads Iceland"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 
+                         http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>F-roads export</name>
+    <time>${metaTime}</time>
+  </metadata>
+${wptXml}
+${trkXml}
+</gpx>`;
+  }
+})();
+
+</script>
+
+<script>
+(function(){if(!window.chatbase||window.chatbase("getState")!=="initialized"){window.chatbase=(...arguments)=>{if(!window.chatbase.q){window.chatbase.q=[]}window.chatbase.q.push(arguments)};window.chatbase=new Proxy(window.chatbase,{get(target,prop){if(prop==="q"){return target.q}return(...args)=>target(prop,...args)}})}const onLoad=function(){const script=document.createElement("script");script.src="https://www.chatbase.co/embed.min.js";script.id="vCUESkYzlWEYc7gmiPXeU";script.domain="www.chatbase.co";document.body.appendChild(script)};if(document.readyState==="complete"){onLoad()}else{window.addEventListener("load",onLoad)}})();
 </script>
 
 </body>
