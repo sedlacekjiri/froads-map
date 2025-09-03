@@ -620,12 +620,14 @@ body.modal-open .leaflet-control-container{ display:none !important; }
 .leaflet-marker-icon.me-dot { pointer-events: none !important; }
 
 /* samotný bod (můžeš zvětšit na 18–20px) */
-.me-dot__core{
+.me-dot__core {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #0073ff;             /* modrá (Tailwind blue-500) */
-  box-shadow: 0 0 0 2px rgb(255, 255, 255); /* jemná aura */
+  background: #0073ff; /* modrá (Tailwind blue-500) */
+  box-shadow:
+    0 0 0 2px #fff,                  /* bílý outline */
+    0 0 20px 8px rgba(0, 115, 255, .4); /* modrý rozptyl (blur) */
   animation: meBlink 1s ease-in-out infinite; /* pulz opacity */
 }
 
