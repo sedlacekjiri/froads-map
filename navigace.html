@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"/>
+  <title>Trasa · Mobilní 3D vizualizace</title>
+  <link href="https://unpkg.com/maplibre-gl@3.7.0/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: rgba(15, 19, 31, 0.86);
+      --accent: #5dd6ff;
+      --accent2: #66ff9a;
+      --text: #f2f6ff;
+      --muted: #9bb0c3;
+    }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); }
+    #app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; }
+
+    /* Header */
+    .topbar {
+      padding: env(safe-area-inset-top) 14px 8px;
+      display:flex; align-items:center; gap:10px; background: linear-gradient(180deg, rgba(9,14,26,.9), rgba(9,14,26,.4));
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .brand { font-weight: 800; letter-spacing:.2px; }
+    .chip { font-size:12px; color: var(--muted); padding:4px 8px; border:1px solid rgba(255,255,255,.12); border-radius: 999px; }
+
+    /* Map */
+    #map { width: 100%; height: 100%; }
+
+    /* Bottom Panel */
+    .panel {
+      position: relative;
+      background: var(--panel);
+      border-top: 1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(10px);
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      display: grid; gap: 10px;
+    }
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .controls .btn {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      background: #101626; color: var(--text);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px; padding: 12px; font-weight: 700; font-size: 14px;
+    }
+    .controls .btn.primary { background: linear-gradient(135deg, #1473ff, #00d4ff); color:#04121b; }
+    .controls .btn:disabled { opacity: .5; }
+    .file { position: relative; overflow: hidden; }
+    .file input { position:absolute; inset:0; opacity:0; }
+
+    /* Metrics row */
+    .metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .metric {
+      background: #0f1524; border: 1px solid rgba(255,255,255,.06);
+      padding: 10px; border-radius: 12px; text-align: center;
+    }
+    .metric .k { font-size: 11px; color: var(--muted); }
+    .metric .v { font-size: 17px; font-weight: 800; letter-spacing:.2px; }
+
+    /* Floating indicators */
+    .badge {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      top: 68px; background: #281513; color:#ffb2a8; border:1px solid #51221e;
+      padding: 6px 10px; border-radius: 10px; display: none; z-index: 3;
+      box-shadow: 0 8px 30px rgba(0,0,0,.3); font-weight:700;
+    }
+
+    /* My Location Pulse */
+    .pulse {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #00e0ff; box-shadow: 0 0 0 rgba(0,224,255,.5);
+      animation: pulse 2s infinite;
+      border: 2px solid white;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(0,224,255,.6); }
+      70% { box-shadow: 0 0 0 20px rgba(0,224,255,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,224,255,0); }
+    }
+
+    /* Maplibre control tweaks for mobile dark */
+    .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-right { filter: invert(1) hue-rotate(180deg); opacity:.9; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">F-Road Navigator</div>
+    <div class="chip" id="status">Ready</div>
+    <div class="chip" id="sourceChip">—</div>
+  </div>
+
+  <div id="map"></div>
+
+  <div class="badge" id="offBadge">Mimo trasu · klepni pro centrování</div>
+
+  <div class="panel">
+    <div class="metrics">
+      <div class="metric"><div class="k">Do cíle</div><div class="v" id="mDist">— km</div></div>
+      <div class="metric"><div class="k">ETA</div><div class="v" id="mEta">—</div></div>
+      <div class="metric"><div class="k">Rychlost</div><div class="v" id="mSpeed">— km/h</div></div>
+    </div>
+
+    <div class="controls">
+      <label class="btn file" title="Načíst KML"><span>📄 KML</span>
+        <input id="kmlFile" type="file" accept=".kml"/>
+      </label>
+      <button class="btn" id="btnFroads">🧭 froads</button>
+      <button class="btn primary" id="btnFly">▶ Fly</button>
+      <button class="btn" id="btnStart">📍 Start</button>
+      <button class="btn" id="btnStop" disabled>■ Stop</button>
+      <button class="btn" id="btnFollow" aria-pressed="true">🎯 Follow ON</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@3.7.0/dist/maplibre-gl.js"></script>
+
+<script>
+/* ===== 1) TVÁ DATA: vlož/nahraj froads – přesně ve formátu co máš v HTML ===== */
+const froads = [
+  {
+    name: "Ukázková F-road",
+    coords: [
+      /* Sem vlož vlastní coords [[lat,lon],...] – pro demo pár bodů: */
+      [64.45378,-21.11316],[64.4538,-21.11312],[64.45394,-21.11349],[64.45408,-21.1138],[64.45423,-21.11405],
+      [64.45493,-21.11497],[64.45563,-21.11585],[64.45639,-21.1167],[64.45713,-21.1176],[64.45856,-21.11927]
+    ]
+  }
+];
+
+/* ===== 2) MAPA (MapLibre: free, bez tokenu) ===== */
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [-21.12, 64.455], // lon, lat
+  zoom: 12.5,
+  pitch: 60,  // 2.5D
+  bearing: 30,
+  attributionControl: false
+});
+map.addControl(new maplibregl.NavigationControl({ visualizePitch:true }), 'top-right');
+map.addControl(new maplibregl.ScaleControl({ maxWidth:120, unit:'metric' }), 'bottom-right');
+
+/* ===== Pomocné funkce ===== */
+const el = id => document.getElementById(id);
+const status = txt => el('status').textContent = txt;
+const sourceChip = txt => el('sourceChip').textContent = txt;
+const km = m => m/1000;
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+function lineFromLatLng(latlngs){ // [[lat,lon]..] -> GeoJSON LineString (lon,lat)
+  return { type:'Feature', properties:{}, geometry: { type:'LineString', coordinates: latlngs.map(([lat,lon])=>[lon,lat]) } };
+}
+function coordsFromKmlText(txt){
+  // najde <coordinates>...</coordinates>, rozparsuje lon,lat[,alt]
+  const m = txt.match(/<coordinates>([\s\S]*?)<\/coordinates>/i);
+  if(!m) return null;
+  const pairs = m[1].trim().split(/\s+/).map(row=>{
+    const [lon,lat] = row.split(',').map(Number);
+    return [lat,lon]; // vracíme [lat,lon] kvůli internímu sjednocení
+  });
+  return pairs;
+}
+function turfDistanceKm(a,b){ // fallback bez knihovny: haversine
+  const toRad = d=>d*Math.PI/180, R=6371;
+  const dLat=toRad(b[1]-a[1]), dLon=toRad(b[0]-a[0]);
+  const lat1=toRad(a[1]), lat2=toRad(b[1]);
+  const c = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(c), Math.sqrt(1-c));
+}
+function lineLengthKm(lonlats){ // lonlat[]
+  let s=0; for(let i=1;i<lonlats.length;i++) s+=turfDistanceKm(lonlats[i-1],lonlats[i]);
+  return s;
+}
+
+/* ===== Stav ===== */
+let currentLine = null;           // GeoJSON Feature<LineString> (lon,lat)
+let currentName = 'Trasa';
+let following = true;
+let watchId = null;
+let lastPos = null; // {coords:{latitude,longitude,speed,accuracy}, timestamp}
+
+/* ===== Vrstvy (po loadu stylu) ===== */
+map.on('load', () => {
+  map.addSource('route', { type:'geojson', data: { type:'FeatureCollection', features: [] }});
+  map.addLayer({
+    id:'route-glow', type:'line', source:'route',
+    paint:{
+      'line-color': '#00e0ff',
+      'line-width': 10,
+      'line-blur': 6,
+      'line-opacity': 0.35
+    }
+  });
+  map.addLayer({
+    id:'route-main', type:'line', source:'route',
+    paint:{
+      'line-color': [
+        'interpolate', ['linear'], ['line-progress'],
+        0, '#5dd6ff',
+        1, '#66ff9a'
+      ],
+      'line-width': 4.5
+    }
+  }, 'route-glow');
+
+  // My location layer (symbol + accuracy)
+  map.addSource('me', { type:'geojson', data: { type:'FeatureCollection', features: [] }});
+  map.addLayer({
+    id:'me-accuracy', type:'circle', source:'me',
+    filter:['==',['get','kind'],'accuracy'],
+    paint:{
+      'circle-color': '#00e0ff',
+      'circle-opacity': 0.12,
+      'circle-radius': ['to-number',['get','r']]
+    }
+  });
+  map.addLayer({
+    id:'me-point', type:'circle', source:'me',
+    filter:['==',['get','kind'],'me'],
+    paint:{
+      'circle-color': '#00e0ff',
+      'circle-stroke-color':'#ffffff',
+      'circle-stroke-width':2,
+      'circle-radius': 7
+    }
+  });
+
+  status('Ready');
+});
+
+/* ===== UI Handlery ===== */
+el('kmlFile').addEventListener('change', async e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  try{
+    const txt = await f.text();
+    const latlngs = coordsFromKmlText(txt);
+    if(!latlngs || latlngs.length < 2){ alert('KML: nenašel jsem souřadnice.'); return; }
+    loadFromLatLng(latlngs, `KML: ${f.name}`);
+  }catch(err){ console.error(err); alert('Chyba při čtení KML'); }
+});
+
+el('btnFroads').addEventListener('click', ()=>{
+  if(!froads.length || !Array.isArray(froads[0].coords)) { alert('Ve stránce nejsou froads data.'); return; }
+  loadFromLatLng(froads[0].coords, froads[0].name || 'froads');
+});
+
+el('btnFly').addEventListener('click', ()=>{
+  if(!currentLine) return;
+  flyAlong(currentLine.geometry.coordinates);
+});
+
+el('btnFollow').addEventListener('click', ()=>{
+  following = !following;
+  el('btnFollow').textContent = following ? '🎯 Follow ON' : '🎯 Follow OFF';
+  el('btnFollow').setAttribute('aria-pressed', String(following));
+});
+
+el('btnStart').addEventListener('click', startNav);
+el('btnStop').addEventListener('click', stopNav);
+el('offBadge').addEventListener('click', ()=> {
+  if(lastPos) map.easeTo({ center:[lastPos.coords.longitude, lastPos.coords.latitude], zoom: Math.max(map.getZoom(), 14), duration: 600 });
+});
+
+/* ===== Načtení trasy z [lat,lon] ===== */
+function loadFromLatLng(latlngs, label='Trasa'){
+  currentName = label;
+  const line = lineFromLatLng(latlngs);
+  currentLine = line;
+
+  const fc = { type:'FeatureCollection', features:[ line ] };
+  map.getSource('route').setData(fc);
+
+  // Fit & UI
+  sourceChip(label);
+  status('Trasa připravena');
+  const bounds = latlngs.reduce((b,[lat,lon])=>{
+    if(!b) return [[lon,lat],[lon,lat]];
+    b[0][0]=Math.min(b[0][0], lon); b[0][1]=Math.min(b[0][1], lat);
+    b[1][0]=Math.max(b[1][0], lon); b[1][1]=Math.max(b[1][1], lat);
+    return b;
+  }, null);
+  if(bounds) map.fitBounds(bounds, { padding: 60, pitch: 60, bearing: 20, duration: 800 });
+
+  // Spočti délku
+  const lenKm = lineLengthKm(line.geometry.coordinates);
+  el('mDist').textContent = lenKm.toFixed(2) + ' km';
+}
+
+/* ===== Fly-through podél trasy ===== */
+function flyAlong(lonlats){
+  if(!lonlats || lonlats.length < 2) return;
+  let i = 0;
+  const stepMs = 20;
+  const total = lonlats.length - 1;
+  function tick(){
+    const p = lonlats[i];
+    const n = lonlats[Math.min(i+1, total)];
+    const bearing = calcBearing(p, n);
+    map.easeTo({
+      center: p,
+      bearing, pitch: 60, zoom: 14.2,
+      duration: stepMs
+    });
+    i++;
+    if(i <= total) requestAnimationFrame(tick);
+  }
+  tick();
+}
+function calcBearing(a,b){
+  const [lon1, lat1] = a.map(x=>x*Math.PI/180);
+  const [lon2, lat2] = b.map(x=>x*Math.PI/180);
+  const y = Math.sin(lon2-lon1) * Math.cos(lat2);
+  const x = Math.cos(lat1)*Math.cos(lat2)*Math.cos(lon2-lon1) - Math.sin(lat1)*Math.sin(lat2);
+  return (Math.atan2(y,x) * 180/Math.PI + 360) % 360;
+}
+
+/* ===== GPS Navigace (follow-me, off-route, ETA) ===== */
+function startNav(){
+  if(!currentLine){ alert('Nejprve načti trasu (KML nebo froads).'); return; }
+  if(!navigator.geolocation){ alert('Geolokace není podporována.'); return; }
+  if(watchId != null) return;
+  status('Navigace…');
+  el('btnStop').disabled = false;
+
+  watchId = navigator.geolocation.watchPosition(onPos, err=>{
+    console.warn(err); status('GPS chyba');
+  }, { enableHighAccuracy:true, maximumAge: 1000, timeout: 15000 });
+}
+function stopNav(){
+  if(watchId != null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+  status('Zastaveno');
+  el('btnStop').disabled = true;
+  el('offBadge').style.display = 'none';
+}
+
+function onPos(pos){
+  lastPos = pos;
+  const lat = pos.coords.latitude, lon = pos.coords.longitude;
+  const acc = pos.coords.accuracy || 25;
+
+  // vykresli mě + přesnost
+  const meFC = {
+    type:'FeatureCollection',
+    features:[
+      { type:'Feature', properties:{kind:'accuracy', r: acc}, geometry:{ type:'Point', coordinates:[lon,lat] } },
+      { type:'Feature', properties:{kind:'me'}, geometry:{ type:'Point', coordinates:[lon,lat] } }
+    ]
+  };
+  map.getSource('me').setData(meFC);
+
+  if(following) map.easeTo({ center:[lon,lat], duration: 300 });
+
+  // vzdálenost do cíle (jednoduše k poslednímu bodu)
+  const end = currentLine.geometry.coordinates[currentLine.geometry.coordinates.length-1];
+  const distKm = turfDistanceKm([lon,lat], end);
+  el('mDist').textContent = distKm.toFixed(2) + ' km';
+
+  // rychlost (km/h)
+  const sp = (pos.coords.speed != null && isFinite(pos.coords.speed)) ? pos.coords.speed*3.6
+            : (function(){
+                if(!onPos._last) return 0;
+                const dt = (pos.timestamp - onPos._last.t)/1000; // s
+                if(dt < 0.5) return onPos._last.v;
+                const dKm = turfDistanceKm(onPos._last.xy, [lon,lat]);
+                return clamp((dKm/dt)*3600, 0, 200);
+              })();
+  onPos._last = { xy:[lon,lat], t: pos.timestamp, v: sp };
+  const smooth = onPos._ema ? 0.7*onPos._ema + 0.3*sp : sp;
+  onPos._ema = smooth;
+  el('mSpeed').textContent = smooth.toFixed(1) + ' km/h';
+
+  // ETA
+  let eta = '—';
+  if (smooth > 2) {
+    const h = distKm / smooth;
+    const min = Math.round(h*60);
+    eta = (min<60) ? `${min} min` : `${Math.floor(min/60)}h ${min%60}m`;
+  }
+  el('mEta').textContent = eta;
+
+  // off-route (~60 m) – nejbližší vzdálenost k polyline (hrubý sampling)
+  const off = distancePointToLineKm([lon,lat], currentLine.geometry.coordinates) > 0.06;
+  el('offBadge').style.display = off ? 'inline-block' : 'none';
+}
+
+/* Vzdálenost bod – polyline (rychlá aproximace) */
+function distancePointToLineKm(p, lineLonLats){
+  let best = Infinity;
+  for(let i=1;i<lineLonLats.length;i++){
+    const a = lineLonLats[i-1], b = lineLonLats[i];
+    const d = segDistKm(p,a,b);
+    if(d < best) best = d;
+  }
+  return best;
+}
+function segDistKm(p, a, b){
+  // projekce bodu na segment v ploché aprox (funguje dobře na krátkých úsecích)
+  const toXY = ([lon,lat])=>[lon*Math.cos(lat*Math.PI/180), lat];
+  const P=toXY(p), A=toXY(a), B=toXY(b);
+  const AP=[P[0]-A[0], P[1]-A[1]], AB=[B[0]-A[0], B[1]-A[1]];
+  const ab2=AB[0]*AB[0]+AB[1]*AB[1]; if(ab2===0) return turfDistanceKm(p,a);
+  let t=(AP[0]*AB[0]+AP[1]*AB[1])/ab2; t=clamp(t,0,1);
+  const H=[A[0]+AB[0]*t, A[1]+AB[1]*t];
+  const inv = ([x,y])=>[x/Math.cos((p[1])*Math.PI/180), y];
+  const Hlonlat=inv(H).map(Number);
+  return turfDistanceKm(p, [Hlonlat[0], Hlonlat[1]]);
+}
+
+/* ===== Inicializace: rovnou načti froads[0] po nahrání stylu ===== */
+map.on('load', ()=>{
+  if(froads?.[0]?.coords?.length>1){
+    loadFromLatLng(froads[0].coords, froads[0].name || 'froads');
+  }
+});
+</script>
+</body>
+</html>
