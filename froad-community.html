@@ -14,27 +14,15 @@
       --blue: #2563eb;
     }
 
-    [data-theme="dark"] {
-      --bg: #0c0d12;
-      --fg: #f3f5f7;
-      --muted: #a0a7b5;
-      --ring: #1f2937;
-      --card: #191c24;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html, body {
+    body {
       margin: 0;
       padding: 0;
+      font-family: system-ui, Inter, sans-serif;
       background: var(--bg);
       color: var(--fg);
-      font-family: system-ui, Inter, sans-serif;
-      height: 100%;
       display: flex;
       flex-direction: column;
+      height: 100vh;
     }
 
     header {
@@ -47,18 +35,17 @@
     }
 
     .brand {
-      font-weight: 900;
-      letter-spacing: .5px;
-      font-size: 16px;
+      font-weight: 800;
+      font-size: 18px;
     }
 
     .btn {
-      padding: 8px 14px;
-      border: 1px solid var(--ring);
-      background: var(--bg);
-      color: var(--fg);
-      font-weight: 700;
-      border-radius: 12px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: var(--blue);
+      color: white;
+      font-weight: bold;
+      border: none;
       cursor: pointer;
     }
 
@@ -68,100 +55,68 @@
       padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
     }
 
     .msg {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
-
-    .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 2px solid var(--ring);
-    }
-
-    .bubble {
       background: var(--card);
-      padding: 12px 14px;
-      border-radius: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
       border: 1px solid var(--ring);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      max-width: 100%;
     }
 
     .meta {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted);
-      font-weight: 600;
+      margin-bottom: 4px;
     }
 
     #form {
       display: flex;
-      padding: 14px;
       gap: 8px;
+      padding: 12px;
       border-top: 1px solid var(--ring);
       background: var(--card);
     }
 
     #form input {
       flex: 1;
-      padding: 10px 14px;
+      padding: 10px;
+      border-radius: 6px;
       border: 1px solid var(--ring);
-      border-radius: 10px;
-      background: var(--bg);
-      color: var(--fg);
     }
 
     #form button {
-      padding: 10px 16px;
-      border: none;
       background: var(--blue);
       color: white;
-      font-weight: bold;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-
-    .theme-toggle {
-      font-size: 18px;
-      cursor: pointer;
-      background: none;
       border: none;
-      color: var(--fg);
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
     }
   </style>
 </head>
-<body data-theme="light">
+<body>
   <header>
     <div class="brand">Froad Community</div>
-    <div style="display:flex; gap:10px; align-items:center">
-      <button id="loginBtn" class="btn">Login</button>
-      <button id="logoutBtn" class="btn" style="display:none">Logout</button>
-      <button class="theme-toggle" id="themeBtn">🌓</button>
-    </div>
+    <button class="btn" id="logoutBtn">Logout</button>
   </header>
 
   <div id="chat"></div>
 
-  <div id="form" style="display:none">
-    <input type="text" id="msgInput" placeholder="Write a message…" />
-    <button id="sendBtn">Send</button>
-  </div>
+  <form id="form" style="display: none;">
+    <input type="text" id="msgInput" placeholder="Write a message..." autocomplete="off" />
+    <button type="submit">Send</button>
+  </form>
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script>
-    const config = {
+    const firebaseConfig = {
       apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
       authDomain: "froad-7d561.firebaseapp.com",
       projectId: "froad-7d561",
@@ -169,90 +124,61 @@
       messagingSenderId: "1086299585443",
       appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
     };
-    firebase.initializeApp(config);
+
+    firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
     const chatDiv = document.getElementById("chat");
-    const form = document.getElementById("form");
     const msgInput = document.getElementById("msgInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const themeBtn = document.getElementById("themeBtn");
-
-    // Theme switcher
-    let theme = localStorage.getItem("froad.theme") || "light";
-    document.body.setAttribute("data-theme", theme);
-    themeBtn.addEventListener("click", () => {
-      theme = theme === "light" ? "dark" : "light";
-      document.body.setAttribute("data-theme", theme);
-      localStorage.setItem("froad.theme", theme);
-    });
-
-    let currentUser = null;
+    const form = document.getElementById("form");
 
     auth.onAuthStateChanged(user => {
-      currentUser = user;
-      if (user) {
-        loginBtn.style.display = "none";
-        logoutBtn.style.display = "inline-block";
+      if (!user) {
+        window.location.href = "froad-login.html";
+      } else {
         form.style.display = "flex";
         loadMessages();
-      } else {
-        loginBtn.style.display = "inline-block";
-        logoutBtn.style.display = "none";
-        form.style.display = "none";
-        chatDiv.innerHTML = '';
       }
     });
 
-    loginBtn.onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(console.error);
+    logoutBtn.onclick = () => {
+      auth.signOut().then(() => {
+        window.location.href = "froad-login.html";
+      });
     };
 
-    logoutBtn.onclick = () => auth.signOut();
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = msgInput.value.trim();
+      if (!text) return;
 
-    sendBtn.onclick = async () => {
-      const txt = msgInput.value.trim();
-      if (!txt) return;
       await db.collection("messages").add({
-        text: txt,
-        uid: currentUser.uid,
-        displayName: currentUser.displayName || "Anonymous",
-        photoURL: currentUser.photoURL || null,
+        text: text,
+        uid: auth.currentUser.uid,
+        displayName: auth.currentUser.displayName || "Anonymous",
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      msgInput.value = '';
-    };
+
+      msgInput.value = "";
+    });
 
     function loadMessages() {
       db.collection("messages")
         .orderBy("createdAt")
         .limit(100)
         .onSnapshot(snapshot => {
-          chatDiv.innerHTML = '';
+          chatDiv.innerHTML = "";
           snapshot.forEach(doc => {
             const msg = doc.data();
-            const msgDiv = document.createElement("div");
-            msgDiv.className = "msg";
-
-            const avatar = document.createElement("img");
-            avatar.className = "avatar";
-            avatar.src = msg.photoURL || "https://www.gravatar.com/avatar?d=mp";
-            avatar.alt = "avatar";
-
-            const bubble = document.createElement("div");
-            bubble.className = "bubble";
-            bubble.innerHTML = `
-              <div class="meta">${msg.displayName || 'Unknown'} · ${msg.createdAt?.toDate().toLocaleString() || ''}</div>
+            const div = document.createElement("div");
+            div.className = "msg";
+            div.innerHTML = `
+              <div class="meta">${msg.displayName || 'Anonymous'} · ${msg.createdAt?.toDate().toLocaleString() || ''}</div>
               <div>${msg.text || ''}</div>
             `;
-
-            msgDiv.appendChild(avatar);
-            msgDiv.appendChild(bubble);
-            chatDiv.appendChild(msgDiv);
+            chatDiv.appendChild(div);
           });
           chatDiv.scrollTop = chatDiv.scrollHeight;
         });
