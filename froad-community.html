@@ -5,35 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>froad. Login</title>
   <style>
-    /* Stejné CSS jako předtím, neupravoval jsem tyto části */
     :root {
       --green: #1f3527;
       --bg: #fff;
       --text: #111;
       --muted: #888;
     }
+
     * { box-sizing: border-box; margin:0; padding:0; }
+
     html, body {
       height:100%;
       font-family: 'Inter', sans-serif;
       background-color: var(--bg);
       color: var(--text);
     }
+
     .login-wrap {
       display: flex;
       height: 100vh;
     }
+
     .left {
-      flex:1;
-      background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center / cover no-repeat;
+      flex: 1;
+      background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center center / cover no-repeat;
       position: relative;
     }
+
     .left::after {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.5));
+      background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6));
     }
+
     .logo {
       position: absolute;
       top: 30px;
@@ -41,135 +46,152 @@
       z-index: 2;
       width: 140px;
     }
+
     .right {
-      flex:1;
-      padding:60px 40px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
+      flex: 1;
+      padding: 60px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       background: #fff;
     }
+
     .form-wrap {
       max-width: 360px;
-      margin:0 auto;
+      margin: 0 auto;
     }
-    h1 { font-size:32px; margin-bottom:10px; }
-    p { font-size:16px; color: var(--muted); margin-bottom:30px; }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 30px;
+    }
+
     input {
       width: 100%;
-      padding:14px;
-      font-size:16px;
-      margin-bottom:16px;
-      border-radius:10px;
-      border:1px solid #ddd;
+      padding: 14px;
+      font-size: 16px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
     }
+
     button {
-      width:100%;
-      padding:14px;
-      font-size:16px;
-      border-radius:10px;
-      border:none;
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: none;
       background: var(--green);
-      color:#fff;
-      cursor:pointer;
-      font-weight:600;
-      margin-top:10px;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 10px;
     }
+
     .or {
-      text-align:center;
-      margin:20px 0;
+      text-align: center;
+      margin: 20px 0;
       color: var(--muted);
     }
+
     .social-login {
-      display:flex;
-      flex-direction:column;
-      gap:10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
+
     .social-login button {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      background:#f3f3f3;
-      color:#000;
-      border:1px solid #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #f3f3f3;
+      color: #000;
+      border: 1px solid #ccc;
     }
+
     .social-login button img {
-      width:18px;
+      width: 18px;
     }
+
     @media (max-width: 768px) {
-      .login-wrap { flex-direction: column; }
-      .left { height: 220px; }
+      .login-wrap {
+        flex-direction: column;
+      }
+
+      .left {
+        height: 220px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="login-wrap">
-    <div class="left">
-      <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8c88227a3da1eb6336_logo-white.PNG" alt="froad logo" class="logo" />
-    </div>
-    <div class="right">
-      <div class="form-wrap">
-        <h1>Welcome back.</h1>
-        <p>Log in and start exploring Iceland’s wild F-roads.</p>
 
-        <input type="email" id="email" placeholder="Email address *">
-        <input type="password" id="password" placeholder="Password *">
-        <button id="emailLoginBtn">Log in</button>
+<div class="login-wrap">
+  <div class="left">
+    <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8c88227a3da1eb6336_logo-white.PNG" alt="froad logo" class="logo" />
+  </div>
 
-        <div class="or">— or —</div>
+  <div class="right">
+    <div class="form-wrap">
+      <h1>Welcome back.</h1>
+      <p>Log in and start exploring Iceland’s wild F-roads.</p>
 
-        <div class="social-login">
-          <button id="googleLoginBtn">
-            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google logo" />
-            Continue with Google
-          </button>
-        </div>
+      <input type="email" id="email" placeholder="Email address *">
+      <input type="password" id="password" placeholder="Password *">
+      <button id="emailLoginBtn">Log in</button>
+
+      <div class="or">— or —</div>
+
+      <div class="social-login">
+        <button id="googleLoginBtn">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google logo" />
+          Continue with Google
+        </button>
       </div>
     </div>
   </div>
+</div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
+    authDomain: "froad-7d561.firebaseapp.com",
+    projectId: "froad-7d561",
+    storageBucket: "froad-7d561.appspot.com",
+    messagingSenderId: "1086299585443",
+    appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
+  };
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
-      authDomain: "froad-7d561.firebaseapp.com",
-      projectId: "froad-7d561",
-      storageBucket: "froad-7d561.appspot.com",
-      messagingSenderId: "1086299585443",
-      appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
-    };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+  // Google login
+  document.getElementById("googleLoginBtn").addEventListener("click", () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+      .then(() => window.location.href = "froad-community.html")
+      .catch(err => alert("Google login failed: " + err.message));
+  });
 
-    document.getElementById("googleLoginBtn").addEventListener("click", () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
-        .then(result => {
-          console.log("Logged in:", result.user);
-          // přesměrování nebo další krok
-        })
-        .catch(error => {
-          console.error("Login error:", error);
-          alert("Login failed: " + error.message);
-        });
-    });
+  // Email login
+  document.getElementById("emailLoginBtn").addEventListener("click", () => {
+    const email = document.getElementById("email").value;
+    const pass = document.getElementById("password").value;
+    auth.signInWithEmailAndPassword(email, pass)
+      .then(() => window.location.href = "froad-community.html")
+      .catch(err => alert("Email login failed: " + err.message));
+  });
+</script>
 
-    document.getElementById("emailLoginBtn").addEventListener("click", () => {
-      const email = document.getElementById("email").value;
-      const pass = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, pass)
-        .then(user => {
-          console.log("Email login:", user.user);
-        })
-        .catch(error => {
-          console.error("Email login error:", error);
-          alert("Email login failed: " + error.message);
-        });
-    });
-  </script>
 </body>
 </html>
