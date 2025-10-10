@@ -12,6 +12,7 @@
       --ring: #e5e7eb;
       --card: #f8f9fa;
       --blue: #2563eb;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     }
 
     [data-theme="dark"] {
@@ -60,6 +61,13 @@
       font-weight: 700;
       border-radius: 12px;
       cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .btn:hover {
+      background: var(--ring);
+      transform: translateY(-1px);
     }
 
     #chat {
@@ -142,7 +150,7 @@
   <header>
     <div class="brand">Froad Community</div>
     <div style="display:flex; gap:10px; align-items:center">
-      <button id="loginBtn" class="btn">Login</button>
+      <button id="loginBtn" class="btn" style="display:none;">Login</button>
       <button id="logoutBtn" class="btn" style="display:none">Logout</button>
       <button class="theme-toggle" id="themeBtn">🌓</button>
     </div>
@@ -153,6 +161,24 @@
   <div id="form" style="display:none">
     <input type="text" id="msgInput" placeholder="Write a message…" />
     <button id="sendBtn">Send</button>
+  </div>
+
+  <!-- Login Overlay -->
+  <div id="loginScreen" style="position: fixed; inset: 0; display: flex; z-index: 9999;">
+    <div style="flex: 1; background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;"></div>
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; background: var(--bg); padding: 40px;">
+      <div style="max-width: 400px; width: 100%; display: flex; flex-direction: column; gap: 24px;">
+        <img id="logoImg" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8cf3bb80acf54b8ce3_logo-black.PNG" alt="Logo" style="width: 160px; height: auto; align-self: center;" />
+        <div style="text-align: center;">
+          <h2 style="color: var(--fg); margin: 0;">Welcome back.</h2>
+          <p style="color: var(--muted); margin: 0;">Log in and start exploring.</p>
+        </div>
+        <button id="loginBtnScreen" class="btn" style="display: flex; gap: 10px; align-items: center; justify-content: center; font-size: 16px;">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 20px; height: 20px;" />
+          Continue with Google
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Firebase SDKs -->
@@ -180,26 +206,49 @@
     const msgInput = document.getElementById("msgInput");
     const sendBtn = document.getElementById("sendBtn");
     const themeBtn = document.getElementById("themeBtn");
+    const loginScreen = document.getElementById("loginScreen");
+    const loginBtnScreen = document.getElementById("loginBtnScreen");
+    const logoImg = document.getElementById("logoImg");
 
     // Theme switcher
     let theme = localStorage.getItem("froad.theme") || "light";
     document.body.setAttribute("data-theme", theme);
+    updateLogoForTheme();
+
     themeBtn.addEventListener("click", () => {
       theme = theme === "light" ? "dark" : "light";
       document.body.setAttribute("data-theme", theme);
       localStorage.setItem("froad.theme", theme);
+      updateLogoForTheme();
     });
+
+    function updateLogoForTheme() {
+      const currentTheme = document.body.getAttribute("data-theme");
+      logoImg.src = currentTheme === "dark"
+        ? "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8c88227a3da1eb6336_logo-white.PNG"
+        : "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8cf3bb80acf54b8ce3_logo-black.PNG";
+    }
+
+    function handleLogin() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(console.error);
+    }
+
+    loginBtn.onclick = handleLogin;
+    loginBtnScreen.onclick = handleLogin;
 
     let currentUser = null;
 
     auth.onAuthStateChanged(user => {
       currentUser = user;
       if (user) {
+        loginScreen.style.display = "none";
         loginBtn.style.display = "none";
         logoutBtn.style.display = "inline-block";
         form.style.display = "flex";
         loadMessages();
       } else {
+        loginScreen.style.display = "flex";
         loginBtn.style.display = "inline-block";
         logoutBtn.style.display = "none";
         form.style.display = "none";
@@ -207,16 +256,11 @@
       }
     });
 
-    loginBtn.onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(console.error);
-    };
-
     logoutBtn.onclick = () => {
-  auth.signOut().then(() => {
-    window.location.href = "froad-login.html";
+      auth.signOut().then(() => {
+        window.location.reload();
       });
-      };
+    };
 
     sendBtn.onclick = async () => {
       const txt = msgInput.value.trim();
