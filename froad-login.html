@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login – froad.</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background-color: #000;
+    }
+
+    .login-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .left {
+      flex: 1;
+      background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center / cover no-repeat;
+      position: relative;
+    }
+
+    .left::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.8));
+    }
+
+    .logo {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      z-index: 2;
+      width: 140px;
+    }
+
+    .right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 40px;
+      background: #fff;
+    }
+
+    .form {
+      max-width: 360px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .google-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #f3f3f3;
+      color: #111;
+      font-weight: 600;
+      padding: 14px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .google-btn:hover {
+      background: #e9e9e9;
+    }
+
+    .google-btn img {
+      width: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .login-container {
+        flex-direction: column;
+      }
+      .left {
+        height: 240px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="left">
+      <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8c88227a3da1eb6336_logo-white.PNG" alt="froad logo" class="logo">
+    </div>
+    <div class="right">
+      <div class="form">
+        <h1>Welcome to froad.</h1>
+        <p>Join the community of Iceland’s off-road explorers.</p>
+        <button class="google-btn" id="loginBtn">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google icon">
+          Continue with Google
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-auth-compat.js"></script>
+  <script>
+    const config = {
+      apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
+      authDomain: "froad-7d561.firebaseapp.com",
+      projectId: "froad-7d561",
+      storageBucket: "froad-7d561.appspot.com",
+      messagingSenderId: "1086299585443",
+      appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
+    };
+    firebase.initializeApp(config);
+    const auth = firebase.auth();
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then(() => {
+          window.location.href = "froad-community.html";
+        })
+        .catch(error => {
+          alert("Login failed: " + error.message);
+        });
+    });
+  </script>
+</body>
+</html>
