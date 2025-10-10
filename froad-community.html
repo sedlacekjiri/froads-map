@@ -3,22 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Froad Community</title>
+  <title>Froad Community + Map</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256‑XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cU="
+    crossorigin=""
+  />
   <style>
     :root {
       --bg: #ffffff;
       --fg: #0b0b0b;
-      --muted: #6b7280;
       --ring: #e5e7eb;
       --card: #f8f9fa;
       --blue: #2563eb;
-      --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     }
-
     * {
       box-sizing: border-box;
     }
-
     html, body {
       margin: 0;
       padding: 0;
@@ -29,7 +31,6 @@
       display: flex;
       flex-direction: column;
     }
-
     header {
       background: var(--card);
       padding: 12px 16px;
@@ -40,18 +41,15 @@
       position: relative;
       z-index: 10;
     }
-
     .logo-header {
       height: 80px;
       object-fit: contain;
     }
-
     .header-right {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-
     .profile-icon {
       width: 36px;
       height: 36px;
@@ -59,17 +57,13 @@
       object-fit: cover;
       border: 2px solid #000;
       background: #fff;
-      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
-      display: block;
+      transition: border-color 0.2s, transform 0.2s;
     }
-
     .profile-icon:hover {
       border-color: #444;
       transform: scale(1.05);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
-
     .profile-icon.fallback {
       display: flex;
       align-items: center;
@@ -78,7 +72,6 @@
       color: #000;
       background: #fff;
     }
-
     #profileEditor {
       position: absolute;
       top: 60px;
@@ -93,11 +86,9 @@
       padding: 16px;
       z-index: 1000;
     }
-
     #profileEditor input[type="file"] {
       margin-bottom: 12px;
     }
-
     #profileEditor input[type="text"] {
       padding: 8px;
       border: 1px solid var(--ring);
@@ -105,21 +96,29 @@
       width: 100%;
       margin-bottom: 12px;
     }
-
     #profileEditor .btn {
       width: 100%;
       padding: 10px;
     }
 
+    /* Kontejnery pro mapu + chat */
+    #mapContainer {
+      flex: 1;
+      position: relative;
+      display: none; /* skryto dokud uživatel nemá přístup / dokud načteme mapu */
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
     #chat {
       flex: 1;
       overflow-y: auto;
       padding: 16px;
-      display: flex;
+      display: none; /* budeme přepínat mezi chat a mapou */
       flex-direction: column;
       gap: 14px;
     }
-
     .msg {
       display: flex;
       gap: 12px;
@@ -144,10 +143,9 @@
     }
     .meta {
       font-size: 13px;
-      color: var(--muted);
+      color: var(--ring);
       font-weight: 600;
     }
-
     #form {
       display: flex;
       padding: 14px;
@@ -173,7 +171,7 @@
       cursor: pointer;
     }
 
-    /* Login / Signup layout */
+    /* Login / Signup */
     #loginScreen {
       position: fixed;
       inset: 0;
@@ -211,7 +209,6 @@
       height: auto;
       margin: 0 auto;
     }
-
     .login-box input {
       padding: 12px 16px;
       font-size: 15px;
@@ -237,15 +234,6 @@
     }
     .login-email-btn:hover {
       background-color: #1a2b1a;
-    }
-    .forgot-password {
-      color: var(--muted);
-      font-size: 14px;
-      text-align: center;
-      text-decoration: none;
-    }
-    .forgot-password:hover {
-      text-decoration: underline;
     }
     .toggle-auth {
       font-size: 14px;
@@ -294,23 +282,15 @@
       height: 18px;
     }
 
+    /* When screen small: mapa může být nad chatem nebo jako samostatná záložka */
     @media (max-width: 1024px) {
+      .login-left {
+        display: none;
+      }
       #loginScreen {
         flex-direction: column;
         background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg')
           center/cover no-repeat;
-      }
-      .login-left {
-        display: none;
-      }
-      .login-right {
-        background: transparent;
-        padding: 32px;
-      }
-      .login-box {
-        background: var(--card);
-        border-radius: 16px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
       }
     }
   </style>
@@ -323,6 +303,10 @@
       <button id="logoutBtn" class="btn" style="display:none">Logout</button>
     </div>
   </header>
+
+  <div id="mapContainer">
+    <div id="map"></div>
+  </div>
 
   <div id="chat"></div>
 
@@ -376,8 +360,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256‑XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cU="
+    crossorigin=""></script>
   <script>
+    // Firebase inicializace
     const config = {
       apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
       authDomain: "froad-7d561.firebaseapp.com",
@@ -400,6 +387,8 @@
     const displayNameInput = document.getElementById("displayNameInput");
     const saveProfileBtn = document.getElementById("saveProfileBtn");
 
+    const mapContainer = document.getElementById("mapContainer");
+    const mapDiv = document.getElementById("map");
     const chatDiv = document.getElementById("chat");
     const form = document.getElementById("form");
     const msgInput = document.getElementById("msgInput");
@@ -408,7 +397,6 @@
     const emailForm = document.getElementById("emailLoginForm");
     const emailInput = document.getElementById("emailInput");
     const passwordInput = document.getElementById("passwordInput");
-
     const signupForm = document.getElementById("signupForm");
     const signupEmail = document.getElementById("signupEmail");
     const signupPassword = document.getElementById("signupPassword");
@@ -431,7 +419,7 @@
       toLogin.style.display = "none";
     });
 
-    // Email login
+    // Login email/password
     emailForm.addEventListener("submit", async e => {
       e.preventDefault();
       const email = emailInput.value.trim();
@@ -443,7 +431,6 @@
       }
     });
 
-    // Sign up
     signupForm.addEventListener("submit", async e => {
       e.preventDefault();
       const email = signupEmail.value.trim();
@@ -455,12 +442,6 @@
       }
     });
 
-    // Google login
-    document.getElementById("loginBtnScreen").onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(console.error);
-    };
-
     logoutBtn.onclick = () => {
       auth.signOut().then(() => {
         window.location.reload();
@@ -468,17 +449,13 @@
     };
 
     profileIcon.addEventListener("click", () => {
-      if (profileEditor.style.display === "none" || profileEditor.style.display === "") {
-        profileEditor.style.display = "flex";
-      } else {
-        profileEditor.style.display = "none";
-      }
+      profileEditor.style.display =
+        profileEditor.style.display === "flex" ? "none" : "flex";
     });
 
     saveProfileBtn.addEventListener("click", async () => {
       const user = auth.currentUser;
       if (!user) return;
-
       const newName = displayNameInput.value.trim();
       let photoURL = user.photoURL;
 
@@ -501,6 +478,18 @@
       alert("Profile saved!");
     });
 
+    // Inicializuj Leaflet mapa (po přihlášení)
+    let map = null;
+    function initMap() {
+      if (!map) {
+        map = L.map(mapDiv).setView([64.1466, -21.9426], 6); // střed na Island
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+          maxZoom: 18
+        }).addTo(map);
+      }
+    }
+
     auth.onAuthStateChanged(async user => {
       if (user) {
         const userDoc = await db.collection("users").doc(user.uid).get();
@@ -510,12 +499,15 @@
           await auth.signOut();
           return;
         }
-
         loginScreen.style.display = "none";
         logoutBtn.style.display = "inline-block";
         form.style.display = "flex";
 
-        // Nastav avatar ikonu
+        // Zobraz chat i mapu
+        chatDiv.style.display = "flex";
+        mapContainer.style.display = "block";
+        initMap();
+
         if (user.photoURL) {
           profileIcon.classList.remove("fallback");
           profileIcon.src = user.photoURL;
@@ -531,6 +523,8 @@
         logoutBtn.style.display = "none";
         profileEditor.style.display = "none";
         loginScreen.style.display = "flex";
+        chatDiv.style.display = "none";
+        mapContainer.style.display = "none";
       }
     });
 
