@@ -3,245 +3,194 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Froad Community</title>
+  <title>froad. Login</title>
   <style>
     :root {
-      --bg: #ffffff;
-      --fg: #0b0b0b;
-      --muted: #6b7280;
-      --ring: #e5e7eb;
-      --card: #f8f9fa;
-      --blue: #2563eb;
-      --blue-dark: #1e40af;
-    }
-    [data-theme="dark"] {
-      --bg: #0c0d12;
-      --fg: #f3f5f7;
-      --muted: #a0a7b5;
-      --ring: #1f2937;
-      --card: #11131a;
+      --green: #1f3527;
+      --bg: #fff;
+      --text: #111;
+      --muted: #888;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      margin: 0;
-      padding: 0;
-      background: var(--bg);
-      color: var(--fg);
-      font-family: system-ui, Inter, sans-serif;
       height: 100%;
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+    }
+
+    .login-wrap {
       display: flex;
-      flex-direction: column;
+      height: 100vh;
     }
 
-    header {
-      background: var(--card);
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--ring);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .brand {
-      font-weight: 900;
-      letter-spacing: .5px;
-      font-size: 16px;
-    }
-
-    .btn {
-      padding: 8px 14px;
-      border: 1px solid var(--ring);
-      background: var(--bg);
-      color: var(--fg);
-      font-weight: 700;
-      border-radius: 12px;
-      cursor: pointer;
-    }
-
-    #chat {
+    .left {
       flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+      background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center center / cover no-repeat;
+      position: relative;
     }
 
-    .msg {
-      background: var(--card);
-      padding: 12px;
-      border: 1px solid var(--ring);
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    .left::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6));
     }
 
-    .meta {
-      font-size: 12px;
+    .logo {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      z-index: 2;
+      width: 140px;
+    }
+
+    .right {
+      flex: 1;
+      padding: 60px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #fff;
+    }
+
+    .form-wrap {
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 30px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      margin-bottom: 16px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: none;
+      background: var(--green);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .or {
+      text-align: center;
+      margin: 20px 0;
       color: var(--muted);
     }
 
-    #form {
+    .social-login {
       display: flex;
-      padding: 14px;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .social-login button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       gap: 8px;
-      border-top: 1px solid var(--ring);
-      background: var(--card);
+      background: #f3f3f3;
+      color: #000;
+      border: 1px solid #ccc;
     }
 
-    #form input {
-      flex: 1;
-      padding: 10px 14px;
-      border: 1px solid var(--ring);
-      border-radius: 10px;
-      background: var(--bg);
-      color: var(--fg);
+    .social-login button img {
+      width: 18px;
     }
 
-    #form button {
-      padding: 10px 16px;
-      border: none;
-      background: var(--blue);
-      color: white;
-      font-weight: bold;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-
-    .theme-toggle {
-      font-size: 18px;
-      cursor: pointer;
-      background: none;
-      border: none;
-      color: var(--fg);
+    @media (max-width: 768px) {
+      .login-wrap {
+        flex-direction: column;
+      }
+      .left {
+        height: 220px;
+      }
     }
   </style>
 </head>
-<body data-theme="light">
-  <header>
-    <div class="brand">Froad Community</div>
-    <div style="display:flex; gap:10px; align-items:center">
-      <button id="loginBtn" class="btn">Login</button>
-      <button id="logoutBtn" class="btn" style="display:none">Logout</button>
-      <button class="theme-toggle" id="themeBtn">🌓</button>
-    </div>
-  </header>
+<body>
 
-  <div id="chat"></div>
-
-  <div id="form" style="display:none">
-    <input type="text" id="msgInput" placeholder="Write a message…" />
-    <button id="sendBtn">Send</button>
+<div class="login-wrap">
+  <div class="left">
+    <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8c88227a3da1eb6336_logo-white.PNG" alt="froad logo" class="logo" />
   </div>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <div class="right">
+    <div class="form-wrap">
+      <h1>Welcome back.</h1>
+      <p>Log in and start exploring Iceland’s wild F-roads.</p>
 
-  <script>
-    const config = {
-      apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
-      authDomain: "froad-7d561.firebaseapp.com",
-      projectId: "froad-7d561",
-      storageBucket: "froad-7d561.appspot.com",
-      messagingSenderId: "1086299585443",
-      appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
-    };
-    firebase.initializeApp(config);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+      <input type="email" id="email" placeholder="Email address *">
+      <input type="password" id="password" placeholder="Password *">
+      <button id="emailLogin">Log in</button>
 
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const chatDiv = document.getElementById("chat");
-    const form = document.getElementById("form");
-    const msgInput = document.getElementById("msgInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const themeBtn = document.getElementById("themeBtn");
+      <div class="or">— or —</div>
 
-    // Theme switcher
-    let theme = localStorage.getItem("froad.theme") || "light";
-    document.body.setAttribute("data-theme", theme);
-    themeBtn.addEventListener("click", () => {
-      theme = theme === "light" ? "dark" : "light";
-      document.body.setAttribute("data-theme", theme);
-      localStorage.setItem("froad.theme", theme);
-    });
+      <div class="social-login">
+        <button id="googleLogin">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google logo" />
+          Continue with Google
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        loginBtn.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-        form.style.display = "flex";
-        loadMessages();
-      } else {
-        loginBtn.style.display = "inline-block";
-        logoutBtn.style.display = "none";
-        form.style.display = "none";
-        chatDiv.innerHTML = '';
-      }
-    });
+<!-- Optional Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-auth-compat.js"></script>
+<script>
+  // Initialize Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
+    authDomain: "froad-7d561.firebaseapp.com",
+    projectId: "froad-7d561",
+    storageBucket: "froad-7d561.appspot.com",
+    messagingSenderId: "1086299585443",
+    appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-    loginBtn.onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(console.error);
-    };
+  // Google login
+  document.getElementById("googleLogin").onclick = () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).then(result => {
+      alert(`Welcome ${result.user.displayName}`);
+    }).catch(console.error);
+  };
 
-    logoutBtn.onclick = () => auth.signOut();
+  // Email login
+  document.getElementById("emailLogin").onclick = () => {
+    const email = document.getElementById("email").value.trim();
+    const pass = document.getElementById("password").value.trim();
+    auth.signInWithEmailAndPassword(email, pass)
+      .then(user => alert(`Welcome ${user.user.email}`))
+      .catch(err => alert(err.message));
+  };
+</script>
 
-    sendBtn.onclick = async () => {
-      const txt = msgInput.value.trim();
-      if (!txt) return;
-      await db.collection("messages").add({
-        text: txt,
-        uid: auth.currentUser.uid,
-        displayName: auth.currentUser.displayName || "Anonymous",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      msgInput.value = '';
-    };
-
-    function loadMessages() {
-  db.collection("messages")
-    .orderBy("createdAt")
-    .limit(100)
-    .onSnapshot(snapshot => {
-      chatDiv.innerHTML = '';
-      snapshot.forEach(doc => {
-        const msg = doc.data();
-        const div = document.createElement("div");
-        div.className = "msg";
-        div.style.display = 'flex';
-        div.style.gap = '10px';
-        div.style.alignItems = 'flex-start';
-
-        const avatar = document.createElement("img");
-        avatar.src = msg.photoURL || "https://via.placeholder.com/40";
-        avatar.alt = msg.displayName || "User";
-        avatar.style.width = "40px";
-        avatar.style.height = "40px";
-        avatar.style.borderRadius = "999px";
-        avatar.style.flexShrink = "0";
-
-        const inner = document.createElement("div");
-        inner.innerHTML = `
-          <div class="meta">${msg.displayName || 'Unknown'} · ${msg.createdAt?.toDate().toLocaleString() || ''}</div>
-          <div>${msg.text || ''}</div>
-        `;
-
-        div.appendChild(avatar);
-        div.appendChild(inner);
-        chatDiv.appendChild(div);
-      });
-      chatDiv.scrollTop = chatDiv.scrollHeight;
-    });
-    }
-  </script>
 </body>
 </html>
