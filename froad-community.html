@@ -15,18 +15,9 @@
       --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     }
 
-    [data-theme="dark"] {
-      --bg: #0c0d12;
-      --fg: #f3f5f7;
-      --muted: #a0a7b5;
-      --ring: #1f2937;
-      --card: #191c24;
-    }
-
     * {
       box-sizing: border-box;
     }
-
     html, body {
       margin: 0;
       padding: 0;
@@ -37,7 +28,6 @@
       display: flex;
       flex-direction: column;
     }
-
     header {
       background: var(--card);
       padding: 12px 16px;
@@ -46,13 +36,11 @@
       justify-content: space-between;
       align-items: center;
     }
-
     .brand {
       font-weight: 900;
       letter-spacing: .5px;
       font-size: 16px;
     }
-
     .btn {
       padding: 8px 14px;
       border: 1px solid var(--ring);
@@ -64,12 +52,10 @@
       box-shadow: var(--shadow);
       transition: background 0.3s, transform 0.2s;
     }
-
     .btn:hover {
       background: var(--ring);
       transform: translateY(-1px);
     }
-
     #chat {
       flex: 1;
       overflow-y: auto;
@@ -78,13 +64,11 @@
       flex-direction: column;
       gap: 14px;
     }
-
     .msg {
       display: flex;
       gap: 12px;
       align-items: flex-start;
     }
-
     .avatar {
       width: 40px;
       height: 40px;
@@ -92,7 +76,6 @@
       object-fit: cover;
       border: 2px solid var(--ring);
     }
-
     .bubble {
       background: var(--card);
       padding: 12px 14px;
@@ -103,13 +86,11 @@
       gap: 4px;
       max-width: 100%;
     }
-
     .meta {
       font-size: 13px;
       color: var(--muted);
       font-weight: 600;
     }
-
     #form {
       display: flex;
       padding: 14px;
@@ -117,7 +98,6 @@
       border-top: 1px solid var(--ring);
       background: var(--card);
     }
-
     #form input {
       flex: 1;
       padding: 10px 14px;
@@ -126,7 +106,6 @@
       background: var(--bg);
       color: var(--fg);
     }
-
     #form button {
       padding: 10px 16px;
       border: none;
@@ -136,16 +115,7 @@
       border-radius: 10px;
       cursor: pointer;
     }
-
-    .theme-toggle {
-      font-size: 18px;
-      cursor: pointer;
-      background: none;
-      border: none;
-      color: var(--fg);
-    }
-
-    /* Login layout */
+    /* Login / Signup layout */
     #loginScreen {
       position: fixed;
       inset: 0;
@@ -153,12 +123,10 @@
       z-index: 9999;
       flex-direction: row;
     }
-
     .login-left {
       flex: 1;
       background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;
     }
-
     .login-right {
       flex: 1;
       display: flex;
@@ -167,7 +135,6 @@
       background: var(--bg);
       padding: 40px;
     }
-
     .login-box {
       max-width: 400px;
       width: 100%;
@@ -180,13 +147,11 @@
       gap: 24px;
       text-align: center;
     }
-
     .login-box img {
       width: 140px;
       height: auto;
       margin: 0 auto;
     }
-
     .login-box input {
       padding: 12px 16px;
       font-size: 15px;
@@ -196,11 +161,9 @@
       color: var(--fg);
       outline: none;
     }
-
     .login-box input:focus {
       border-color: var(--blue);
     }
-
     .login-email-btn {
       padding: 12px 20px;
       background-color: #121d12;
@@ -212,24 +175,32 @@
       cursor: pointer;
       transition: background 0.2s ease;
     }
-
     .login-email-btn:hover {
       background-color: #1a2b1a;
     }
-
     .forgot-password {
       color: var(--muted);
       font-size: 14px;
       text-align: center;
       text-decoration: none;
-      margin-top: -8px;
-      margin-bottom: 12px;
     }
-
     .forgot-password:hover {
       text-decoration: underline;
     }
-
+    .toggle-auth {
+      font-size: 14px;
+      text-align: center;
+      margin-top: 4px;
+    }
+    .toggle-auth a {
+      color: var(--blue);
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .toggle-auth a:hover {
+      text-decoration: underline;
+    }
     .google-signin-btn {
       display: flex;
       align-items: center;
@@ -247,11 +218,9 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       transition: background 0.2s ease;
     }
-
     .google-signin-btn:hover {
       background-color: #357ae8;
     }
-
     .google-icon-wrapper {
       background: white;
       border-radius: 50%;
@@ -260,36 +229,27 @@
       align-items: center;
       justify-content: center;
     }
-
     .google-icon-wrapper img {
       width: 18px;
       height: 18px;
     }
 
-    /* Responsive for mobile */
     @media (max-width: 1024px) {
       #loginScreen {
         flex-direction: column;
         background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;
       }
-
       .login-left {
         display: none;
       }
-
       .login-right {
         background: transparent;
         padding: 32px;
       }
-
       .login-box {
         background: var(--card);
         border-radius: 16px;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-      }
-
-      [data-theme="dark"] .login-box {
-        background: #1c1c1c;
       }
     }
   </style>
@@ -300,18 +260,16 @@
     <div style="display:flex; gap:10px; align-items:center">
       <button id="loginBtn" class="btn" style="display:none;">Login</button>
       <button id="logoutBtn" class="btn" style="display:none">Logout</button>
-      <button class="theme-toggle" id="themeBtn">🌓</button>
+      <!-- přepínač stylu odstraněn -->
     </div>
   </header>
 
   <div id="chat"></div>
-
   <div id="form" style="display:none">
     <input type="text" id="msgInput" placeholder="Write a message…" />
     <button id="sendBtn">Send</button>
   </div>
 
-  <!-- Login UI -->
   <div id="loginScreen">
     <div class="login-left"></div>
     <div class="login-right">
@@ -326,7 +284,14 @@
           <button type="submit" class="btn login-email-btn">Log in</button>
         </form>
 
-        <a href="#" class="forgot-password">Forgot your password?</a>
+        <form id="signupForm" style="display: none; flex-direction: column; gap: 14px;">
+          <input type="email" id="signupEmail" placeholder="Email address *" required />
+          <input type="password" id="signupPassword" placeholder="Password *" required />
+          <button type="submit" class="btn login-email-btn">Create account</button>
+        </form>
+
+        <p class="toggle-auth" id="toSignup">Don't have an account? <a href="#">Sign up</a></p>
+        <p class="toggle-auth" id="toLogin" style="display: none;">Already have an account? <a href="#">Log in</a></p>
 
         <button id="loginBtnScreen" class="google-signin-btn">
           <span class="google-icon-wrapper">
@@ -338,7 +303,6 @@
     </div>
   </div>
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -361,7 +325,6 @@
     const logoutBtn = document.getElementById("logoutBtn");
     const loginBtnScreen = document.getElementById("loginBtnScreen");
     const logoImg = document.getElementById("logoImg");
-    const themeBtn = document.getElementById("themeBtn");
     const chatDiv = document.getElementById("chat");
     const form = document.getElementById("form");
     const msgInput = document.getElementById("msgInput");
@@ -371,6 +334,29 @@
     const emailInput = document.getElementById("emailInput");
     const passwordInput = document.getElementById("passwordInput");
 
+    const signupForm = document.getElementById("signupForm");
+    const signupEmail = document.getElementById("signupEmail");
+    const signupPassword = document.getElementById("signupPassword");
+    const toSignup = document.getElementById("toSignup");
+    const toLogin = document.getElementById("toLogin");
+
+    // Přepínání login / signup
+    toSignup.querySelector("a").addEventListener("click", e => {
+      e.preventDefault();
+      emailForm.style.display = "none";
+      signupForm.style.display = "flex";
+      toSignup.style.display = "none";
+      toLogin.style.display = "block";
+    });
+    toLogin.querySelector("a").addEventListener("click", e => {
+      e.preventDefault();
+      emailForm.style.display = "flex";
+      signupForm.style.display = "none";
+      toSignup.style.display = "block";
+      toLogin.style.display = "none";
+    });
+
+    // Email login
     emailForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = emailInput.value.trim();
@@ -382,11 +368,22 @@
       }
     });
 
+    // Signup
+    signupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = signupEmail.value.trim();
+      const password = signupPassword.value.trim();
+      try {
+        await auth.createUserWithEmailAndPassword(email, password);
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
     loginBtnScreen.onclick = () => {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider).catch(console.error);
     };
-
     loginBtn.onclick = loginBtnScreen.onclick;
 
     logoutBtn.onclick = () => {
@@ -395,16 +392,22 @@
       });
     };
 
-    let currentUser = null;
-
-    auth.onAuthStateChanged(user => {
-      currentUser = user;
+    auth.onAuthStateChanged(async (user) => {
       if (user) {
-        loginScreen.style.display = "none";
-        loginBtn.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-        form.style.display = "flex";
-        loadMessages();
+        // Zkontroluj přístup
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        const hasAccess = userDoc.exists && userDoc.data().access === true;
+
+        if (hasAccess) {
+          loginScreen.style.display = "none";
+          loginBtn.style.display = "none";
+          logoutBtn.style.display = "inline-block";
+          form.style.display = "flex";
+          loadMessages();
+        } else {
+          alert("Your account does not have access yet. Please wait for approval.");
+          await auth.signOut();
+        }
       } else {
         chatDiv.innerHTML = '';
         form.style.display = "none";
@@ -419,9 +422,9 @@
       if (!txt) return;
       await db.collection("messages").add({
         text: txt,
-        uid: currentUser.uid,
-        displayName: currentUser.displayName || "Anonymous",
-        photoURL: currentUser.photoURL || null,
+        uid: auth.currentUser.uid,
+        displayName: auth.currentUser.displayName || "Anonymous",
+        photoURL: auth.currentUser.photoURL || null,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       msgInput.value = '';
@@ -456,25 +459,6 @@
           });
           chatDiv.scrollTop = chatDiv.scrollHeight;
         });
-    }
-
-    // Theme switch
-    let theme = localStorage.getItem("froad.theme") || "light";
-    document.body.setAttribute("data-theme", theme);
-    updateLogoForTheme();
-
-    themeBtn.addEventListener("click", () => {
-      theme = theme === "light" ? "dark" : "light";
-      document.body.setAttribute("data-theme", theme);
-      localStorage.setItem("froad.theme", theme);
-      updateLogoForTheme();
-    });
-
-    function updateLogoForTheme() {
-      const currentTheme = document.body.getAttribute("data-theme");
-      logoImg.src = currentTheme === "dark"
-        ? "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8c88227a3da1eb6336_logo-white.PNG"
-        : "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8cf3bb80acf54b8ce3_logo-black.PNG";
     }
   </script>
 </body>
