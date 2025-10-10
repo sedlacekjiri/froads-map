@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Froad Community + Map</title>
+  <title>Froad Community + Live Map</title>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -42,7 +42,7 @@
       z-index: 10;
     }
     .logo-header {
-      height: 80px;
+      height: 60px;
       object-fit: contain;
     }
     .header-right {
@@ -100,12 +100,10 @@
       width: 100%;
       padding: 10px;
     }
-
-    /* Kontejnery pro mapu + chat */
     #mapContainer {
       flex: 1;
       position: relative;
-      display: none; /* skryto dokud uživatel nemá přístup / dokud načteme mapu */
+      display: none;
     }
     #map {
       width: 100%;
@@ -115,7 +113,7 @@
       flex: 1;
       overflow-y: auto;
       padding: 16px;
-      display: none; /* budeme přepínat mezi chat a mapou */
+      display: none;
       flex-direction: column;
       gap: 14px;
     }
@@ -170,8 +168,6 @@
       border-radius: 10px;
       cursor: pointer;
     }
-
-    /* Login / Signup */
     #loginScreen {
       position: fixed;
       inset: 0;
@@ -282,7 +278,6 @@
       height: 18px;
     }
 
-    /* When screen small: mapa může být nad chatem nebo jako samostatná záložka */
     @media (max-width: 1024px) {
       .login-left {
         display: none;
@@ -299,7 +294,7 @@
   <header>
     <img class="logo-header" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8cf3bb80acf54b8ce3_logo-black.PNG" alt="Logo" />
     <div class="header-right">
-      <div id="profileIcon" class="profile-icon fallback">U</div>
+      <img id="profileIcon" class="profile-icon fallback" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e956576523671093377344_account.png" alt="Profile" />
       <button id="logoutBtn" class="btn" style="display:none">Logout</button>
     </div>
   </header>
@@ -309,7 +304,6 @@
   </div>
 
   <div id="chat"></div>
-
   <div id="form" style="display:none">
     <input type="text" id="msgInput" placeholder="Write a message…" />
     <button id="sendBtn">Send</button>
@@ -330,22 +324,18 @@
         <img id="logoImg" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8cf3bb80acf54b8ce3_logo-black.PNG" alt="Logo" />
         <h2>Welcome back</h2>
         <p>Log in and start exploring</p>
-
         <form id="emailLoginForm" style="display: flex; flex-direction: column; gap: 14px;">
           <input type="email" id="emailInput" placeholder="Email address *" required />
           <input type="password" id="passwordInput" placeholder="Password *" required />
           <button type="submit" class="btn login-email-btn">Log in</button>
         </form>
-
         <form id="signupForm" style="display: none; flex-direction: column; gap: 14px;">
           <input type="email" id="signupEmail" placeholder="Email address *" required />
           <input type="password" id="signupPassword" placeholder="Password *" required />
           <button type="submit" class="btn login-email-btn">Create account</button>
         </form>
-
         <p class="toggle-auth" id="toSignup">Don't have an account? <a href="#">Sign up</a></p>
         <p class="toggle-auth" id="toLogin" style="display: none;">Already have an account? <a href="#">Log in</a></p>
-
         <button id="loginBtnScreen" class="google-signin-btn">
           <span class="google-icon-wrapper">
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" />
@@ -364,7 +354,6 @@
     integrity="sha256‑XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cU="
     crossorigin=""></script>
   <script>
-    // Firebase inicializace
     const config = {
       apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
       authDomain: "froad-7d561.firebaseapp.com",
@@ -403,7 +392,6 @@
     const toSignup = document.getElementById("toSignup");
     const toLogin = document.getElementById("toLogin");
 
-    // Přepínání login / signup
     toSignup.querySelector("a").addEventListener("click", e => {
       e.preventDefault();
       emailForm.style.display = "none";
@@ -419,7 +407,6 @@
       toLogin.style.display = "none";
     });
 
-    // Login email/password
     emailForm.addEventListener("submit", async e => {
       e.preventDefault();
       const email = emailInput.value.trim();
@@ -478,11 +465,12 @@
       alert("Profile saved!");
     });
 
-    // Inicializuj Leaflet mapa (po přihlášení)
     let map = null;
+    const liveMarkers = {};
+
     function initMap() {
       if (!map) {
-        map = L.map(mapDiv).setView([64.1466, -21.9426], 6); // střed na Island
+        map = L.map(mapDiv).setView([64.1466, -21.9426], 6);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap contributors',
           maxZoom: 18
@@ -503,7 +491,6 @@
         logoutBtn.style.display = "inline-block";
         form.style.display = "flex";
 
-        // Zobraz chat i mapu
         chatDiv.style.display = "flex";
         mapContainer.style.display = "block";
         initMap();
@@ -516,7 +503,58 @@
           profileIcon.textContent = (user.displayName || "U")[0].toUpperCase();
         }
 
+        // Listen for live locations
+        db.collection("liveLocations").onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(change => {
+            const uid = change.doc.id;
+            const data = change.doc.data();
+            if ((change.type === "added" || change.type === "modified") && data.isLive) {
+              const lat = data.lat;
+              const lng = data.lng;
+              if (!liveMarkers[uid]) {
+                const m = L.marker([lat, lng], {
+                  icon: L.icon({
+                    iconUrl: data.photoURL || "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e956576523671093377344_account.png",
+                    iconSize: [40, 40],
+                    className: 'live-user-marker'
+                  })
+                }).addTo(map);
+                m.bindPopup(data.displayName || "");
+                liveMarkers[uid] = m;
+              } else {
+                liveMarkers[uid].setLatLng([lat, lng]);
+              }
+            } else {
+              // pokud už není live nebo byl odstraněn
+              if (liveMarkers[uid]) {
+                map.removeLayer(liveMarkers[uid]);
+                delete liveMarkers[uid];
+              }
+            }
+          });
+        });
+
         loadMessages();
+
+        // Přidej tlačítko Go Live
+        let goLiveBtn = document.getElementById("goLiveBtn");
+        if (!goLiveBtn) {
+          goLiveBtn = document.createElement("button");
+          goLiveBtn.id = "goLiveBtn";
+          goLiveBtn.className = "btn";
+          goLiveBtn.textContent = "Go Live";
+          document.querySelector("header .header-right").appendChild(goLiveBtn);
+
+          goLiveBtn.onclick = () => {
+            if (liveWatchId === null) {
+              startLive();
+              goLiveBtn.textContent = "Stop Live";
+            } else {
+              stopLive();
+              goLiveBtn.textContent = "Go Live";
+            }
+          };
+        }
       } else {
         chatDiv.innerHTML = "";
         form.style.display = "none";
@@ -527,6 +565,46 @@
         mapContainer.style.display = "none";
       }
     });
+
+    let liveWatchId = null;
+
+    async function startLive() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const userDocRef = db.collection("liveLocations").doc(user.uid);
+      await userDocRef.set({
+        displayName: user.displayName || "",
+        photoURL: user.photoURL || "",
+        isLive: true,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      liveWatchId = navigator.geolocation.watchPosition(async pos => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        await userDocRef.set({
+          lat, lng,
+          lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      }, err => {
+        console.error("Geolocation error:", err);
+      }, {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 10000
+      });
+    }
+
+    async function stopLive() {
+      const user = auth.currentUser;
+      if (!user) return;
+      if (liveWatchId !== null) {
+        navigator.geolocation.clearWatch(liveWatchId);
+        liveWatchId = null;
+      }
+      await db.collection("liveLocations").doc(user.uid).set({
+        isLive: false
+      }, { merge: true });
+    }
 
     sendBtn.onclick = async () => {
       const txt = msgInput.value.trim();
