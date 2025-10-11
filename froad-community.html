@@ -157,6 +157,7 @@
       border-top: 1px solid var(--ring);
       background: var(--card);
     }
+
     #form input {
       flex: 1;
       padding: 10px 14px;
@@ -237,6 +238,7 @@
     .login-email-btn:hover {
       background-color: #1a2b1a;
     }
+    
     .toggle-auth {
       font-size: 14px;
       text-align: center;
@@ -333,6 +335,14 @@
         <form id="emailLoginForm" style="display: flex; flex-direction: column; gap: 14px;">
           <input type="email" id="emailInput" placeholder="Email address *" required />
           <input type="password" id="passwordInput" placeholder="Password *" required />
+          <a 
+  href="#" 
+  id="forgotPasswordLink" 
+  style="font-size:14px; color:#303030; text-decoration:underline; align-self:flex-start;"
+>
+  Forgot password?
+</a>
+
           <button type="submit" class="btn login-email-btn">Log in</button>
         </form>
         <form id="signupForm" style="display: none; flex-direction: column; gap: 14px;">
@@ -440,6 +450,29 @@ toLogin.querySelector("a").addEventListener("click", e => {
       }
     });
 
+    // Forgot password
+document.getElementById("forgotPasswordLink").addEventListener("click", async (e) => {
+  e.preventDefault();
+  const email = emailInput.value.trim();
+  const errorEl = document.getElementById("loginError");
+
+  if (!email) {
+    errorEl.textContent = "Please enter your email first.";
+    return;
+  }
+
+  try {
+    await auth.sendPasswordResetEmail(email);
+    errorEl.style.color = "green";
+    errorEl.textContent = "Password reset link has been sent to your email.";
+  } catch (err) {
+    console.error("Password reset error:", err);
+    errorEl.style.color = "red";
+    errorEl.textContent = "Couldn't send reset link. Please check your email.";
+  }
+});
+
+
     // Signup
     signupForm.addEventListener("submit", async e => {
   e.preventDefault();
@@ -452,7 +485,7 @@ toLogin.querySelector("a").addEventListener("click", e => {
     showAccessDeniedModal(); // zobraz modal po registraci
     await auth.signOut();    // automaticky odhlásí
   } catch (err) {
-    errorEl.textContent = "Registration failed. Try another email.";
+    errorEl.textContent = "Looks like you already have an account! Try logging in.";
   }
 });
 
@@ -557,26 +590,6 @@ toLogin.querySelector("a").addEventListener("click", e => {
       });
     }
 
-    function setupGoLiveButton() {
-      let goLiveBtn = document.getElementById("goLiveBtn");
-      if (!goLiveBtn) {
-        goLiveBtn = document.createElement("button");
-        goLiveBtn.id = "goLiveBtn";
-        goLiveBtn.className = "btn";
-        goLiveBtn.textContent = "Go Live";
-        document.querySelector("header .header-right").appendChild(goLiveBtn);
-
-        goLiveBtn.onclick = () => {
-          if (liveWatchId === null) {
-            startLive();
-            goLiveBtn.textContent = "Stop Live";
-          } else {
-            stopLive();
-            goLiveBtn.textContent = "Go Live";
-          }
-        };
-      }
-    }
 
     async function startLive() {
       const user = auth.currentUser;
