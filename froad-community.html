@@ -460,8 +460,14 @@
 document.getElementById("loginBtnScreen").addEventListener("click", async () => {
   const provider = new firebase.auth.GoogleAuthProvider();
   const errorEl = document.getElementById("loginError");
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
   try {
-    await auth.signInWithPopup(provider);
+    if (isSafari) {
+      await auth.signInWithRedirect(provider);
+    } else {
+      await auth.signInWithPopup(provider);
+    }
     errorEl.textContent = "";
   } catch (err) {
     console.error("Google login error:", err);
@@ -469,14 +475,13 @@ document.getElementById("loginBtnScreen").addEventListener("click", async () => 
   }
 });
 
-    document.getElementById("loginBtnScreen").addEventListener("click", async () => {
-  const provider = new firebase.auth.GoogleAuthProvider();
-  try {
-    await auth.signInWithPopup(provider);
-  } catch (err) {
-    console.error("Google login error:", err);
-    alert("Google login failed. Check your Firebase setup.");
+// Zpracování redirect loginu pro Safari
+auth.getRedirectResult().then(result => {
+  if (result.user) {
+    console.log("Přihlášen přes redirect:", result.user);
   }
+}).catch(err => {
+  console.error("Redirect login error:", err);
 });
 
     logoutBtn.onclick = () => {
