@@ -516,29 +516,36 @@
 document.getElementById("loginBtnScreen").addEventListener("click", async () => {
   const provider = new firebase.auth.GoogleAuthProvider();
   const errorEl = document.getElementById("loginError");
+
+  // Detekce Safari i mobilních prohlížečů
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
   try {
-    if (isSafari) {
+    if (isSafari || isMobile) {
+      // ✅ Mobilní zařízení i Safari → redirect
       await auth.signInWithRedirect(provider);
     } else {
+      // ✅ Desktop → popup
       await auth.signInWithPopup(provider);
     }
     errorEl.textContent = "";
   } catch (err) {
     console.error("Google login error:", err);
-    errorEl.textContent = "Google login failed. Check your Firebase setup.";
+    errorEl.textContent = "Google login failed. Please try again.";
   }
 });
 
-// Zpracování redirect loginu pro Safari
-auth.getRedirectResult().then(result => {
-  if (result.user) {
-    console.log("Přihlášen přes redirect:", result.user);
-  }
-}).catch(err => {
-  console.error("Redirect login error:", err);
-});
+// ✅ Zpracování redirect loginu po návratu z Google účtu
+auth.getRedirectResult()
+  .then(result => {
+    if (result.user) {
+      console.log("Přihlášen přes redirect:", result.user);
+    }
+  })
+  .catch(err => {
+    console.error("Redirect login error:", err);
+  });
 
     logoutBtn.onclick = () => {
       auth.signOut().then(() => {
