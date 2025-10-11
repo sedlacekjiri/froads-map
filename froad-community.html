@@ -54,7 +54,6 @@
       height: 36px;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid #000;
       background: #fff;
       cursor: pointer;
       transition: border-color 0.2s, transform 0.2s;
@@ -360,6 +359,7 @@
   </div>
 
   <div id="chatCategories">
+  <button class="cat-btn active" data-cat="general">💬 General</button>
   <button class="cat-btn" data-cat="routes">🗺️ Routes & Trips</button>
   <button class="cat-btn" data-cat="gear">🚙 Vehicle & Gear</button>
   <button class="cat-btn" data-cat="weather">❄️ Weather & Conditions</button>
@@ -597,7 +597,7 @@ auth.getRedirectResult().then(result => {
         document.getElementById("accessDeniedModal").style.display = "none";
         }
 
-    let currentCategory = "routes"; // výchozí kategorie
+    let currentCategory = "general"; // výchozí kategorie
 
     auth.onAuthStateChanged(async user => {
       if (user) {
