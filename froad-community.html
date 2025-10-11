@@ -16,8 +16,7 @@
     }
     * { box-sizing: border-box; }
     html, body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       background: var(--bg);
       color: var(--fg);
       font-family: 'Poppins', system-ui, Inter, sans-serif;
@@ -242,8 +241,8 @@
     }
     .legal-text {
       font-size: 13px;
-      color: var(--muted);
-      line-height: 1.6;
+      color: var(--fg);
+      line-height: 1.4;
       margin-top: 10px;
     }
     .legal-text a {
@@ -251,61 +250,31 @@
       text-decoration: underline;
       font-weight: 500;
     }
-    .google-signin-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      background-color: #4285F4;
-      color: white;
-      font-weight: 500;
-      font-size: 16px;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 999px;
-      cursor: pointer;
-      width: 100%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      transition: background 0.2s ease;
-    }
-    .google-signin-btn:hover {
-      background-color: #357ae8;
-    }
-    .google-icon-wrapper {
-      background: white;
-      border-radius: 50%;
-      padding: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .google-icon-wrapper img {
-      width: 18px;
-      height: 18px;
-    }
+
     @media (max-width: 1024px) {
-      #loginScreen {
-        flex-direction: column;
-        background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;
-      }
-      .login-left {
-        display: none;
-      }
-      .login-right {
-        background: rgba(255, 255, 255, 0);
-        padding: 32px;
-        width: 100%;
-        height: auto;
-      }
-      .login-box {
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-      }
-    }
+  #loginScreen {
+    flex-direction: column;
+    background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;
+  }
+  .login-left {
+    display: none;
+  }
+  .login-right {
+    background: rgba(255, 255, 255, 0); /* poloprůhledné pozadí boxu */
+    padding: 32px;
+    width: 100%;
+    height: auto;
+  }
+  .login-box {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  }
+}
+
   </style>
 </head>
-<body data-theme="light">
+<body>
   <header>
     <img class="logo-header" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ea50150761950e794dd2bb_logo-black.png" alt="Logo" />
     <div class="header-right">
@@ -359,15 +328,11 @@
           <input type="password" id="signupPassword" placeholder="Password *" required />
           <button type="submit" class="btn login-email-btn">Create account</button>
         </form>
+
         <p id="loginError" style="color: red; font-size: 14px; margin: 0;"></p>
         <p class="toggle-auth" id="toSignup">Don't have an account? <a href="#">Sign up</a></p>
         <p class="toggle-auth" id="toLogin" style="display: none;">Already have an account? <a href="#">Log in</a></p>
-        <button id="loginBtnScreen" class="google-signin-btn">
-          <span class="google-icon-wrapper">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" />
-          </span>
-          <span>Continue with Google</span>
-        </button>
+
         <p class="legal-text">
           By continuing to use Froad, you agree to our
           <a href="/terms" target="_blank">Terms of Service</a> and
@@ -397,7 +362,7 @@
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    // DOM elements
+    // DOM references
     const loginScreen = document.getElementById("loginScreen");
     const logoutBtn = document.getElementById("logoutBtn");
     const profileIcon = document.getElementById("profileIcon");
@@ -427,7 +392,7 @@
     const liveMarkers = {};
     let liveWatchId = null;
 
-    // Toggle login / signup forms
+    // Toggle login <-> signup UI
     toSignup.querySelector("a").addEventListener("click", e => {
       e.preventDefault();
       emailForm.style.display = "none";
@@ -453,7 +418,8 @@
         await auth.signInWithEmailAndPassword(email, password);
         errorEl.textContent = "";
       } catch (err) {
-        errorEl.textContent = "Login failed. Please check your email and password.";
+        console.error("Login error:", err);
+        errorEl.textContent = "Login failed. Check credentials.";
       }
     });
 
@@ -467,74 +433,45 @@
         await auth.createUserWithEmailAndPassword(email, password);
         errorEl.textContent = "";
       } catch (err) {
+        console.error("Signup error:", err);
         errorEl.textContent = "Registration failed. Try another email.";
       }
     });
 
-    // Google login (popup or redirect for Safari)
-    document.getElementById("loginBtnScreen").addEventListener("click", async () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      const errorEl = document.getElementById("loginError");
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      try {
-        if (isSafari) {
-          await auth.signInWithRedirect(provider);
-        } else {
-          await auth.signInWithPopup(provider);
-        }
-        errorEl.textContent = "";
-      } catch (err) {
-        console.error("Google login error:", err);
-        errorEl.textContent = "Google login failed. Check your Firebase setup.";
-      }
-    });
-
-    // Process redirect result (for Safari / mobile Google login)
-    firebase.auth().getRedirectResult().then(async (result) => {
-      if (result.user) {
-        console.log("Redirect login OK:", result.user);
-        await postLogin(result.user);
-      }
-    }).catch(err => {
-      console.error("Redirect login error:", err);
-    });
-
-    // Auth state listener
+    // Auth listener
     auth.onAuthStateChanged(async user => {
-      if (user) {
-        await postLogin(user);
-      } else {
-        showLoginScreen();
+      if (!user) {
+        // Not logged in
+        loginScreen.style.display = "flex";
+        formEl.style.display = "none";
+        chatDiv.style.display = "none";
+        mapContainer.style.display = "none";
+        logoutBtn.style.display = "none";
+        return;
       }
-    });
 
-    function showLoginScreen() {
-      chatDiv.innerHTML = "";
-      formEl.style.display = "none";
-      logoutBtn.style.display = "none";
-      profileEditor.style.display = "none";
-      loginScreen.style.display = "flex";
-      chatDiv.style.display = "none";
-      mapContainer.style.display = "none";
-    }
-
-    async function postLogin(user) {
-      // Check access
-      const userDoc = await db.collection("users").doc(user.uid).get();
-      const hasAccess = userDoc.exists && userDoc.data().access === true;
-      if (!hasAccess) {
+      // Logged in
+      const userRef = db.collection("users").doc(user.uid);
+      const doc = await userRef.get();
+      if (!doc.exists) {
+        await userRef.set({
+          displayName: user.displayName || "",
+          photoURL: user.photoURL || "",
+          access: true
+        });
+      }
+      const userDoc = await userRef.get();
+      if (!userDoc.data().access) {
         showAccessDeniedModal();
         await auth.signOut();
         return;
       }
 
-      // Show UI
       loginScreen.style.display = "none";
-      logoutBtn.style.display = "inline-block";
+      mapContainer.style.display = "block";
       formEl.style.display = "flex";
       chatDiv.style.display = "flex";
-      mapContainer.style.display = "block";
-      initMap();
+      logoutBtn.style.display = "inline-block";
 
       if (user.photoURL) {
         profileIcon.classList.remove("fallback");
@@ -544,7 +481,34 @@
         profileIcon.textContent = (user.displayName || "U")[0].toUpperCase();
       }
 
-      // Live locations listener
+      initMap();
+      setupLiveLocations();
+      loadMessages();
+      setupGoLiveButton();
+    });
+
+    logoutBtn.onclick = () => {
+      auth.signOut();
+    };
+
+    function showAccessDeniedModal() {
+      document.getElementById("accessDeniedModal").style.display = "flex";
+    }
+    function closeAccessModal() {
+      document.getElementById("accessDeniedModal").style.display = "none";
+    }
+
+    function initMap() {
+      if (!map) {
+        map = L.map(mapDiv).setView([64.1466, -21.9426], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+          maxZoom: 18
+        }).addTo(map);
+      }
+    }
+
+    function setupLiveLocations() {
       db.collection("liveLocations").onSnapshot(snapshot => {
         snapshot.docChanges().forEach(change => {
           const uid = change.doc.id;
@@ -555,8 +519,8 @@
             if (!liveMarkers[uid]) {
               const m = L.marker([lat, lng], {
                 icon: L.icon({
-                  iconUrl: data.photoURL || "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e956576523671093377344_account.png",
-                  iconSize: [40, 40],
+                  iconUrl: data.photoURL || "",
+                  iconSize: [40,40],
                   className: 'live-user-marker'
                 })
               }).addTo(map);
@@ -573,10 +537,9 @@
           }
         });
       });
+    }
 
-      loadMessages();
-
-      // Add “Go Live” button if not exists
+    function setupGoLiveButton() {
       let goLiveBtn = document.getElementById("goLiveBtn");
       if (!goLiveBtn) {
         goLiveBtn = document.createElement("button");
@@ -595,59 +558,6 @@
           }
         };
       }
-    }
-
-    logoutBtn.onclick = () => {
-      auth.signOut().then(() => {
-        window.location.reload();
-      });
-    };
-
-    profileIcon.addEventListener("click", () => {
-      profileEditor.style.display =
-        profileEditor.style.display === "flex" ? "none" : "flex";
-    });
-
-    saveProfileBtn.addEventListener("click", async () => {
-      const user = auth.currentUser;
-      if (!user) return;
-      const newName = displayNameInput.value.trim();
-      let photoURL = user.photoURL;
-
-      if (avatarInput.files[0]) {
-        const file = avatarInput.files[0];
-        const avatarRef = storage.ref(`avatars/${user.uid}/${file.name}`);
-        await avatarRef.put(file);
-        photoURL = await avatarRef.getDownloadURL();
-      }
-
-      await user.updateProfile({ displayName: newName, photoURL });
-      await db.collection("users").doc(user.uid).set({
-        displayName: newName,
-        photoURL
-      }, { merge: true });
-
-      profileEditor.style.display = "none";
-      profileIcon.classList.remove("fallback");
-      profileIcon.src = photoURL || profileIcon.src;
-      alert("Profile saved!");
-    });
-
-    function initMap() {
-      if (!map) {
-        map = L.map(mapDiv).setView([64.1466, -21.9426], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors',
-          maxZoom: 18
-        }).addTo(map);
-      }
-    }
-
-    function showAccessDeniedModal() {
-      document.getElementById("accessDeniedModal").style.display = "flex";
-    }
-    function closeAccessModal() {
-      document.getElementById("accessDeniedModal").style.display = "none";
     }
 
     async function startLive() {
@@ -731,6 +641,10 @@
           });
           chatDiv.scrollTop = chatDiv.scrollHeight;
         });
+    }
+
+    function closeAccessModal() {
+      document.getElementById("accessDeniedModal").style.display = "none";
     }
 
   </script>
