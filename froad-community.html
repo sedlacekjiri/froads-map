@@ -54,6 +54,7 @@
       height: 36px;
       border-radius: 50%;
       object-fit: cover;
+      border: 2px solid #000;
       background: #fff;
       cursor: pointer;
       transition: border-color 0.2s, transform 0.2s;
@@ -359,7 +360,6 @@
   </div>
 
   <div id="chatCategories">
-  <button class="cat-btn active" data-cat="general">💬 General</button>
   <button class="cat-btn" data-cat="routes">🗺️ Routes & Trips</button>
   <button class="cat-btn" data-cat="gear">🚙 Vehicle & Gear</button>
   <button class="cat-btn" data-cat="weather">❄️ Weather & Conditions</button>
@@ -442,21 +442,52 @@
       messagingSenderId: "1086299585443",
       appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
     };
-    // === 🔥 Firebase Inicializace ===
-firebase.initializeApp(config);
+    firebase.initializeApp(config);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
 
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage();
+    const loginScreen = document.getElementById("loginScreen");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const profileIcon = document.getElementById("profileIcon");
+    const profileEditor = document.getElementById("profileEditor");
+    const currentAvatar = document.getElementById("currentAvatar");
+    const avatarInput = document.getElementById("avatarInput");
+    const displayNameInput = document.getElementById("displayNameInput");
+    const saveProfileBtn = document.getElementById("saveProfileBtn");
 
-// Nastavení perzistence (až po inicializaci auth)
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-  .then(() => console.log("Auth persistence set to LOCAL"))
-  .catch(err => console.error("Persistence error:", err));
+    const mapContainer = document.getElementById("mapContainer");
+    const mapDiv = document.getElementById("map");
+    const chatDiv = document.getElementById("chat");
+    const form = document.getElementById("form");
+    const msgInput = document.getElementById("msgInput");
+    const sendBtn = document.getElementById("sendBtn");
 
+    const emailForm = document.getElementById("emailLoginForm");
+    const emailInput = document.getElementById("emailInput");
+    const passwordInput = document.getElementById("passwordInput");
+    const signupForm = document.getElementById("signupForm");
+    const signupEmail = document.getElementById("signupEmail");
+    const signupPassword = document.getElementById("signupPassword");
+    const toSignup = document.getElementById("toSignup");
+    const toLogin = document.getElementById("toLogin");
 
-// === 📧 Login přes email a heslo ===
-emailForm.addEventListener("submit", async e => {
+    toSignup.querySelector("a").addEventListener("click", e => {
+      e.preventDefault();
+      emailForm.style.display = "none";
+      signupForm.style.display = "flex";
+      toSignup.style.display = "none";
+      toLogin.style.display = "block";
+    });
+    toLogin.querySelector("a").addEventListener("click", e => {
+      e.preventDefault();
+      emailForm.style.display = "flex";
+      signupForm.style.display = "none";
+      toSignup.style.display = "block";
+      toLogin.style.display = "none";
+    });
+
+    emailForm.addEventListener("submit", async e => {
   e.preventDefault();
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
@@ -465,12 +496,11 @@ emailForm.addEventListener("submit", async e => {
     await auth.signInWithEmailAndPassword(email, password);
     errorEl.textContent = "";
   } catch (err) {
-    console.error("Email login error:", err);
     errorEl.textContent = "Login failed. Please check your email and password.";
   }
 });
 
-signupForm.addEventListener("submit", async e => {
+    signupForm.addEventListener("submit", async e => {
   e.preventDefault();
   const email = signupEmail.value.trim();
   const password = signupPassword.value.trim();
@@ -479,25 +509,17 @@ signupForm.addEventListener("submit", async e => {
     await auth.createUserWithEmailAndPassword(email, password);
     errorEl.textContent = "";
   } catch (err) {
-    console.error("Signup error:", err);
     errorEl.textContent = "Registration failed. Try another email.";
   }
 });
 
-
-// === 🔑 Google login ===
 document.getElementById("loginBtnScreen").addEventListener("click", async () => {
   const provider = new firebase.auth.GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-
   const errorEl = document.getElementById("loginError");
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua);
-  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
-  const useRedirect = isIOS || isSafari;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   try {
-    if (useRedirect) {
+    if (isSafari) {
       await auth.signInWithRedirect(provider);
     } else {
       await auth.signInWithPopup(provider);
@@ -505,24 +527,18 @@ document.getElementById("loginBtnScreen").addEventListener("click", async () => 
     errorEl.textContent = "";
   } catch (err) {
     console.error("Google login error:", err);
-    errorEl.textContent = "Google login failed. Please try again.";
+    errorEl.textContent = "Google login failed. Check your Firebase setup.";
   }
 });
 
-
-// === 🔁 Výsledek redirect loginu ===
-auth.getRedirectResult()
-  .then(result => {
-    if (result.user) {
-      console.log("Redirect success:", result.user.email);
-      loginScreen.style.display = "none";
-      mapContainer.style.display = "block";
-    }
-  })
-  .catch(err => {
-    console.error("Redirect login error:", err);
-  });
-
+// Zpracování redirect loginu pro Safari
+auth.getRedirectResult().then(result => {
+  if (result.user) {
+    console.log("Přihlášen přes redirect:", result.user);
+  }
+}).catch(err => {
+  console.error("Redirect login error:", err);
+});
 
     logoutBtn.onclick = () => {
       auth.signOut().then(() => {
@@ -581,7 +597,7 @@ auth.getRedirectResult()
         document.getElementById("accessDeniedModal").style.display = "none";
         }
 
-    let currentCategory = "general"; // výchozí kategorie
+    let currentCategory = "routes"; // defaultní sekce
 
     auth.onAuthStateChanged(async user => {
       if (user) {
@@ -724,34 +740,31 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
 
 
     sendBtn.onclick = async () => {
-  const txt = msgInput.value.trim();
-  if (!txt) return;
-  const user = auth.currentUser;
-
-  await db.collection("messages").add({
-    text: txt,
-    uid: user.uid,
-    displayName: user.displayName || "Anonymous",
-    photoURL: user.photoURL || null,
-    category: currentCategory,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-
-  msgInput.value = "";
-};
+      const txt = msgInput.value.trim();
+      if (!txt) return;
+      const user = auth.currentUser;
+      await db.collection("messages").add({
+        text: txt,
+        uid: user.uid,
+        displayName: user.displayName || "Anonymous",
+        photoURL: user.photoURL || null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      msgInput.value = "";
+    };
 
     function loadMessages() {
   chatDiv.innerHTML = "";
 
+  // ✅ Načti aktuálně zvolenou kategorii (např. "routes", "gear", atd.)
   db.collection("messages")
+    .where("category", "==", currentCategory) // ← nová podmínka
     .orderBy("createdAt")
-    .limit(200)
+    .limit(100)
     .onSnapshot(snapshot => {
       chatDiv.innerHTML = "";
       snapshot.forEach(doc => {
         const msg = doc.data();
-        // ✅ Filtruj podle aktuální kategorie ručně
-        if (msg.category !== currentCategory) return;
 
         const msgDiv = document.createElement("div");
         msgDiv.className = "msg";
