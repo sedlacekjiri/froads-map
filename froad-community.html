@@ -277,15 +277,28 @@
     }
 
     @media (max-width: 1024px) {
-      .login-left {
-        display: none;
-      }
-      #loginScreen {
-        flex-direction: column;
-        background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg')
-          center/cover no-repeat;
-      }
-    }
+  #loginScreen {
+    flex-direction: column;
+    background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;
+  }
+
+  .login-left {
+    display: none;
+  }
+
+  .login-right {
+    background: rgba(255, 255, 255, 0); /* světlé pozadí pro kontrast */
+    padding: 32px;
+    width: 100%;
+    height: auto;
+  }
+
+  .login-box {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  }
+}
   </style>
 </head>
 <body data-theme="light">
