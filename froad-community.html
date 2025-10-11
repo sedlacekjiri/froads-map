@@ -317,7 +317,7 @@
     <div class="login-right">
       <div class="login-box">
         <img id="logoImg" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ea50150761950e794dd2bb_logo-black.png" alt="Logo" />
-        <h2>Log In</h2>
+        <h2 id="authTitle">Log in</h2>
         <form id="emailLoginForm" style="display: flex; flex-direction: column; gap: 14px;">
           <input type="email" id="emailInput" placeholder="Email address *" required />
           <input type="password" id="passwordInput" placeholder="Password *" required />
@@ -392,21 +392,26 @@
     const liveMarkers = {};
     let liveWatchId = null;
 
-    // Toggle login <-> signup UI
-    toSignup.querySelector("a").addEventListener("click", e => {
-      e.preventDefault();
-      emailForm.style.display = "none";
-      signupForm.style.display = "flex";
-      toSignup.style.display = "none";
-      toLogin.style.display = "block";
-    });
-    toLogin.querySelector("a").addEventListener("click", e => {
-      e.preventDefault();
-      emailForm.style.display = "flex";
-      signupForm.style.display = "none";
-      toSignup.style.display = "block";
-      toLogin.style.display = "none";
-    });
+    const authTitle = document.getElementById("authTitle");
+
+// Toggle login / signup forms
+toSignup.querySelector("a").addEventListener("click", e => {
+  e.preventDefault();
+  emailForm.style.display = "none";
+  signupForm.style.display = "flex";
+  toSignup.style.display = "none";
+  toLogin.style.display = "block";
+  authTitle.textContent = "Sign Up";
+});
+
+toLogin.querySelector("a").addEventListener("click", e => {
+  e.preventDefault();
+  emailForm.style.display = "flex";
+  signupForm.style.display = "none";
+  toSignup.style.display = "block";
+  toLogin.style.display = "none";
+  authTitle.textContent = "Log In";
+});
 
     // Email login
     emailForm.addEventListener("submit", async e => {
@@ -419,24 +424,25 @@
         errorEl.textContent = "";
       } catch (err) {
         console.error("Login error:", err);
-        errorEl.textContent = "Login failed. Check credentials.";
+        errorEl.textContent = "Incorrect email or password. Try again.";
       }
     });
 
     // Signup
     signupForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const email = signupEmail.value.trim();
-      const password = signupPassword.value.trim();
-      const errorEl = document.getElementById("loginError");
-      try {
-        await auth.createUserWithEmailAndPassword(email, password);
-        errorEl.textContent = "";
-      } catch (err) {
-        console.error("Signup error:", err);
-        errorEl.textContent = "Registration failed. Try another email.";
-      }
-    });
+  e.preventDefault();
+  const email = signupEmail.value.trim();
+  const password = signupPassword.value.trim();
+  const errorEl = document.getElementById("loginError");
+  try {
+    await auth.createUserWithEmailAndPassword(email, password);
+    errorEl.textContent = "";
+    showAccessDeniedModal(); // zobraz modal po registraci
+    await auth.signOut();    // automaticky odhlásí
+  } catch (err) {
+    errorEl.textContent = "Registration failed. Try another email.";
+  }
+});
 
     // Auth listener
     auth.onAuthStateChanged(async user => {
@@ -457,7 +463,7 @@
         await userRef.set({
           displayName: user.displayName || "",
           photoURL: user.photoURL || "",
-          access: true
+          access: false
         });
       }
       const userDoc = await userRef.get();
