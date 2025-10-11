@@ -759,15 +759,15 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
     function loadMessages() {
   chatDiv.innerHTML = "";
 
-  // ✅ Načti aktuálně zvolenou kategorii (např. "routes", "gear", atd.)
   db.collection("messages")
-    .where("category", "==", currentCategory) // ← nová podmínka
     .orderBy("createdAt")
-    .limit(100)
+    .limit(200)
     .onSnapshot(snapshot => {
       chatDiv.innerHTML = "";
       snapshot.forEach(doc => {
         const msg = doc.data();
+        // ✅ Filtruj podle aktuální kategorie ručně
+        if (msg.category !== currentCategory) return;
 
         const msgDiv = document.createElement("div");
         msgDiv.className = "msg";
