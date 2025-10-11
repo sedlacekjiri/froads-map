@@ -199,7 +199,7 @@
       text-align: center;
     }
     .login-box img {
-      width: 140px;
+      width: 60px;
       height: auto;
       margin: 0 auto;
     }
@@ -290,7 +290,7 @@
 </head>
 <body data-theme="light">
   <header>
-    <img class="logo-header" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8cf3bb80acf54b8ce3_logo-black.PNG" alt="Logo" />
+    <img class="logo-header" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ea50150761950e794dd2bb_logo-black.png" alt="Logo" />
     <div class="header-right">
       <img id="profileIcon" class="profile-icon fallback" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e956576523671093377344_account.png" alt="Profile" />
       <button id="logoutBtn" class="btn" style="display:none">Logout</button>
@@ -319,7 +319,7 @@
     <div class="login-left"></div>
     <div class="login-right">
       <div class="login-box">
-        <img id="logoImg" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e92b8cf3bb80acf54b8ce3_logo-black.PNG" alt="Logo" />
+        <img id="logoImg" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ea50150761950e794dd2bb_logo-black.png" alt="Logo" />
         <h2>Welcome back</h2>
         <p>Log in and start exploring</p>
         <form id="emailLoginForm" style="display: flex; flex-direction: column; gap: 14px;">
@@ -424,6 +424,16 @@
         alert(err.message);
       }
     });
+
+    document.getElementById("loginBtnScreen").addEventListener("click", async () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    await auth.signInWithPopup(provider);
+  } catch (err) {
+    console.error("Google login error:", err);
+    alert("Google login failed. Check your Firebase setup.");
+  }
+});
 
     logoutBtn.onclick = () => {
       auth.signOut().then(() => {
