@@ -498,14 +498,6 @@ document.getElementById("loginBtnScreen").addEventListener("click", async () => 
   }
 });
 
-// Zpracování redirect loginu pro Safari
-auth.getRedirectResult().then(result => {
-  if (result.user) {
-    console.log("Přihlášen přes redirect:", result.user);
-  }
-}).catch(err => {
-  console.error("Redirect login error:", err);
-});
 
     logoutBtn.onclick = () => {
       auth.signOut().then(() => {
