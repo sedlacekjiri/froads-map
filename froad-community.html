@@ -108,6 +108,31 @@
       width: 100%;
       height: 100%;
     }
+
+    #chatCategories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ring);
+    background: var(--card);
+    }
+
+    .cat-btn {
+    background: white;
+    border: 1px solid var(--ring);
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+    }
+
+    .cat-btn.active {
+    background: black;
+    color: white;
+    }
+
     #chat {
       flex: 1;
       overflow-y: auto;
@@ -129,8 +154,8 @@
       border: 2px solid var(--ring);
     }
     .bubble {
-    background: #000;
-    color: #fff;
+    background: #ffffff;
+    color: #191919;
     padding: 12px 14px;
     border-radius: 12px;
     border: none;
@@ -333,6 +358,13 @@
   <div id="mapContainer">
     <div id="map"></div>
   </div>
+
+  <div id="chatCategories">
+  <button class="cat-btn" data-cat="routes">🗺️ Routes & Trips</button>
+  <button class="cat-btn" data-cat="gear">🚙 Vehicle & Gear</button>
+  <button class="cat-btn" data-cat="weather">❄️ Weather & Conditions</button>
+  <button class="cat-btn" data-cat="stories">📸 Photos & Stories</button>
+</div>
 
   <div id="chat"></div>
   <div id="form" style="display:none">
@@ -565,6 +597,8 @@ auth.getRedirectResult().then(result => {
         document.getElementById("accessDeniedModal").style.display = "none";
         }
 
+    let currentCategory = "routes"; // defaultní sekce
+
     auth.onAuthStateChanged(async user => {
       if (user) {
         const userDoc = await db.collection("users").doc(user.uid).get();
@@ -694,6 +728,17 @@ auth.getRedirectResult().then(result => {
       }, { merge: true });
     }
 
+
+document.querySelectorAll(".cat-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentCategory = btn.dataset.cat;
+    loadMessages();
+  });
+});
+
+
     sendBtn.onclick = async () => {
       const txt = msgInput.value.trim();
       if (!txt) return;
@@ -709,35 +754,41 @@ auth.getRedirectResult().then(result => {
     };
 
     function loadMessages() {
-      db.collection("messages")
-        .orderBy("createdAt")
-        .limit(100)
-        .onSnapshot(snapshot => {
-          chatDiv.innerHTML = "";
-          snapshot.forEach(doc => {
-            const msg = doc.data();
-            const msgDiv = document.createElement("div");
-            msgDiv.className = "msg";
+  chatDiv.innerHTML = "";
 
-            const avatar = document.createElement("img");
-            avatar.className = "avatar";
-            avatar.src = msg.photoURL || "https://www.gravatar.com/avatar?d=mp";
-            avatar.alt = "avatar";
+  // ✅ Načti aktuálně zvolenou kategorii (např. "routes", "gear", atd.)
+  db.collection("messages")
+    .where("category", "==", currentCategory) // ← nová podmínka
+    .orderBy("createdAt")
+    .limit(100)
+    .onSnapshot(snapshot => {
+      chatDiv.innerHTML = "";
+      snapshot.forEach(doc => {
+        const msg = doc.data();
 
-            const bubble = document.createElement("div");
-            bubble.className = "bubble";
-            bubble.innerHTML = `
-              <div class="meta">${msg.displayName || 'Unknown'} · ${msg.createdAt?.toDate().toLocaleString() || ''}</div>
-              <div>${msg.text || ''}</div>
-            `;
+        const msgDiv = document.createElement("div");
+        msgDiv.className = "msg";
 
-            msgDiv.appendChild(avatar);
-            msgDiv.appendChild(bubble);
-            chatDiv.appendChild(msgDiv);
-          });
-          chatDiv.scrollTop = chatDiv.scrollHeight;
-        });
-    }
+        const avatar = document.createElement("img");
+        avatar.className = "avatar";
+        avatar.src = msg.photoURL || "https://www.gravatar.com/avatar?d=mp";
+        avatar.alt = "avatar";
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.innerHTML = `
+          <div class="meta">${msg.displayName || 'Unknown'} · ${msg.createdAt?.toDate().toLocaleString() || ''}</div>
+          <div>${msg.text || ''}</div>
+        `;
+
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+        chatDiv.appendChild(msgDiv);
+      });
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    });
+}
+
   </script>
 </body>
 </html>
