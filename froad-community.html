@@ -315,6 +315,20 @@
     <button id="saveProfileBtn" class="btn">Save</button>
   </div>
 
+  <div id="accessDeniedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center;">
+  <div style="background:white; padding:32px; border-radius:12px; max-width:360px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+    <h2 style="margin-top:0; font-size:22px;">Access pending</h2>
+    <p style="color:#555; font-size:16px; line-height:1.4;">
+      Děkujeme za registraci!<br/>Momentálně nemáte přístup.<br/>
+      Počkejte prosím, než vám manuálně schválíme přístup.
+    </p>
+    <button onclick="closeAccessModal()" style="margin-top:20px; padding:10px 20px; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+      OK
+    </button>
+  </div>
+</div>
+
+
   <div id="loginScreen">
     <div class="login-left"></div>
     <div class="login-right">
@@ -489,10 +503,19 @@
         const userDoc = await db.collection("users").doc(user.uid).get();
         const hasAccess = userDoc.exists && userDoc.data().access === true;
         if (!hasAccess) {
-          alert("Your account does not have access yet.");
-          await auth.signOut();
-          return;
+            showAccessDeniedModal();
+            await auth.signOut();
+            return;
         }
+
+        function showAccessDeniedModal() {
+        document.getElementById("accessDeniedModal").style.display = "flex";
+        }
+
+        function closeAccessModal() {
+        document.getElementById("accessDeniedModal").style.display = "none";
+        }
+
         loginScreen.style.display = "none";
         logoutBtn.style.display = "inline-block";
         form.style.display = "flex";
