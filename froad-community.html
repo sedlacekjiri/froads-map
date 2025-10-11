@@ -528,6 +528,14 @@ document.getElementById("loginBtnScreen").addEventListener("click", async () => 
       }
     }
 
+     function showAccessDeniedModal() {
+        document.getElementById("accessDeniedModal").style.display = "flex";
+        }
+
+        function closeAccessModal() {
+        document.getElementById("accessDeniedModal").style.display = "none";
+        }
+
     auth.onAuthStateChanged(async user => {
       if (user) {
         const userDoc = await db.collection("users").doc(user.uid).get();
@@ -536,14 +544,6 @@ document.getElementById("loginBtnScreen").addEventListener("click", async () => 
             showAccessDeniedModal();
             await auth.signOut();
             return;
-        }
-
-        function showAccessDeniedModal() {
-        document.getElementById("accessDeniedModal").style.display = "flex";
-        }
-
-        function closeAccessModal() {
-        document.getElementById("accessDeniedModal").style.display = "none";
         }
 
         loginScreen.style.display = "none";
