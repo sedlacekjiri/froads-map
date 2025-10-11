@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <title>Froad Community + Live Map</title>
   <link
   rel="stylesheet"
@@ -24,7 +25,7 @@
       padding: 0;
       background: var(--bg);
       color: var(--fg);
-      font-family: system-ui, Inter, sans-serif;
+      font-family: 'Poppins', system-ui, Inter, sans-serif;
       height: 100%;
       display: flex;
       flex-direction: column;
@@ -220,7 +221,7 @@
       background-color: #121d12;
       color: white;
       font-size: 16px;
-      font-weight: bold;
+      font-weight: 500;
       border: none;
       border-radius: 999px;
       cursor: pointer;
@@ -243,6 +244,21 @@
     .toggle-auth a:hover {
       text-decoration: underline;
     }
+
+    .legal-text {
+     font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+     margin-top: 10px;
+    }
+
+    .legal-text a {
+     color: var(--fg);
+     text-decoration: underline;
+     font-weight: 500;
+    }
+
+    
     .google-signin-btn {
       display: flex;
       align-items: center;
@@ -250,7 +266,7 @@
       gap: 12px;
       background-color: #4285F4;
       color: white;
-      font-weight: 600;
+      font-weight: 500;
       font-size: 16px;
       padding: 12px 24px;
       border: none;
@@ -298,6 +314,8 @@
     border-radius: 16px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   }
+
+
 }
   </style>
 </head>
@@ -347,8 +365,7 @@
     <div class="login-right">
       <div class="login-box">
         <img id="logoImg" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ea50150761950e794dd2bb_logo-black.png" alt="Logo" />
-        <h2>Welcome back</h2>
-        <p>Log in and start exploring</p>
+        <h2>Log In</h2>
         <form id="emailLoginForm" style="display: flex; flex-direction: column; gap: 14px;">
           <input type="email" id="emailInput" placeholder="Email address *" required />
           <input type="password" id="passwordInput" placeholder="Password *" required />
@@ -368,6 +385,11 @@
           </span>
           <span>Continue with Google</span>
         </button>
+        <p class="legal-text">
+  By continuing to use Froad, you agree to our
+  <a href="/terms" target="_blank">Terms of Service</a> and
+  <a href="/privacy" target="_blank">Privacy Policy</a>.
+</p>
       </div>
     </div>
   </div>
