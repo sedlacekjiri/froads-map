@@ -332,8 +332,8 @@
   <div style="background:white; padding:32px; border-radius:12px; max-width:360px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
     <h2 style="margin-top:0; font-size:22px;">Access pending</h2>
     <p style="color:#555; font-size:16px; line-height:1.4;">
-      Děkujeme za registraci!<br/>Momentálně nemáte přístup.<br/>
-      Počkejte prosím, než vám manuálně schválíme přístup.
+      <br>Your account has been created, but access is pending.<br/>
+      You'll receive an email once you're approved.
     </p>
     <button onclick="closeAccessModal()" style="margin-top:20px; padding:10px 20px; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer;">
       OK
@@ -359,6 +359,7 @@
           <input type="password" id="signupPassword" placeholder="Password *" required />
           <button type="submit" class="btn login-email-btn">Create account</button>
         </form>
+        <p id="loginError" style="color: red; font-size: 14px; margin: 0;"></p>
         <p class="toggle-auth" id="toSignup">Don't have an account? <a href="#">Sign up</a></p>
         <p class="toggle-auth" id="toLogin" style="display: none;">Already have an account? <a href="#">Log in</a></p>
         <button id="loginBtnScreen" class="google-signin-btn">
@@ -431,26 +432,42 @@
     });
 
     emailForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-      try {
-        await auth.signInWithEmailAndPassword(email, password);
-      } catch (err) {
-        alert(err.message);
-      }
-    });
+  e.preventDefault();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  const errorEl = document.getElementById("loginError");
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    errorEl.textContent = "";
+  } catch (err) {
+    errorEl.textContent = "Login failed. Please check your email and password.";
+  }
+});
 
     signupForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const email = signupEmail.value.trim();
-      const password = signupPassword.value.trim();
-      try {
-        await auth.createUserWithEmailAndPassword(email, password);
-      } catch (err) {
-        alert(err.message);
-      }
-    });
+  e.preventDefault();
+  const email = signupEmail.value.trim();
+  const password = signupPassword.value.trim();
+  const errorEl = document.getElementById("loginError");
+  try {
+    await auth.createUserWithEmailAndPassword(email, password);
+    errorEl.textContent = "";
+  } catch (err) {
+    errorEl.textContent = "Registration failed. Try another email.";
+  }
+});
+
+document.getElementById("loginBtnScreen").addEventListener("click", async () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  const errorEl = document.getElementById("loginError");
+  try {
+    await auth.signInWithPopup(provider);
+    errorEl.textContent = "";
+  } catch (err) {
+    console.error("Google login error:", err);
+    errorEl.textContent = "Google login failed. Check your Firebase setup.";
+  }
+});
 
     document.getElementById("loginBtnScreen").addEventListener("click", async () => {
   const provider = new firebase.auth.GoogleAuthProvider();
