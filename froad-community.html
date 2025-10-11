@@ -43,6 +43,7 @@
       align-items: center;
       gap: 12px;
     }
+    
     .profile-icon {
       width: 36px;
       height: 36px;
@@ -101,6 +102,17 @@
       width: 100%;
       height: 100%;
     }
+
+    #goLiveBtn {
+  padding: 10px 16px;
+  background-color: green;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
     #chat {
       flex: 1;
       overflow-y: auto;
@@ -578,18 +590,31 @@ toLogin.querySelector("a").addEventListener("click", e => {
       }, { merge: true });
 
       liveWatchId = navigator.geolocation.watchPosition(async pos => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        await userDocRef.set({
-          lat, lng,
-          lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-      }, err => {
-        console.error("Geolocation error:", err);
-      }, {
-        enableHighAccuracy: true,
-        maximumAge: 10000,
-        timeout: 10000
-      });
+  if (!pos.coords) {
+    console.warn("No coords returned from geolocation.");
+    return;
+  }
+
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
+
+  try {
+    await userDocRef.set({
+      lat,
+      lng,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch (err) {
+    console.error("Failed to update live location:", err);
+  }
+
+}, err => {
+  console.error("Geolocation error:", err);
+}, {
+  enableHighAccuracy: true,
+  maximumAge: 10000,
+  timeout: 10000
+});
     }
 
     async function stopLive() {
@@ -617,6 +642,29 @@ toLogin.querySelector("a").addEventListener("click", e => {
       });
       msgInput.value = "";
     };
+
+    function setupGoLiveButton() {
+  console.log("Setting up Go Live button...");
+  let goLiveBtn = document.getElementById("goLiveBtn");
+  if (!goLiveBtn) {
+    goLiveBtn = document.createElement("button");
+    goLiveBtn.id = "goLiveBtn";
+    goLiveBtn.className = "btn";
+    goLiveBtn.textContent = "Go Live";
+    document.querySelector("header .header-right").appendChild(goLiveBtn);
+
+    goLiveBtn.onclick = () => {
+      if (liveWatchId === null) {
+        startLive();
+        goLiveBtn.textContent = "Stop Live";
+      } else {
+        stopLive();
+        goLiveBtn.textContent = "Go Live";
+      }
+    };
+  }
+}
+
 
     function loadMessages() {
       db.collection("messages")
