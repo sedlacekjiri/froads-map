@@ -443,6 +443,9 @@
       appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
     };
     firebase.initializeApp(config);
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+  .then(() => console.log("Auth persistence set to LOCAL"))
+  .catch(console.error);
     const auth = firebase.auth();
     const db = firebase.firestore();
     const storage = firebase.storage();
@@ -515,6 +518,13 @@
 
 document.getElementById("loginBtnScreen").addEventListener("click", async () => {
   const provider = new firebase.auth.GoogleAuthProvider();
+
+  // 💡 DŮLEŽITÉ – přidej parametry, které opravují redirect flow
+  provider.setCustomParameters({
+    prompt: 'select_account',
+    redirect_uri: window.location.origin
+  });
+
   const errorEl = document.getElementById("loginError");
 
   const ua = navigator.userAgent;
@@ -537,11 +547,14 @@ document.getElementById("loginBtnScreen").addEventListener("click", async () => 
   }
 });
 
+
 // ✅ Zpracování redirect loginu po návratu z Google účtu
 auth.getRedirectResult()
   .then(result => {
     if (result.user) {
-      console.log("Přihlášen přes redirect:", result.user);
+      console.log("Redirect success:", result.user);
+      loginScreen.style.display = "none";
+      mapContainer.style.display = "block";
     }
   })
   .catch(err => {
