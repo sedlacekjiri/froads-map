@@ -517,16 +517,17 @@ document.getElementById("loginBtnScreen").addEventListener("click", async () => 
   const provider = new firebase.auth.GoogleAuthProvider();
   const errorEl = document.getElementById("loginError");
 
-  // Detekce Safari i mobilních prohlížečů
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  const useRedirect = isIOS || isSafari;
 
   try {
-    if (isSafari || isMobile) {
-      // ✅ Mobilní zařízení i Safari → redirect
+    if (useRedirect) {
+      // ✅ iOS Safari nebo vestavěné prohlížeče → redirect
       await auth.signInWithRedirect(provider);
     } else {
-      // ✅ Desktop → popup
+      // ✅ Vše ostatní (včetně mobilního Chrome) → popup
       await auth.signInWithPopup(provider);
     }
     errorEl.textContent = "";
