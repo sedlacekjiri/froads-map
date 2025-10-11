@@ -597,7 +597,7 @@ auth.getRedirectResult().then(result => {
         document.getElementById("accessDeniedModal").style.display = "none";
         }
 
-    let currentCategory = "routes"; // defaultní sekce
+    let currentCategory = "routes"; // výchozí kategorie
 
     auth.onAuthStateChanged(async user => {
       if (user) {
@@ -740,18 +740,21 @@ document.querySelectorAll(".cat-btn").forEach(btn => {
 
 
     sendBtn.onclick = async () => {
-      const txt = msgInput.value.trim();
-      if (!txt) return;
-      const user = auth.currentUser;
-      await db.collection("messages").add({
-        text: txt,
-        uid: user.uid,
-        displayName: user.displayName || "Anonymous",
-        photoURL: user.photoURL || null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      msgInput.value = "";
-    };
+  const txt = msgInput.value.trim();
+  if (!txt) return;
+  const user = auth.currentUser;
+
+  await db.collection("messages").add({
+    text: txt,
+    uid: user.uid,
+    displayName: user.displayName || "Anonymous",
+    photoURL: user.photoURL || null,
+    category: currentCategory,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  msgInput.value = "";
+};
 
     function loadMessages() {
   chatDiv.innerHTML = "";
