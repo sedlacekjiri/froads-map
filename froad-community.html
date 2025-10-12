@@ -690,35 +690,62 @@ auth.onAuthStateChanged(async user => {
     }
 
     function setupLiveLocations() {
-      db.collection("liveLocations").onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-          const uid = change.doc.id;
-          const data = change.doc.data();
-          if ((change.type === "added" || change.type === "modified") && data.isLive) {
-            const lat = data.lat;
-            const lng = data.lng;
-            if (!liveMarkers[uid]) {
-              const m = L.marker([lat, lng], {
-                icon: L.icon({
-                  iconUrl: data.photoURL || "https://www.gravatar.com/avatar?d=mp",
-                  iconSize: [40,40],
-                  className: 'live-user-marker'
-                })
-              }).addTo(map);
-              m.bindPopup(data.displayName || "");
-              liveMarkers[uid] = m;
-            } else {
-              liveMarkers[uid].setLatLng([lat, lng]);
-            }
-          } else {
-            if (liveMarkers[uid]) {
-              map.removeLayer(liveMarkers[uid]);
-              delete liveMarkers[uid];
-            }
-          }
+  db.collection("liveLocations").onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      const uid = change.doc.id;
+      const data = change.doc.data();
+
+      // === Pokud marker existuje, ale už není live ===
+      if ((change.type === "modified" && data && data.isLive === false) || change.type === "removed") {
+        if (liveMarkers[uid]) {
+          map.removeLayer(liveMarkers[uid]);
+          delete liveMarkers[uid];
+        }
+        return; // ukončí se pro tento dokument
+      }
+
+      // === Přidání nebo update aktivních markerů ===
+      if ((change.type === "added" || change.type === "modified") && data.isLive) {
+        const lat = data.lat;
+        const lng = data.lng;
+        const avatarUrl = data.photoURL || "https://www.gravatar.com/avatar?d=mp";
+
+        const icon = L.icon({
+          iconUrl: avatarUrl,
+          iconSize: [44, 44],
+          iconAnchor: [22, 44],
+          popupAnchor: [0, -46],
+          className: "user-icon"
         });
-      });
-    }
+
+        const gpsText =
+          typeof lat === "number" && typeof lng === "number"
+            ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+            : "No GPS data";
+
+        const popupHTML = `
+          <div class="popup-content">
+            <strong>${data.displayName || "Unknown User"}</strong>
+            <div class="gps">📍 ${gpsText}</div>
+            <div class="vehicle">🚙 ${data.vehicle || "No vehicle info"}</div>
+          </div>
+        `;
+
+        if (!liveMarkers[uid]) {
+          // nový marker
+          const m = L.marker([lat, lng], { icon }).addTo(map);
+          m.bindPopup(popupHTML, { className: "custom-popup" });
+          liveMarkers[uid] = m;
+        } else {
+          // aktualizace markeru
+          liveMarkers[uid].setLatLng([lat, lng]);
+          liveMarkers[uid].setPopupContent(popupHTML);
+        }
+      }
+    });
+  });
+}
+
 
 
     async function startLive() {
