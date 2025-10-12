@@ -45,8 +45,8 @@
     }
     
     .profile-icon {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       object-fit: cover;
       background: #fff;
@@ -102,6 +102,47 @@
       width: 100%;
       height: 100%;
     }
+
+    .user-marker {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid white;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  background-color: #ccc;
+  transform: translate(-50%, -100%);
+}
+
+.user-marker img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-marker::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid white;
+}
+
+/* === Kulatý avatar marker === */
+.leaflet-marker-icon.user-icon,
+.leaflet-marker-icon.live-user-marker {
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
 
     #goLiveBtn {
   padding: 10px 16px;
@@ -285,6 +326,53 @@
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   }
 }
+
+/* === Custom popup design === */
+/* === Custom popup === */
+.leaflet-popup.custom-popup .leaflet-popup-content-wrapper,
+.leaflet-popup-content-wrapper.custom-popup {
+  background: #fff !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+  border: none !important;
+  padding: 10px 14px !important;
+  font-family: "Poppins", sans-serif;
+  color: #222;
+}
+
+.leaflet-popup.custom-popup .leaflet-popup-tip,
+.leaflet-popup-tip.custom-popup {
+  background: #fff !important;
+}
+
+.custom-popup .popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.custom-popup .popup-content strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
+
+.custom-popup .popup-content .gps {
+  font-size: 13px;
+  color: #555;
+}
+
+.custom-popup .popup-content .vehicle {
+  font-size: 13px;
+  color: #333;
+  font-style: italic;
+}
+
+/* Volitelné: odstraní Leaflet rámeček okolo popupu */
+.leaflet-popup-content-wrapper {
+  border: none !important;
+}
+
 
   </style>
 </head>
@@ -803,6 +891,17 @@ saveProfileBtn.addEventListener("click", async () => {
     profileIcon.src = photoURL || "https://www.gravatar.com/avatar?d=mp";
     profileIcon.textContent = displayName ? displayName[0].toUpperCase() : "U";
 
+    // ✅ Aktualizuj marker uživatele na mapě
+if (typeof updateUserMarker === "function") {
+  updateUserMarker({
+    uid: user.uid,
+    displayName: displayName || user.displayName || "Unknown",
+    photoURL: photoURL || user.photoURL || "https://www.gravatar.com/avatar?d=mp",
+    vehicle: vehicle || ""
+  });
+}
+
+
     alert("✅ Profile updated successfully!");
     profileEditor.style.display = "none";
   } catch (err) {
@@ -810,6 +909,41 @@ saveProfileBtn.addEventListener("click", async () => {
     alert("Failed to update profile. Try again later.");
   }
 });
+
+// === Aktualizace markeru uživatele na mapě ===
+function updateUserMarker(data) {
+  if (!window.liveMarkers || !map) return;
+
+  const existing = window.liveMarkers[data.uid];
+  if (!existing) return;
+
+  const icon = L.icon({
+  iconUrl: data.photoURL || "https://www.gravatar.com/avatar?d=mp",
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -42],
+  className: "user-icon",
+});
+
+  existing.setIcon(icon);
+
+  const vehicleText = data.vehicle ? ` (${data.vehicle})` : "";
+  const gpsText =
+  data.lat && data.lng
+    ? `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`
+    : "No GPS data";
+
+const popupHTML = `
+  <div class="popup-content">
+    <strong>${data.displayName || "Unknown User"}</strong>
+    <div class="gps">📍 ${gpsText}</div>
+    <div class="vehicle">🚙 ${data.vehicle || "No vehicle info"}</div>
+  </div>
+`;
+
+existing.bindPopup(popupHTML, { className: "custom-popup" });
+
+}
 
 
   </script>
