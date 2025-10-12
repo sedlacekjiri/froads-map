@@ -756,6 +756,62 @@ auth.onAuthStateChanged(async user => {
       document.getElementById("accessDeniedModal").style.display = "none";
     }
 
+    // === SAVE PROFILE HANDLER ===
+saveProfileBtn.addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const displayName = displayNameInput.value.trim();
+  const vehicle = document.getElementById("vehicleSelect").value;
+  const file = avatarInput.files[0];
+  const userRef = db.collection("users").doc(user.uid);
+
+  // ✅ limit 1 MB pro fotku
+  if (file && file.size > 1024 * 1024) {
+    alert("Image is too large. Please upload a file under 1 MB.");
+    return;
+  }
+
+  try {
+    let photoURL = user.photoURL || "";
+
+    // ✅ nahrát novou fotku do Firebase Storage
+    if (file) {
+      const storageRef = storage.ref(`avatars/${user.uid}`);
+      await storageRef.put(file);
+      photoURL = await storageRef.getDownloadURL();
+      await user.updateProfile({ photoURL });
+    }
+
+    // ✅ aktualizovat jméno v Auth
+    if (displayName) {
+      await user.updateProfile({ displayName });
+    }
+
+    // ✅ uložit všechno do Firestore
+    await userRef.set(
+      {
+        displayName: displayName || user.displayName || "",
+        photoURL,
+        vehicle: vehicle || "",
+      },
+      { merge: true }
+    );
+
+    // ✅ aktualizovat UI
+    currentAvatar.src = photoURL || "https://www.gravatar.com/avatar?d=mp";
+    profileIcon.src = photoURL || "https://www.gravatar.com/avatar?d=mp";
+    profileIcon.textContent = displayName ? displayName[0].toUpperCase() : "U";
+
+    alert("✅ Profile updated successfully!");
+    profileEditor.style.display = "none";
+  } catch (err) {
+    console.error("❌ Error updating profile:", err);
+    alert("Failed to update profile. Try again later.");
+  }
+});
+
+
   </script>
 </body>
 </html>
