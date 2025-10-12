@@ -306,12 +306,34 @@
   </div>
 
   <div id="profileEditor">
-    <h3>Edit Profile</h3>
-    <img id="currentAvatar" src="" alt="Avatar" style="width:80px; height:80px; border-radius:50%; object-fit:cover;" />
-    <input type="file" id="avatarInput" accept="image/*" />
-    <input type="text" id="displayNameInput" placeholder="Your name" />
-    <button id="saveProfileBtn" class="btn">Save</button>
-  </div>
+  <h3>Edit Profile</h3>
+
+  <!-- Avatar náhled -->
+  <img id="currentAvatar" src="" alt="Avatar" 
+       style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:10px;" />
+
+  <!-- Výběr souboru -->
+  <input type="file" id="avatarInput" accept="image/*" />
+
+  <!-- Jméno -->
+  <input type="text" id="displayNameInput" placeholder="Your name" />
+
+  <!-- Auto -->
+  <select id="vehicleSelect" 
+          style="padding:8px; border:1px solid var(--ring); border-radius:8px; width:100%; margin-bottom:12px;">
+    <option value="">Select your 4x4 vehicle</option>
+    <option value="Dacia Duster">Dacia Duster</option>
+    <option value="Toyota Land Cruiser">Toyota Land Cruiser</option>
+    <option value="Jeep Wrangler Rubicon">Jeep Wrangler Rubicon</option>
+    <option value="Suzuki Jimny (new)">Suzuki Jimny (new)</option>
+    <option value="Suzuki Jimny (old)">Suzuki Jimny (old)</option>
+    <option value="Ford Econoline 4x4">Ford Econoline 4x4</option>
+    <option value="Other">Other</option>
+  </select>
+
+  <!-- Uložit -->
+  <button id="saveProfileBtn" class="btn">Save</button>
+</div>
 
   <div id="accessDeniedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center;">
     <div style="background:white; padding:32px; border-radius:12px; max-width:360px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
@@ -490,53 +512,73 @@ document.getElementById("forgotPasswordLink").addEventListener("click", async (e
 });
 
     // Auth listener
-    auth.onAuthStateChanged(async user => {
-      if (!user) {
-        // Not logged in
-        loginScreen.style.display = "flex";
-        formEl.style.display = "none";
-        chatDiv.style.display = "none";
-        mapContainer.style.display = "none";
-        logoutBtn.style.display = "none";
-        return;
-      }
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    // Not logged in
+    loginScreen.style.display = "flex";
+    formEl.style.display = "none";
+    chatDiv.style.display = "none";
+    mapContainer.style.display = "none";
+    logoutBtn.style.display = "none";
+    return;
+  }
 
-      // Logged in
-      const userRef = db.collection("users").doc(user.uid);
-      const doc = await userRef.get();
-      if (!doc.exists) {
-        await userRef.set({
-          displayName: user.displayName || "",
-          photoURL: user.photoURL || "",
-          access: false
-        });
-      }
-      const userDoc = await userRef.get();
-      if (!userDoc.data().access) {
-        showAccessDeniedModal();
-        await auth.signOut();
-        return;
-      }
+  // === LOAD / INIT USER DOC ===
+  const userRef = db.collection("users").doc(user.uid);
+  let userDoc = await userRef.get();
 
-      loginScreen.style.display = "none";
-      mapContainer.style.display = "block";
-      formEl.style.display = "flex";
-      chatDiv.style.display = "flex";
-      logoutBtn.style.display = "inline-block";
-
-      if (user.photoURL) {
-        profileIcon.classList.remove("fallback");
-        profileIcon.src = user.photoURL;
-      } else {
-        profileIcon.classList.add("fallback");
-        profileIcon.textContent = (user.displayName || "U")[0].toUpperCase();
-      }
-
-      initMap();
-      setupLiveLocations();
-      loadMessages();
-      setupGoLiveButton();
+  if (!userDoc.exists) {
+    await userRef.set({
+      displayName: user.displayName || "",
+      photoURL: user.photoURL || "",
+      vehicle: "",
+      access: true // ✅ pro test, můžeš dát zpět na false až později
     });
+    userDoc = await userRef.get();
+  }
+
+  const userData = userDoc.data();
+
+  // ✅ Access kontrola
+  if (!userData.access) {
+    showAccessDeniedModal();
+    await auth.signOut();
+    return;
+  }
+
+  // Prefill editor
+  displayNameInput.value = userData.displayName || "";
+  currentAvatar.src = userData.photoURL || "https://www.gravatar.com/avatar?d=mp";
+  const vehicleSelect = document.getElementById("vehicleSelect");
+  if (vehicleSelect) vehicleSelect.value = userData.vehicle || "";
+
+  // Toggle editor
+  profileIcon.addEventListener("click", () => {
+    profileEditor.style.display =
+      profileEditor.style.display === "flex" ? "none" : "flex";
+  });
+
+  // === Zobrazení hlavní části ===
+  loginScreen.style.display = "none";
+  mapContainer.style.display = "block";
+  formEl.style.display = "flex";
+  chatDiv.style.display = "flex";
+  logoutBtn.style.display = "inline-block";
+
+  if (user.photoURL) {
+    profileIcon.classList.remove("fallback");
+    profileIcon.src = user.photoURL;
+  } else {
+    profileIcon.classList.add("fallback");
+    profileIcon.textContent = (user.displayName || "U")[0].toUpperCase();
+  }
+
+  initMap();
+  setupLiveLocations();
+  loadMessages();
+  setupGoLiveButton();
+});
+
 
     logoutBtn.onclick = () => {
       auth.signOut();
@@ -570,7 +612,7 @@ document.getElementById("forgotPasswordLink").addEventListener("click", async (e
             if (!liveMarkers[uid]) {
               const m = L.marker([lat, lng], {
                 icon: L.icon({
-                  iconUrl: data.photoURL || "",
+                  iconUrl: data.photoURL || "https://www.gravatar.com/avatar?d=mp",
                   iconSize: [40,40],
                   className: 'live-user-marker'
                 })
@@ -625,8 +667,8 @@ document.getElementById("forgotPasswordLink").addEventListener("click", async (e
   console.error("Geolocation error:", err);
 }, {
   enableHighAccuracy: true,
-  maximumAge: 10000,
-  timeout: 10000
+  maximumAge: 30000,
+  timeout: 20000
 });
     }
 
