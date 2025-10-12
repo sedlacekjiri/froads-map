@@ -72,10 +72,10 @@
     }
     #profileEditor {
     position: absolute;
-    top: 60px;
+    top: 100px;
     right: 16px;
     width: 350px;
-    max-height: calc(100vh - 80px); /* ✅ omezení výšky */
+    max-height: calc(100vh - 120px); /* ✅ omezení výšky */
     overflow-y: auto;               /* ✅ scroll pro delší obsah */
     background: #fff;
     border: 1px solid var(--ring);
@@ -751,6 +751,25 @@
 
 #bioInput:focus,
 #instagramInput:focus,
+
+.popup-instagram {
+  margin-top: 2px;
+}
+
+.popup-instagram-link {
+  color: #3d3d3d; /* pěkná modrá */
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.popup-instagram-link:hover {
+  color: #000000;
+  text-decoration: underline;
+}
+
+
 #vehicleInput:focus {
   border-color: #bfbfbf;
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
@@ -857,7 +876,61 @@
   margin-bottom: 22px !important; /* ✅ viditelný prostor nad Save */
 }
 
+.popup-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
+.popup-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #eee;
+}
+
+.popup-instagram {
+  font-size: 13px;
+  color: #777;
+  margin-top: 2px;
+}
+
+.popup-bio {
+  font-size: 13px;
+  color: #333;
+  margin: 6px 0;
+  line-height: 1.4;
+}
+
+.popup-vehicle-photo {
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 6px;
+  border: 1px solid #eee;
+}
+
+/* === Override Leaflet default link colors === */
+.leaflet-popup-content a.popup-instagram-link {
+  color: #222 !important; /* černá */
+  text-decoration: none !important;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  transition: color 0.2s ease;
+}
+
+.leaflet-popup-content a.popup-instagram-link:hover {
+  color: #555 !important; /* decentní šedá při hoveru */
+  text-decoration: underline !important;
+}
+
+#vehiclePhotoPreview {
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
 
 
   </style>
@@ -914,7 +987,7 @@
 
   <div class="avatar-upload">
     <img id="currentAvatar" src="https://www.gravatar.com/avatar?d=mp" alt="Avatar" />
-    <label for="avatarInput" class="upload-btn">Upload photo</label>
+    <label for="avatarInput" class="upload-btn">+ Upload photo</label>
     <input type="file" id="avatarInput" accept="image/*" hidden />
   </div>
 
@@ -935,8 +1008,9 @@
   <label for="vehicleInput">Vehicle type</label>
   <input type="text" id="vehicleInput" placeholder="e.g. Ford Econoline 4x4" />
 
-  <label for="vehiclePhoto">Upload Vehicle Photo</label>
-  <label for="vehiclePhoto" class="upload-vehicle-btn">Upload Photo</label>
+  <img id="vehiclePhotoPreview" src="" alt="Vehicle photo preview" style="display:none; width:100%; border-radius:10px; margin-bottom:10px; object-fit:cover;">
+
+  <label for="vehiclePhoto" class="upload-vehicle-btn">+ Upload Vehicle Photo</label>
   <input type="file" id="vehiclePhoto" accept="image/*" hidden />
 
   <button id="saveProfileBtn" class="btn btn-save">Save</button>
@@ -1118,7 +1192,7 @@ document.getElementById("forgotPasswordLink").addEventListener("click", async (e
   }
 });
 
-    // Auth listener
+    // === AUTH LISTENER ===
 auth.onAuthStateChanged(async user => {
   if (!user) {
     // Not logged in
@@ -1139,63 +1213,67 @@ auth.onAuthStateChanged(async user => {
       displayName: user.displayName || "",
       photoURL: user.photoURL || "",
       vehicle: "",
-      access: true // ✅ pro test, můžeš dát zpět na false až později
+      bio: "",
+      instagram: "",
+      vehiclePhotoURL: "",
+      access: true // test mode
     });
     userDoc = await userRef.get();
   }
 
   const userData = userDoc.data();
 
-  // ✅ Access kontrola
-  if (!userData.access) {
-    showAccessDeniedModal();
-    await auth.signOut();
-    return;
-  }
-
-  // Prefill editor
- displayNameInput.value = userData.displayName || "";
-currentAvatar.src = userData.photoURL || "https://www.gravatar.com/avatar?d=mp";
-
-// === Vehicle Type ===
-const vehicleSelect = document.getElementById("vehicleInput");
-if (vehicleSelect) vehicleSelect.value = userData.vehicle || "";
-
-// === Bio ===
-const bioInput = document.getElementById("bioInput");
-if (bioInput) bioInput.value = userData.bio || "";
-
-// === Instagram ===
-const instagramInput = document.getElementById("instagramInput");
-if (instagramInput) instagramInput.value = userData.instagram || "";
-
-// === Vehicle Photo Preview (optional, if you want later)
-const vehiclePhotoInput = document.getElementById("vehiclePhoto");
-if (userData.vehiclePhotoURL) {
-  vehiclePhotoInput.setAttribute("data-existing-photo", userData.vehiclePhotoURL);
-}
-
-  // Toggle editor
-  profileIcon.addEventListener("click", () => {
-    profileEditor.style.display =
-      profileEditor.style.display === "flex" ? "none" : "flex";
-  });
-
-  // === Zobrazení hlavní části ===
+  // === UPDATE UI ===
   loginScreen.style.display = "none";
-  mapContainer.style.display = "block";
   formEl.style.display = "flex";
   chatDiv.style.display = "flex";
+  mapContainer.style.display = "block";
   logoutBtn.style.display = "inline-block";
 
+  // === Fill in profile data ===
+  displayNameInput.value = userData.displayName || "";
+  currentAvatar.src = userData.photoURL || "https://www.gravatar.com/avatar?d=mp";
+  document.getElementById("vehicleInput").value = userData.vehicle || "";
+  document.getElementById("bioInput").value = userData.bio || "";
+  document.getElementById("instagramInput").value = userData.instagram || "";
+
+  // === Set profile icon in header ===
   if (user.photoURL) {
-    profileIcon.classList.remove("fallback");
     profileIcon.src = user.photoURL;
+    profileIcon.classList.remove("fallback");
   } else {
     profileIcon.classList.add("fallback");
     profileIcon.textContent = (user.displayName || "U")[0].toUpperCase();
   }
 
+  // === Profile editor open/close ===
+profileEditor.style.display = "none";
+
+// 🧠 Připoj listener jen jednou, mimo auth listeneru
+if (!window.profileIconListenerAdded) {
+  window.profileIconListenerAdded = true;
+  profileIcon.addEventListener("click", () => {
+    const user = auth.currentUser;
+    if (!user) return; // pokud není přihlášený, nic
+    profileEditor.style.display =
+      profileEditor.style.display === "flex" ? "none" : "flex";
+  });
+}
+
+
+  // === Update map marker ===
+  if (typeof updateUserMarker === "function") {
+    updateUserMarker({
+      uid: user.uid,
+      displayName: userData.displayName || user.displayName || "Unknown",
+      photoURL: userData.photoURL || user.photoURL || "https://www.gravatar.com/avatar?d=mp",
+      vehicle: userData.vehicle || "",
+      bio: userData.bio || "",
+      instagram: userData.instagram || "",
+      vehiclePhotoURL: userData.vehiclePhotoURL || ""
+    });
+  }
+  // === INIT MAIN FEATURES AFTER LOGIN ===
   initMap();
   setupLiveLocations();
   loadMessages();
@@ -1260,12 +1338,27 @@ if (userData.vehiclePhotoURL) {
             : "No GPS data";
 
         const popupHTML = `
-          <div class="popup-content">
-            <strong>${data.displayName || "Unknown User"}</strong>
-            <div class="gps">📍 ${gpsText}</div>
-            <div class="vehicle">🚙 ${data.vehicle || "No vehicle info"}</div>
-          </div>
-        `;
+        <div class="popup-content">
+            <div class="popup-header">
+            <img src="${data.photoURL || "https://www.gravatar.com/avatar?d=mp"}" class="popup-avatar" alt="Avatar">
+            <div>
+                <strong>${data.displayName || "Unknown User"}</strong>
+                ${data.instagram ? `
+  <div class="popup-instagram">
+    <a href="https://instagram.com/${data.instagram.replace('@','')}" 
+       target="_blank" 
+       rel="noopener noreferrer"
+       class="popup-instagram-link">
+      @${data.instagram.replace('@','')}
+    </a>
+  </div>` : ""}
+            </div>
+            </div>
+            ${data.bio ? `<div class="popup-bio">${data.bio}</div>` : ""}
+            ${data.vehicle ? `<div class="vehicle">🚙 ${data.vehicle}</div>` : ""}
+            ${data.vehiclePhotoURL ? `<img src="${data.vehiclePhotoURL}" class="popup-vehicle-photo" alt="Vehicle Photo">` : ""}
+        </div>
+`;
 
         if (!liveMarkers[uid]) {
           // nový marker
@@ -1285,43 +1378,42 @@ if (userData.vehiclePhotoURL) {
 
 
     async function startLive() {
-      const user = auth.currentUser;
-      if (!user) return;
-      const userDocRef = db.collection("liveLocations").doc(user.uid);
-      await userDocRef.set({
-        displayName: user.displayName || "",
-        photoURL: user.photoURL || "",
-        isLive: true,
-        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+  const user = auth.currentUser;
+  if (!user) return;
 
-      liveWatchId = navigator.geolocation.watchPosition(async pos => {
-  if (!pos.coords) {
-    console.warn("No coords returned from geolocation.");
-    return;
-  }
+  // načti celý profil z kolekce users
+  const userDoc = await db.collection("users").doc(user.uid).get();
+  const userData = userDoc.exists ? userDoc.data() : {};
 
-  const lat = pos.coords.latitude;
-  const lng = pos.coords.longitude;
+  const userDocRef = db.collection("liveLocations").doc(user.uid);
+  await userDocRef.set({
+    displayName: user.displayName || userData.displayName || "",
+    photoURL: user.photoURL || userData.photoURL || "",
+    vehicle: userData.vehicle || "",
+    bio: userData.bio || "",
+    instagram: userData.instagram || "",
+    vehiclePhotoURL: userData.vehiclePhotoURL || "",
+    isLive: true,
+    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
 
-  try {
+  // sleduj polohu
+  liveWatchId = navigator.geolocation.watchPosition(async pos => {
+    if (!pos.coords) return;
+    const { latitude, longitude } = pos.coords;
+
     await userDocRef.set({
-      lat,
-      lng,
+      lat: latitude,
+      lng: longitude,
       lastSeen: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-  } catch (err) {
-    console.error("Failed to update live location:", err);
-  }
 
-}, err => {
-  console.error("Geolocation error:", err);
-}, {
-  enableHighAccuracy: true,
-  maximumAge: 30000,
-  timeout: 20000
-});
-    }
+  }, err => console.error("Geolocation error:", err), {
+    enableHighAccuracy: true,
+    maximumAge: 30000,
+    timeout: 20000
+  });
+}
 
     async function stopLive() {
       const user = auth.currentUser;
@@ -1443,6 +1535,10 @@ saveProfileBtn.addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
 
+  const userRef = db.collection("users").doc(user.uid);
+  const userDoc = await userRef.get();
+  const userData = userDoc.exists ? userDoc.data() : {};
+
   const displayName = displayNameInput.value.trim();
   const bio = bioInput.value.trim();
   const instagram = instagramInput.value.trim();
@@ -1450,7 +1546,6 @@ saveProfileBtn.addEventListener("click", async () => {
 
   const avatarFile = avatarInput.files[0];
   const vehiclePhotoFile = document.getElementById("vehiclePhoto").files[0];
-  const userRef = db.collection("users").doc(user.uid);
 
   // ✅ limity pro fotky
   if (avatarFile && avatarFile.size > 1024 * 1024) {
@@ -1464,7 +1559,7 @@ saveProfileBtn.addEventListener("click", async () => {
 
   try {
     let photoURL = user.photoURL || "";
-    let vehiclePhotoURL = "";
+    let vehiclePhotoURL = userData.vehiclePhotoURL || "";
 
     // ✅ nahrát novou profilovou fotku
     if (avatarFile) {
@@ -1492,7 +1587,7 @@ saveProfileBtn.addEventListener("click", async () => {
         vehicle: vehicle || "",
         bio,
         instagram,
-        vehiclePhotoURL,
+        vehiclePhotoURL, // ← zachová původní fotku, pokud nebyla nová
       },
       { merge: true }
     );
@@ -1524,6 +1619,7 @@ saveProfileBtn.addEventListener("click", async () => {
 });
 
 
+
 // === Aktualizace markeru uživatele na mapě ===
 function updateUserMarker(data) {
   if (!window.liveMarkers || !map) return;
@@ -1549,9 +1645,16 @@ function updateUserMarker(data) {
 
 const popupHTML = `
   <div class="popup-content">
-    <strong>${data.displayName || "Unknown User"}</strong>
-    <div class="gps">📍 ${gpsText}</div>
-    <div class="vehicle">🚙 ${data.vehicle || "No vehicle info"}</div>
+    <div class="popup-header">
+      <img src="${data.photoURL || "https://www.gravatar.com/avatar?d=mp"}" class="popup-avatar" alt="Avatar">
+      <div>
+        <strong>${data.displayName || "Unknown User"}</strong>
+        ${data.instagram ? `<div class="popup-instagram">@${data.instagram.replace('@','')}</div>` : ""}
+      </div>
+    </div>
+    ${data.bio ? `<div class="popup-bio">${data.bio}</div>` : ""}
+    ${data.vehicle ? `<div class="vehicle">🚙 ${data.vehicle}</div>` : ""}
+    ${data.vehiclePhotoURL ? `<img src="${data.vehiclePhotoURL}" class="popup-vehicle-photo" alt="Vehicle Photo">` : ""}
   </div>
 `;
 
@@ -1657,6 +1760,39 @@ async function sendMessage() {
   imageInput.value = "";
 }
 
+// === Vehicle Photo Preview ===
+const vehiclePhotoInput = document.getElementById("vehiclePhoto");
+const vehiclePhotoPreview = document.getElementById("vehiclePhotoPreview");
+
+// zobraz uloženou fotku po přihlášení
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    const userRef = db.collection("users").doc(user.uid);
+    const doc = await userRef.get();
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.vehiclePhotoURL) {
+        vehiclePhotoPreview.src = data.vehiclePhotoURL;
+        vehiclePhotoPreview.style.display = "block";
+      } else {
+        vehiclePhotoPreview.style.display = "none";
+      }
+    }
+  }
+});
+
+// náhled při novém výběru
+vehiclePhotoInput.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      vehiclePhotoPreview.src = reader.result;
+      vehiclePhotoPreview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  }
+});
 
 
 
