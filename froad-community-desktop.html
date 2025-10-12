@@ -932,6 +932,14 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+.verified-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+
 
   </style>
 </head>
@@ -1252,13 +1260,30 @@ profileEditor.style.display = "none";
 // 🧠 Připoj listener jen jednou, mimo auth listeneru
 if (!window.profileIconListenerAdded) {
   window.profileIconListenerAdded = true;
+
   profileIcon.addEventListener("click", () => {
     const user = auth.currentUser;
-    if (!user) return; // pokud není přihlášený, nic
-    profileEditor.style.display =
-      profileEditor.style.display === "flex" ? "none" : "flex";
+    if (!user) return;
+
+    const isOpen = profileEditor.style.display === "flex";
+    const chatBubbleEl = document.getElementById("chatBubble");
+    const chatToggleBtnEl = document.getElementById("chatToggleBtn");
+
+    if (isOpen) {
+      // Zavři editor → znovu zobraz chat
+      profileEditor.style.display = "none";
+      if (chatBubbleEl) chatBubbleEl.classList.remove("hidden");
+      if (chatToggleBtnEl) chatToggleBtnEl.style.display = "none";
+    } else {
+      // Otevři editor → schovej chat (jako by byl zavřený)
+      profileEditor.style.display = "flex";
+      if (chatBubbleEl) chatBubbleEl.classList.add("hidden");
+      if (chatToggleBtnEl) chatToggleBtnEl.style.display = "block";
+    }
   });
 }
+
+
 
 
   // === Update map marker ===
@@ -1342,7 +1367,10 @@ if (!window.profileIconListenerAdded) {
             <div class="popup-header">
             <img src="${data.photoURL || "https://www.gravatar.com/avatar?d=mp"}" class="popup-avatar" alt="Avatar">
             <div>
-                <strong>${data.displayName || "Unknown User"}</strong>
+                <strong>
+                ${data.displayName || "Unknown User"}
+                ${data.verified ? `<img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" class="verified-icon" alt="Verified" />` : ""}
+                </strong>
                 ${data.instagram ? `
   <div class="popup-instagram">
     <a href="https://instagram.com/${data.instagram.replace('@','')}" 
@@ -1387,15 +1415,17 @@ if (!window.profileIconListenerAdded) {
 
   const userDocRef = db.collection("liveLocations").doc(user.uid);
   await userDocRef.set({
-    displayName: user.displayName || userData.displayName || "",
-    photoURL: user.photoURL || userData.photoURL || "",
-    vehicle: userData.vehicle || "",
-    bio: userData.bio || "",
-    instagram: userData.instagram || "",
-    vehiclePhotoURL: userData.vehiclePhotoURL || "",
-    isLive: true,
-    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-  }, { merge: true });
+  displayName: user.displayName || userData.displayName || "",
+  photoURL: user.photoURL || userData.photoURL || "",
+  vehicle: userData.vehicle || "",
+  bio: userData.bio || "",
+  instagram: userData.instagram || "",
+  vehiclePhotoURL: userData.vehiclePhotoURL || "",
+  verified: userData.verified || false, // ✅ přidáno
+  isLive: true,
+  lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+}, { merge: true });
+
 
   // sleduj polohu
   liveWatchId = navigator.geolocation.watchPosition(async pos => {
@@ -1450,14 +1480,19 @@ if (!window.profileIconListenerAdded) {
   }
 
   // === Uložení zprávy do Firestore ===
-  await db.collection("messages").add({
-    text: txt || "",
-    imageUrl: imageUrl || "",
-    uid: user.uid,
-    displayName: user.displayName || "Anonymous",
-    photoURL: user.photoURL || "https://www.gravatar.com/avatar?d=mp",
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  const userDoc = await db.collection("users").doc(user.uid).get();
+const userData = userDoc.exists ? userDoc.data() : {};
+
+await db.collection("messages").add({
+  text: txt || "",
+  imageUrl: imageUrl || "",
+  uid: user.uid,
+  displayName: user.displayName || "Anonymous",
+  photoURL: user.photoURL || "https://www.gravatar.com/avatar?d=mp",
+  verified: userData.verified || false, // ✅ přidáno
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+});
+
 
   msgInput.value = "";
   imageUpload.value = "";
@@ -1503,8 +1538,27 @@ if (!window.profileIconListenerAdded) {
             const bubble = document.createElement("div");
             bubble.className = "bubble";
             bubble.innerHTML = `
-              <div class="meta">${msg.displayName || 'Unknown'} · ${msg.createdAt?.toDate().toLocaleString() || ''}</div>
-              <div>${msg.text || ''}</div>
+            <div class="meta">
+                ${msg.displayName || 'Unknown'}
+                ${msg.verified ? `<img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" class="verified-icon" alt="Verified" />` : ""}
+                · ${(() => {
+  if (!msg.createdAt) return "";
+  const date = msg.createdAt.toDate();
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  if (isToday) {
+    return time; // ✅ Jen čas pro dnešní zprávy
+  } else {
+    const day = date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+    return `${day} · ${time}`; // ✅ Např. “10 Oct · 18:42”
+  }
+})()}
+
+
+            </div>
+            <div>${msg.text || ''}</div>
             `;
 
             if (msg.imageUrl) {
@@ -1648,7 +1702,11 @@ const popupHTML = `
     <div class="popup-header">
       <img src="${data.photoURL || "https://www.gravatar.com/avatar?d=mp"}" class="popup-avatar" alt="Avatar">
       <div>
-        <strong>${data.displayName || "Unknown User"}</strong>
+        <strong>
+        ${data.displayName || "Unknown User"}
+        ${data.verified ? `<img src="https://cdn.prod.website-files.com/687ebffd20183f2f84c71b7_verified.png" class="verified-icon" alt="Verified" />` : ""}
+        </strong>
+
         ${data.instagram ? `<div class="popup-instagram">@${data.instagram.replace('@','')}</div>` : ""}
       </div>
     </div>
