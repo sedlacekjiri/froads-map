@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <title>Froad Community + Live Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #0b0b0b;
+      --ring: #e5e7eb;
+      --card: #f8f9fa;
+      --blue: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Poppins', system-ui, Inter, sans-serif;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    * {
+  font-family: "Poppins", sans-serif !important;
+}
+
+    header {
+      background: #fff;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--ring);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+    }
+    .logo-header {
+      height: 25px;
+      object-fit: contain;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .profile-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .profile-icon:hover {
+      border-color: #444;
+      transform: scale(1.05);
+    }
+    .profile-icon.fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #000;
+      background: #fff;
+    }
+    #profileEditor {
+      position: absolute;
+      top: 60px;
+      right: 16px;
+      width: 260px;
+      background: var(--card);
+      border: 1px solid var(--ring);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      display: none;
+      flex-direction: column;
+      padding: 16px;
+      z-index: 1000;
+    }
+    #profileEditor input[type="file"] {
+      margin-bottom: 12px;
+    }
+    #profileEditor input[type="text"] {
+      padding: 8px;
+      border: 1px solid var(--ring);
+      border-radius: 8px;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    #profileEditor .btn {
+      width: 100%;
+      padding: 10px;
+    }
+    #mapContainer {
+      flex: 1;
+      position: relative;
+      display: none;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .user-marker {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid white;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  background-color: #ccc;
+  transform: translate(-50%, -100%);
+}
+
+.user-marker img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-marker::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid white;
+}
+
+/* === Kulatý avatar marker === */
+.leaflet-marker-icon.user-icon,
+.leaflet-marker-icon.live-user-marker {
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+
+    #goLiveBtn {
+  padding: 10px 16px;
+  background-color: rgb(255, 21, 80);
+  color: white;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* === DESKTOP CHAT LAYOUT === */
+@media (min-width: 1024px) {
+  #mapContainer {
+    position: relative;
+    height: calc(100vh - 60px);
+  }
+
+  #chatBubble {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 400px;
+    height: 70vh;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 999;
+    transition: all 0.3s ease;
+  }
+
+  #chatBubble.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+  }
+
+  .chat-header {
+    background: #f8f8f8;
+    padding: 10px 14px;
+    border-bottom: 1px solid #ddd;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #chatCloseBtn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #444;
+  }
+
+  .chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+}
+
+.chat-message {
+  background: #f1f1f1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+
+  .chat-input {
+    display: flex;
+    border-top: 1px solid #ddd;
+    padding: 8px 10px;
+    background: #fafafa;
+  }
+
+  .chat-input input {
+    flex: 1;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .chat-input button {
+    margin-left: 8px;
+    padding: 6px 12px;
+    background: #000000;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  #chatToggleBtn.chat-toggle {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #000000;
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    z-index: 998;
+  }
+
+  #chatBubble.hidden + #chatToggleBtn {
+    display: block;
+  }
+}
+
+
+   
+    .msg {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--ring);
+    }
+    .bubble {
+      background: #ffffff;
+      color: #1a1a1a;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 100%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .meta {
+      font-size: 13px;
+      color: #454545;
+      font-weight: 500;
+    }
+
+    #form input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--ring);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    #form button {
+      padding: 10px 16px;
+      border: none;
+      background: var(--blue);
+      color: white;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    #loginScreen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      z-index: 9999;
+      flex-direction: row;
+    }
+    .login-left {
+      flex: 1;
+      background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg')
+        center/cover no-repeat;
+    }
+    .login-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      padding: 40px;
+    }
+    .login-box {
+      max-width: 400px;
+      width: 100%;
+      background: var(--bg);
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      text-align: center;
+    }
+    .login-box img {
+      width: 60px;
+      height: auto;
+      margin: 0 auto;
+    }
+    .login-box input {
+      padding: 12px 16px;
+      font-size: 15px;
+      border: 1px solid var(--ring);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--fg);
+      outline: none;
+    }
+    .login-box input:focus {
+      border-color: var(--blue);
+    }
+    .login-email-btn {
+      padding: 12px 20px;
+      background-color: #121d12;
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .login-email-btn:hover {
+      background-color: #1a2b1a;
+    }
+    
+    .toggle-auth {
+      font-size: 14px;
+      text-align: center;
+      margin-top: 4px;
+    }
+    .toggle-auth a {
+      color: var(--blue);
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .toggle-auth a:hover {
+      text-decoration: underline;
+    }
+    .legal-text {
+      font-size: 13px;
+      color: var(--fg);
+      line-height: 1.4;
+      margin-top: 10px;
+    }
+    .legal-text a {
+      color: var(--fg);
+      text-decoration: underline;
+      font-weight: 500;
+    }
+
+    @media (max-width: 1024px) {
+  #loginScreen {
+    flex-direction: column;
+    background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;
+  }
+  .login-left {
+    display: none;
+  }
+  .login-right {
+    background: rgba(255, 255, 255, 0); /* poloprůhledné pozadí boxu */
+    padding: 32px;
+    width: 100%;
+    height: auto;
+  }
+  .login-box {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* === Custom popup design === */
+/* === Custom popup === */
+.leaflet-popup.custom-popup .leaflet-popup-content-wrapper,
+.leaflet-popup-content-wrapper.custom-popup {
+  background: #fff !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+  border: none !important;
+  padding: 10px 14px !important;
+  font-family: "Poppins", sans-serif;
+  color: #222;
+}
+
+.leaflet-popup.custom-popup .leaflet-popup-tip,
+.leaflet-popup-tip.custom-popup {
+  background: #fff !important;
+}
+
+.custom-popup .popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.custom-popup .popup-content strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
+
+.custom-popup .popup-content .gps {
+  font-size: 13px;
+  color: #555;
+}
+
+.custom-popup .popup-content .vehicle {
+  font-size: 13px;
+  color: #333;
+  font-style: italic;
+}
+
+/* Volitelné: odstraní Leaflet rámeček okolo popupu */
+.leaflet-popup-content-wrapper {
+  border: none !important;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn-live {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-live:hover {
+  background: #0056b3;
+}
+
+.btn-live.active {
+  background: #ff2049;
+}
+
+.profile-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.profile-icon:hover {
+  box-shadow: 0 0 0 3px #00000019;
+}
+
+.logout-btn {
+  background: #dc3545;
+  color: white;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.logout-btn:hover {
+  background: #ff264a;
+}
+
+/* === Modernized Profile Editor (minimal changes) === */
+#profileEditor {
+  background: #fff; /* čisté bílé pozadí */
+}
+
+#profileEditor h3 {
+  margin-bottom: 10px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+#profileEditor label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.avatar-upload img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid #e5e5e5;
+  object-fit: cover;
+  margin-bottom: 8px;
+}
+
+/* Upload tlačítko místo “Choose file” */
+.upload-btn {
+  background-color: #f3f3f3;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s ease;
+}
+.upload-btn:hover {
+  background-color: #e6e6e6;
+}
+
+#displayNameInput,
+#vehicleInput {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.btn-save {
+  background-color: #47ed8c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-save:hover {
+  background-color: #5add91;
+}
+
+.btn-logout {
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-logout:hover {
+  background-color: #c6c6c6;
+}
+
+/* === Chat input bar – větší výška + lepší vzhled === */
+.chat-input {
+  display: flex;
+  border-top: 1px solid #ddd;
+  padding: 10px 12px; /* trochu větší padding */
+  background: #fafafa;
+  align-items: center;
+}
+
+.chat-input input {
+  flex: 1;
+  height: 44px; /* vyšší pole */
+  border: 1px solid #0000002b;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 15px;
+  outline: none;
+  font-family: "Poppins", sans-serif;
+}
+
+.chat-input input:focus {
+  border-color: #00000031;
+}
+
+.chat-input button {
+  height: 44px; /* stejná výška jako input */
+  padding: 0 18px;
+  margin-left: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 8px;
+  background: #000;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.chat-input button:hover {
+  background: #333;
+}
+
+
+
+  </style>
+</head>
+<body>
+  <header>
+  <img
+    class="logo-header"
+    src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ea50150761950e794dd2bb_logo-black.png"
+    alt="Logo"
+  />
+  <div class="header-right">
+    <button id="goLiveBtn" class="btn btn-live">Share Location</button>
+    <img
+      id="profileIcon"
+      class="profile-icon fallback"
+      src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e956576523671093377344_account.png"
+      alt="Profile"
+    />
+  </div>
+</header>
+
+
+  <div id="mapContainer"><div id="map"></div></div>
+
+  <!-- === Chat bubble (desktop only) === -->
+<div id="chatBubble" class="hidden">
+  <div class="chat-header">
+    <span>The Basecamp Chat</span>
+    <button id="chatCloseBtn">×</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input">
+    <input type="text" id="messageInput" placeholder="Type a message..." />
+    <button id="sendMessageBtn">Send</button>
+  </div>
+</div>
+
+<!-- Floating open button -->
+<button id="chatToggleBtn" class="chat-toggle">💬</button>
+
+
+  <div id="profileEditor" class="profile-editor">
+  <h3>Edit Profile</h3>
+
+  <div class="avatar-upload">
+    <img id="currentAvatar" src="https://www.gravatar.com/avatar?d=mp" alt="Avatar" />
+    <label for="avatarInput" class="upload-btn">Upload photo</label>
+    <input type="file" id="avatarInput" accept="image/*" hidden />
+  </div>
+
+  <label for="displayNameInput">Name</label>
+  <input type="text" id="displayNameInput" placeholder="Your name" />
+
+  <label for="vehicleInput">Vehicle type</label>
+  <input type="text" id="vehicleInput" placeholder="e.g. Ford Econoline 4x4" />
+
+  <button id="saveProfileBtn" class="btn btn-save">Save</button>
+  <button id="logoutBtn" class="btn btn-logout">Logout</button>
+</div>
+
+
+  <div id="accessDeniedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:32px; border-radius:12px; max-width:360px; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+      <h2 style="margin-top:0; font-size:22px;">Access pending</h2>
+      <p style="color:#555; font-size:16px; line-height:1.4;">
+        <br>Your account has been created, but access is pending.<br/>
+        You'll receive an email once you're approved.
+      </p>
+      <button onclick="closeAccessModal()" style="margin-top:20px; padding:10px 20px; background:#000; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+        OK
+      </button>
+    </div>
+  </div>
+
+  <div id="loginScreen">
+    <div class="login-left"></div>
+    <div class="login-right">
+      <div class="login-box">
+        <img id="logoImg" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ea50150761950e794dd2bb_logo-black.png" alt="Logo" />
+        <h2 id="authTitle">Log in</h2>
+        <form id="emailLoginForm" style="display: flex; flex-direction: column; gap: 14px;">
+          <input type="email" id="emailInput" placeholder="Email address *" required />
+          <input type="password" id="passwordInput" placeholder="Password *" required />
+          <a 
+  href="#" 
+  id="forgotPasswordLink" 
+  style="font-size:14px; color:#303030; text-decoration:underline; align-self:flex-start;"
+>
+  Forgot password?
+</a>
+
+          <button type="submit" class="btn login-email-btn">Log in</button>
+        </form>
+        <form id="signupForm" style="display: none; flex-direction: column; gap: 14px;">
+          <input type="email" id="signupEmail" placeholder="Email address *" required />
+          <input type="password" id="signupPassword" placeholder="Password *" required />
+          <button type="submit" class="btn login-email-btn">Create account</button>
+        </form>
+
+        <p id="loginError" style="color: red; font-size: 14px; margin: 0;"></p>
+        <p class="toggle-auth" id="toSignup">Don't have an account? <a href="#">Sign up</a></p>
+        <p class="toggle-auth" id="toLogin" style="display: none;">Already have an account? <a href="#">Log in</a></p>
+
+        <p class="legal-text">
+          By continuing to use Froad, you agree to our
+          <a href="/terms" target="_blank">Terms of Service</a> and
+          <a href="/privacy" target="_blank">Privacy Policy</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Firebase init
+    const config = {
+      apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
+      authDomain: "froad-7d561.firebaseapp.com",
+      projectId: "froad-7d561",
+      storageBucket: "froad-7d561.firebasestorage.app",
+      messagingSenderId: "1086299585443",
+      appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
+    };
+    firebase.initializeApp(config);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // DOM references
+    const loginScreen = document.getElementById("loginScreen");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const profileIcon = document.getElementById("profileIcon");
+    const profileEditor = document.getElementById("profileEditor");
+    const currentAvatar = document.getElementById("currentAvatar");
+    const avatarInput = document.getElementById("avatarInput");
+    const displayNameInput = document.getElementById("displayNameInput");
+    const saveProfileBtn = document.getElementById("saveProfileBtn");
+
+    const mapContainer = document.getElementById("mapContainer");
+    const chatDiv = document.getElementById("chatMessages");
+    const formEl = document.getElementById("chatBubble");
+    const msgInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendMessageBtn");
+    const emailForm = document.getElementById("emailLoginForm");
+    const emailInput = document.getElementById("emailInput");
+    const passwordInput = document.getElementById("passwordInput");
+    const signupForm = document.getElementById("signupForm");
+    const signupEmail = document.getElementById("signupEmail");
+    const signupPassword = document.getElementById("signupPassword");
+    const toSignup = document.getElementById("toSignup");
+    const toLogin = document.getElementById("toLogin");
+
+    let map = null;
+    const liveMarkers = {};
+    let liveWatchId = null;
+
+    const authTitle = document.getElementById("authTitle");
+
+// Toggle login / signup forms
+toSignup.querySelector("a").addEventListener("click", e => {
+  e.preventDefault();
+  emailForm.style.display = "none";
+  signupForm.style.display = "flex";
+  toSignup.style.display = "none";
+  toLogin.style.display = "block";
+  authTitle.textContent = "Sign Up";
+});
+
+toLogin.querySelector("a").addEventListener("click", e => {
+  e.preventDefault();
+  emailForm.style.display = "flex";
+  signupForm.style.display = "none";
+  toSignup.style.display = "block";
+  toLogin.style.display = "none";
+  authTitle.textContent = "Log In";
+});
+
+    // Email login
+    emailForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      const errorEl = document.getElementById("loginError");
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        errorEl.textContent = "";
+      } catch (err) {
+        console.error("Login error:", err);
+        errorEl.textContent = "Incorrect email or password. Try again.";
+      }
+    });
+
+    // Forgot password
+document.getElementById("forgotPasswordLink").addEventListener("click", async (e) => {
+  e.preventDefault();
+  const email = emailInput.value.trim();
+  const errorEl = document.getElementById("loginError");
+
+  if (!email) {
+    errorEl.textContent = "Please enter your email first.";
+    return;
+  }
+
+  try {
+    await auth.sendPasswordResetEmail(email);
+    errorEl.style.color = "green";
+    errorEl.textContent = "Password reset link has been sent to your email.";
+  } catch (err) {
+    console.error("Password reset error:", err);
+    errorEl.style.color = "red";
+    errorEl.textContent = "Couldn't send reset link. Please check your email.";
+  }
+});
+
+
+    // Signup
+    signupForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = signupEmail.value.trim();
+  const password = signupPassword.value.trim();
+  const errorEl = document.getElementById("loginError");
+  try {
+    await auth.createUserWithEmailAndPassword(email, password);
+    errorEl.textContent = "";
+    showAccessDeniedModal(); // zobraz modal po registraci
+    await auth.signOut();    // automaticky odhlásí
+  } catch (err) {
+    errorEl.textContent = "Looks like you already have an account! Try logging in.";
+  }
+});
+
+    // Auth listener
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    // Not logged in
+    loginScreen.style.display = "flex";
+    formEl.style.display = "none";
+    chatDiv.style.display = "none";
+    mapContainer.style.display = "none";
+    logoutBtn.style.display = "none";
+    return;
+  }
+
+  // === LOAD / INIT USER DOC ===
+  const userRef = db.collection("users").doc(user.uid);
+  let userDoc = await userRef.get();
+
+  if (!userDoc.exists) {
+    await userRef.set({
+      displayName: user.displayName || "",
+      photoURL: user.photoURL || "",
+      vehicle: "",
+      access: true // ✅ pro test, můžeš dát zpět na false až později
+    });
+    userDoc = await userRef.get();
+  }
+
+  const userData = userDoc.data();
+
+  // ✅ Access kontrola
+  if (!userData.access) {
+    showAccessDeniedModal();
+    await auth.signOut();
+    return;
+  }
+
+  // Prefill editor
+  displayNameInput.value = userData.displayName || "";
+  currentAvatar.src = userData.photoURL || "https://www.gravatar.com/avatar?d=mp";
+  const vehicleSelect = document.getElementById("vehicleInput");
+  if (vehicleSelect) vehicleSelect.value = userData.vehicle || "";
+
+  // Toggle editor
+  profileIcon.addEventListener("click", () => {
+    profileEditor.style.display =
+      profileEditor.style.display === "flex" ? "none" : "flex";
+  });
+
+  // === Zobrazení hlavní části ===
+  loginScreen.style.display = "none";
+  mapContainer.style.display = "block";
+  formEl.style.display = "flex";
+  chatDiv.style.display = "flex";
+  logoutBtn.style.display = "inline-block";
+
+  if (user.photoURL) {
+    profileIcon.classList.remove("fallback");
+    profileIcon.src = user.photoURL;
+  } else {
+    profileIcon.classList.add("fallback");
+    profileIcon.textContent = (user.displayName || "U")[0].toUpperCase();
+  }
+
+  initMap();
+  setupLiveLocations();
+  loadMessages();
+  setupGoLiveButton();
+});
+
+
+    logoutBtn.onclick = () => {
+      auth.signOut();
+    };
+
+    function showAccessDeniedModal() {
+      document.getElementById("accessDeniedModal").style.display = "flex";
+    }
+    function closeAccessModal() {
+      document.getElementById("accessDeniedModal").style.display = "none";
+    }
+
+    function initMap() {
+  if (!map) {
+    const mapDiv = document.getElementById("map");
+    map = L.map(mapDiv).setView([64.1466, -21.9426], 6);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 18,
+    }).addTo(map);
+  }
+}
+
+    function setupLiveLocations() {
+  db.collection("liveLocations").onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      const uid = change.doc.id;
+      const data = change.doc.data();
+
+      // === Pokud marker existuje, ale už není live ===
+      if ((change.type === "modified" && data && data.isLive === false) || change.type === "removed") {
+        if (liveMarkers[uid]) {
+          map.removeLayer(liveMarkers[uid]);
+          delete liveMarkers[uid];
+        }
+        return; // ukončí se pro tento dokument
+      }
+
+      // === Přidání nebo update aktivních markerů ===
+      if ((change.type === "added" || change.type === "modified") && data.isLive) {
+        const lat = data.lat;
+        const lng = data.lng;
+        const avatarUrl = data.photoURL || "https://www.gravatar.com/avatar?d=mp";
+
+        const icon = L.icon({
+          iconUrl: avatarUrl,
+          iconSize: [44, 44],
+          iconAnchor: [22, 44],
+          popupAnchor: [0, -46],
+          className: "user-icon"
+        });
+
+        const gpsText =
+          typeof lat === "number" && typeof lng === "number"
+            ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+            : "No GPS data";
+
+        const popupHTML = `
+          <div class="popup-content">
+            <strong>${data.displayName || "Unknown User"}</strong>
+            <div class="gps">📍 ${gpsText}</div>
+            <div class="vehicle">🚙 ${data.vehicle || "No vehicle info"}</div>
+          </div>
+        `;
+
+        if (!liveMarkers[uid]) {
+          // nový marker
+          const m = L.marker([lat, lng], { icon }).addTo(map);
+          m.bindPopup(popupHTML, { className: "custom-popup" });
+          liveMarkers[uid] = m;
+        } else {
+          // aktualizace markeru
+          liveMarkers[uid].setLatLng([lat, lng]);
+          liveMarkers[uid].setPopupContent(popupHTML);
+        }
+      }
+    });
+  });
+}
+
+
+
+    async function startLive() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const userDocRef = db.collection("liveLocations").doc(user.uid);
+      await userDocRef.set({
+        displayName: user.displayName || "",
+        photoURL: user.photoURL || "",
+        isLive: true,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      liveWatchId = navigator.geolocation.watchPosition(async pos => {
+  if (!pos.coords) {
+    console.warn("No coords returned from geolocation.");
+    return;
+  }
+
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
+
+  try {
+    await userDocRef.set({
+      lat,
+      lng,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch (err) {
+    console.error("Failed to update live location:", err);
+  }
+
+}, err => {
+  console.error("Geolocation error:", err);
+}, {
+  enableHighAccuracy: true,
+  maximumAge: 30000,
+  timeout: 20000
+});
+    }
+
+    async function stopLive() {
+      const user = auth.currentUser;
+      if (!user) return;
+      if (liveWatchId !== null) {
+        navigator.geolocation.clearWatch(liveWatchId);
+        liveWatchId = null;
+      }
+      await db.collection("liveLocations").doc(user.uid).set({
+        isLive: false
+      }, { merge: true });
+    }
+
+    sendBtn.onclick = async () => {
+      const txt = msgInput.value.trim();
+      if (!txt) return;
+      const user = auth.currentUser;
+      await db.collection("messages").add({
+        text: txt,
+        uid: user.uid,
+        displayName: user.displayName || "Anonymous",
+        photoURL: user.photoURL || null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      msgInput.value = "";
+    };
+
+    function setupGoLiveButton() {
+  console.log("Setting up Go Live button...");
+  const goLiveBtn = document.getElementById("goLiveBtn");
+  if (!goLiveBtn) return;
+
+  goLiveBtn.onclick = () => {
+    if (liveWatchId === null) {
+      startLive();
+      goLiveBtn.textContent = "Stop Live";
+      goLiveBtn.classList.add("active");
+    } else {
+      stopLive();
+      goLiveBtn.textContent = "Share Location";
+      goLiveBtn.classList.remove("active");
+    }
+  };
+}
+
+
+
+    function loadMessages() {
+      db.collection("messages")
+        .orderBy("createdAt")
+        .limit(100)
+        .onSnapshot(snapshot => {
+          chatDiv.innerHTML = "";
+          snapshot.forEach(doc => {
+            const msg = doc.data();
+            const msgDiv = document.createElement("div");
+            msgDiv.className = "msg";
+
+            const avatar = document.createElement("img");
+            avatar.className = "avatar";
+            avatar.src = msg.photoURL || "https://www.gravatar.com/avatar?d=mp";
+            avatar.alt = "avatar";
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+            bubble.innerHTML = `
+              <div class="meta">${msg.displayName || 'Unknown'} · ${msg.createdAt?.toDate().toLocaleString() || ''}</div>
+              <div>${msg.text || ''}</div>
+            `;
+
+            msgDiv.appendChild(avatar);
+            msgDiv.appendChild(bubble);
+            chatDiv.appendChild(msgDiv);
+          });
+          chatDiv.scrollTop = chatDiv.scrollHeight;
+        });
+    }
+
+    function closeAccessModal() {
+      document.getElementById("accessDeniedModal").style.display = "none";
+    }
+
+    // === SAVE PROFILE HANDLER ===
+saveProfileBtn.addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const displayName = displayNameInput.value.trim();
+  const vehicle = document.getElementById("vehicleInput").value;
+  const file = avatarInput.files[0];
+  const userRef = db.collection("users").doc(user.uid);
+
+  // ✅ limit 1 MB pro fotku
+  if (file && file.size > 1024 * 1024) {
+    alert("Image is too large. Please upload a file under 1 MB.");
+    return;
+  }
+
+  try {
+    let photoURL = user.photoURL || "";
+
+    // ✅ nahrát novou fotku do Firebase Storage
+    if (file) {
+      const storageRef = storage.ref(`avatars/${user.uid}`);
+      await storageRef.put(file);
+      photoURL = await storageRef.getDownloadURL();
+      await user.updateProfile({ photoURL });
+    }
+
+    // ✅ aktualizovat jméno v Auth
+    if (displayName) {
+      await user.updateProfile({ displayName });
+    }
+
+    // ✅ uložit všechno do Firestore
+    await userRef.set(
+      {
+        displayName: displayName || user.displayName || "",
+        photoURL,
+        vehicle: vehicle || "",
+      },
+      { merge: true }
+    );
+
+    // ✅ aktualizovat UI
+    currentAvatar.src = photoURL || "https://www.gravatar.com/avatar?d=mp";
+    profileIcon.src = photoURL || "https://www.gravatar.com/avatar?d=mp";
+    profileIcon.textContent = displayName ? displayName[0].toUpperCase() : "U";
+
+    // ✅ Aktualizuj marker uživatele na mapě
+if (typeof updateUserMarker === "function") {
+  updateUserMarker({
+    uid: user.uid,
+    displayName: displayName || user.displayName || "Unknown",
+    photoURL: photoURL || user.photoURL || "https://www.gravatar.com/avatar?d=mp",
+    vehicle: vehicle || ""
+  });
+}
+
+
+    alert("✅ Profile updated successfully!");
+    profileEditor.style.display = "none";
+  } catch (err) {
+    console.error("❌ Error updating profile:", err);
+    alert("Failed to update profile. Try again later.");
+  }
+});
+
+// === Aktualizace markeru uživatele na mapě ===
+function updateUserMarker(data) {
+  if (!window.liveMarkers || !map) return;
+
+  const existing = window.liveMarkers[data.uid];
+  if (!existing) return;
+
+  const icon = L.icon({
+  iconUrl: data.photoURL || "https://www.gravatar.com/avatar?d=mp",
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -42],
+  className: "user-icon",
+});
+
+  existing.setIcon(icon);
+
+  const vehicleText = data.vehicle ? ` (${data.vehicle})` : "";
+  const gpsText =
+  data.lat && data.lng
+    ? `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`
+    : "No GPS data";
+
+const popupHTML = `
+  <div class="popup-content">
+    <strong>${data.displayName || "Unknown User"}</strong>
+    <div class="gps">📍 ${gpsText}</div>
+    <div class="vehicle">🚙 ${data.vehicle || "No vehicle info"}</div>
+  </div>
+`;
+
+existing.bindPopup(popupHTML, { className: "custom-popup" });
+
+}
+
+// === Chat toggle for desktop ===
+const chatBubble = document.getElementById("chatBubble");
+const chatToggleBtn = document.getElementById("chatToggleBtn");
+const chatCloseBtn = document.getElementById("chatCloseBtn");
+
+// Desktop-only automatické otevření
+const isDesktop = window.innerWidth >= 1024;
+
+if (chatBubble && chatToggleBtn && chatCloseBtn) {
+  chatToggleBtn.addEventListener("click", () => {
+    chatBubble.classList.remove("hidden");
+    chatToggleBtn.style.display = "none";
+  });
+
+  chatCloseBtn.addEventListener("click", () => {
+    chatBubble.classList.add("hidden");
+    chatToggleBtn.style.display = "block";
+  });
+
+  // 🔥 Auto-open po refreshi (pouze desktop)
+  if (isDesktop) {
+    chatBubble.classList.remove("hidden");
+    chatToggleBtn.style.display = "none";
+  }
+}
+
+
+
+
+  </script>
+</body>
+</html>
