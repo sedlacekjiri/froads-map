@@ -162,7 +162,6 @@ header {
   gap: 14px;
   background: var(--bg);
   z-index: 1;
-  scroll-behavior: smooth; /* ✨ plynulý scroll */
 }
 
 
@@ -936,17 +935,11 @@ if (mapBtn) {
 
 
 
-    function loadMessages() {
+   function loadMessages() {
   db.collection("messages")
-    .orderBy("createdAt", "asc") // starší nahoře, novější dole
-    .limit(500)
+    .orderBy("createdAt", "asc")
     .onSnapshot(snapshot => {
-      const wasAtBottom =
-        chatDiv.scrollHeight - chatDiv.scrollTop <= chatDiv.clientHeight + 50;
-
       chatDiv.innerHTML = "";
-
-      const fragment = document.createDocumentFragment();
 
       snapshot.forEach(doc => {
         const msg = doc.data();
@@ -962,24 +955,23 @@ if (mapBtn) {
         bubble.className = "bubble";
         bubble.innerHTML = `
           <div class="meta">${msg.displayName || "Unknown"} · ${
-          msg.createdAt?.toDate
-            ? msg.createdAt.toDate().toLocaleString()
-            : ""
+          msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() : ""
         }</div>
           <div>${msg.text || ""}</div>
         `;
 
         msgDiv.appendChild(avatar);
         msgDiv.appendChild(bubble);
-        fragment.appendChild(msgDiv);
+        chatDiv.appendChild(msgDiv);
       });
 
-      chatDiv.appendChild(fragment);
-
-      // 🔽 Okamžitý scroll dolů – bez animace, bez čekání
-      chatDiv.scrollTop = chatDiv.scrollHeight;
+      // 🔥 Z desktop verze: okamžitý scroll bez čekání
+      setTimeout(() => {
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      }, 50);
     });
 }
+
 
 
 
@@ -1101,23 +1093,36 @@ existing.bindPopup(popupHTML, { className: "custom-popup" });
   const mapIconActive   = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed64a21a1343f06a3152d5_map-focus.png";
 
   document.querySelectorAll('.footer-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.footer-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+  btn.addEventListener('click', () => {
+    // === Reset aktivních tlačítek ===
+    document.querySelectorAll('.footer-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
 
-      const tab = btn.dataset.tab;
+    const tab = btn.dataset.tab;
 
-      // Update each icon state
-      document.querySelector('.chat-btn .chat-icon').src = (tab === "chat") ? chatIconActive : chatIconDefault;
-      document.querySelector('.live-btn .live-icon').src = (tab === "live") ? liveIconActive : liveIconDefault;
-      document.querySelector('.map-btn .map-icon').src = (tab === "map") ? mapIconActive : mapIconDefault;
+    // === Update ikon ===
+    document.querySelector('.chat-btn .chat-icon').src =
+      (tab === "chat") ? chatIconActive : chatIconDefault;
+    document.querySelector('.live-btn .live-icon').src =
+      (tab === "live") ? liveIconActive : liveIconDefault;
+    document.querySelector('.map-btn .map-icon').src =
+      (tab === "map") ? mapIconActive : mapIconDefault;
 
-      // Optional section switching
-      document.getElementById('mapContainer').style.display = tab === "map" ? "block" : "none";
-      document.getElementById('chat').style.display = tab === "chat" ? "block" : "none";
-      document.getElementById('form').style.display = tab === "chat" ? "flex" : "none";
-    });
+    // === Přepínání sekcí ===
+    document.getElementById('mapContainer').style.display = (tab === "map") ? "block" : "none";
+    document.getElementById('chat').style.display        = (tab === "chat") ? "block" : "none";
+    document.getElementById('form').style.display        = (tab === "chat") ? "flex"  : "none";
+
+    // === 💬 Nové: instantní posun na konec chatu ===
+    if (tab === "chat") {
+      const chatDiv = document.getElementById('chat');
+      // okamžitě po přepnutí (bez animace)
+      requestAnimationFrame(() => {
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+      });
+    }
   });
+});
 
 
 
