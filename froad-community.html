@@ -96,9 +96,13 @@ header {
 }
 
 #mapContainer {
-  flex: 1;
+  position: absolute;
+  top: 60px; /* výška headeru */
+  bottom: 70px; /* výška footeru */
+  left: 0;
+  right: 0;
   display: none;
-  position: relative;
+  z-index: 1;
 }
 
 #map {
@@ -160,8 +164,8 @@ header {
   align-items: flex-start;
 }
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--ring);
@@ -359,7 +363,7 @@ header {
   display: flex;
   justify-content: space-evenly;
   align-items: center;
-  z-index: 999;
+  z-index: 5000; /* 🔸 posílený z-index */
 }
 
 .footer-btn {
@@ -396,6 +400,10 @@ header {
   line-height: 16px;
   font-weight: 500;
   opacity: 0.85;
+}
+
+#goLiveBtn {
+  display: none;
 }
 
 
@@ -663,6 +671,17 @@ auth.onAuthStateChanged(async user => {
     return;
   }
 
+  // Výchozí aktivní tab = MAPA
+document.querySelectorAll('.footer-btn').forEach(b => b.classList.remove('active'));
+const mapBtn = document.querySelector('.footer-btn.map-btn');
+if (mapBtn) {
+  mapBtn.classList.add('active');
+  const mapIcon = mapBtn.querySelector('.map-icon');
+  if (mapIcon)
+    mapIcon.src = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed64a21a1343f06a3152d5_map-focus.png";
+}
+
+
   // === LOAD / INIT USER DOC ===
   const userRef = db.collection("users").doc(user.uid);
   let userDoc = await userRef.get();
@@ -701,8 +720,8 @@ auth.onAuthStateChanged(async user => {
   // === Zobrazení hlavní části ===
   loginScreen.style.display = "none";
   mapContainer.style.display = "block";
-  formEl.style.display = "flex";
-  chatDiv.style.display = "flex";
+  chatDiv.style.display = "none";
+  formEl.style.display = "none";
   logoutBtn.style.display = "inline-block";
 
   if (user.photoURL) {
@@ -866,26 +885,31 @@ auth.onAuthStateChanged(async user => {
     };
 
     function setupGoLiveButton() {
-  console.log("Setting up Go Live button...");
-  let goLiveBtn = document.getElementById("goLiveBtn");
-  if (!goLiveBtn) {
-    goLiveBtn = document.createElement("button");
-    goLiveBtn.id = "goLiveBtn";
-    goLiveBtn.className = "btn";
-    goLiveBtn.textContent = "Go Live";
-    document.querySelector("header .header-right").appendChild(goLiveBtn);
+  console.log("Setting up Share Location button...");
 
-    goLiveBtn.onclick = () => {
-      if (liveWatchId === null) {
-        startLive();
-        goLiveBtn.textContent = "Stop Live";
-      } else {
-        stopLive();
-        goLiveBtn.textContent = "Go Live";
-      }
-    };
-  }
+  const liveBtn = document.querySelector(".footer-btn.live-btn");
+  const liveIcon = liveBtn.querySelector(".live-icon");
+  const liveLabel = liveBtn.querySelector("span");
+
+  const liveIconDefault = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png";
+  const liveIconActive  = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed633027976d278ff80bba_live-focus.png";
+
+  liveBtn.addEventListener("click", () => {
+    if (liveWatchId === null) {
+      startLive();
+      liveIcon.src = liveIconActive;
+      liveLabel.textContent = "Stop Sharing";
+      liveBtn.classList.add("active");
+    } else {
+      stopLive();
+      liveIcon.src = liveIconDefault;
+      liveLabel.textContent = "Share Location";
+      liveBtn.classList.remove("active");
+    }
+  });
 }
+
+
 
 
     function loadMessages() {
