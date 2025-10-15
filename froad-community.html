@@ -1230,6 +1230,9 @@ saveProfileBtn.addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
 
+  saveProfileBtn.disabled = true;                // 🔹 zablokuj tlačítko
+  saveProfileBtn.textContent = "Saving...";      // 🔹 vizuální feedback
+
   const displayName = displayNameInput.value.trim();
   const bio = document.getElementById("bioInput").value.trim();
   const instagram = document.getElementById("instagramInput").value.trim();
@@ -1242,43 +1245,31 @@ saveProfileBtn.addEventListener("click", async () => {
     let photoURL = user.photoURL || "";
     let vehiclePhotoURL = "";
 
-    // ✅ Upload avatar (limit 1MB)
+    // === Upload avatar ===
     if (avatarFile) {
-      if (avatarFile.size > 1024 * 1024) {
-        alert("Profile photo is too large. Please upload under 1 MB.");
-        return;
-      }
       const avatarRef = storage.ref(`avatars/${user.uid}`);
       await avatarRef.put(avatarFile);
       photoURL = await avatarRef.getDownloadURL();
       await user.updateProfile({ photoURL });
     }
 
-    // ✅ Upload vehicle photo (limit 2MB)
+    // === Upload vehicle photo ===
     if (vehicleFile) {
-      if (vehicleFile.size > 2 * 1024 * 1024) {
-        alert("Vehicle photo is too large. Please upload under 2 MB.");
-        return;
-      }
-      const vehicleRef = storage.ref(`vehicles/${user.uid}`);
-      await vehicleRef.put(vehicleFile);
-      vehiclePhotoURL = await vehicleRef.getDownloadURL();
+      const fileName = `${Date.now()}_${vehicleFile.name}`;
+      const vehicleRef = storage.ref(`vehicles/${user.uid}/${fileName}`);
+      const snapshot = await vehicleRef.put(vehicleFile);
+      vehiclePhotoURL = await snapshot.ref.getDownloadURL();
     }
 
-    // ✅ Ulož všechna data do Firestore
-    await userRef.set(
-      {
-        displayName: displayName || user.displayName || "",
-        photoURL,
-        vehicle,
-        bio,
-        instagram,
-        vehiclePhotoURL,
-      },
-      { merge: true }
-    );
+    await userRef.set({
+      displayName,
+      photoURL,
+      vehicle,
+      bio,
+      instagram,
+      vehiclePhotoURL
+    }, { merge: true });
 
-    // ✅ Aktualizuj liveLocations marker, pokud existuje
     await db.collection("liveLocations").doc(user.uid).set({
       displayName,
       photoURL,
@@ -1290,16 +1281,14 @@ saveProfileBtn.addEventListener("click", async () => {
       lastSeen: firebase.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    // ✅ Aktualizuj UI
-    currentAvatar.src = photoURL || "https://www.gravatar.com/avatar?d=mp";
-    profileIcon.src = photoURL || "https://www.gravatar.com/avatar?d=mp";
-    vehiclePhotoPreview.src = vehiclePhotoURL || vehiclePhotoPreview.src;
-    vehiclePhotoPreview.style.display = vehiclePhotoURL ? "block" : vehiclePhotoPreview.style.display;
     alert("✅ Profile saved!");
     profileEditor.style.display = "none";
   } catch (err) {
     console.error("❌ Error saving profile:", err);
     alert("Failed to save profile. Try again later.");
+  } finally {
+    saveProfileBtn.disabled = false;             // 🔹 odblokuj tlačítko
+    saveProfileBtn.textContent = "Save";         // 🔹 obnov text
   }
 });
 
