@@ -439,6 +439,27 @@ header {
   height: 100%;
 }
 
+.share-location-btn {
+  position: absolute;
+  bottom: 90px;
+  right: 20px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 4000;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+.share-location-btn:hover {
+  transform: scale(1.05);
+}
+.share-location-btn.active {
+  background: #ff4500; /* oranžová při aktivaci */
+}
 
 
 
@@ -454,6 +475,12 @@ header {
   </header>
 
   <div id="mapContainer"><div id="map"></div></div>
+
+  <!-- Floating Share Location Button -->
+<button id="shareLocationBtn" class="share-location-btn">
+  📍 Share Location
+</button>
+
   <div id="exploreMap"><div id="froadMap"></div></div>
   
 
@@ -559,14 +586,6 @@ header {
          src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68efa731bab109784845d316_people.png"
          alt="People" />
     <span>People</span>
-  </button>
-
-  <!-- Share Location -->
-  <button class="footer-btn live-btn" data-tab="live">
-    <img class="live-icon"
-         src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png"
-         alt="Live" />
-    <span>Share Location</span>
   </button>
 
   <!-- Chat -->
@@ -949,26 +968,18 @@ if (typeof initExploreMap === "function") {
 };
 
     function setupGoLiveButton() {
-  console.log("Setting up Share Location button...");
+  const shareBtn = document.getElementById("shareLocationBtn");
+  if (!shareBtn) return;
 
-  const liveBtn = document.querySelector(".footer-btn.live-btn");
-  const liveIcon = liveBtn.querySelector(".live-icon");
-  const liveLabel = liveBtn.querySelector("span");
-
-  const liveIconDefault = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png";
-  const liveIconActive  = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed633027976d278ff80bba_live-focus.png";
-
-  liveBtn.addEventListener("click", () => {
+  shareBtn.addEventListener("click", () => {
     if (liveWatchId === null) {
       startLive();
-      liveIcon.src = liveIconActive;
-      liveLabel.textContent = "Stop Sharing";
-      liveBtn.classList.add("active");
+      shareBtn.classList.add("active");
+      shareBtn.textContent = "🛑 Stop Sharing";
     } else {
       stopLive();
-      liveIcon.src = liveIconDefault;
-      liveLabel.textContent = "Share Location";
-      liveBtn.classList.remove("active");
+      shareBtn.classList.remove("active");
+      shareBtn.textContent = "📍 Share Location";
     }
   });
 }
@@ -1151,47 +1162,32 @@ const communityIconActive  = "https://cdn.prod.website-files.com/687ebffd20183c0
 
 document.querySelectorAll('.footer-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    // === Reset aktivních tlačítek ===
     document.querySelectorAll('.footer-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
     const tab = btn.dataset.tab;
 
-    // === Update ikon ===
+    // Ikony (jen ty, které ve footeru skutečně jsou)
     document.querySelector('.explore-btn .explore-icon').src =
       (tab === "explore") ? exploreIconActive : exploreIconDefault;
     document.querySelector('.map-btn .map-icon').src =
       (tab === "map") ? communityIconActive : communityIconDefault;
-    document.querySelector('.live-btn .live-icon').src =
-      (tab === "live") ? liveIconActive : liveIconDefault;
     document.querySelector('.chat-btn .chat-icon').src =
       (tab === "chat") ? chatIconActive : chatIconDefault;
 
-    // === Přepínání sekcí ===
+    // Sekce
     document.getElementById('exploreMap').style.display = (tab === "explore") ? "block" : "none";
     document.getElementById('mapContainer').style.display = (tab === "map") ? "block" : "none";
     document.getElementById('chat').style.display        = (tab === "chat") ? "block" : "none";
     document.getElementById('form').style.display        = (tab === "chat") ? "flex"  : "none";
 
-    // === Instantní posun na konec chatu ===
     if (tab === "chat") {
       const chatDiv = document.getElementById('chat');
-      chatDiv.scrollTop = chatDiv.scrollHeight;
+      chatDiv.scrollTop = chatDiv.scrollHeight; // instantně bez scroll animace
     }
-
-    // === Inicializace nové Explore mapy ===
-    if (tab === "explore") {
-      initExploreMap();
-    }
+    if (tab === "explore") initExploreMap();
   });
 });
-
-
-
-
-
-
-
 
 
 
