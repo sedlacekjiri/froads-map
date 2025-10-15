@@ -461,6 +461,13 @@ header {
   background: #ff4500; /* oranžová při aktivaci */
 }
 
+.header-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #000;
+  margin-left: 6px;
+  user-select: none;
+}
 
 
   </style>
@@ -469,6 +476,7 @@ header {
   <header>
     <img class="logo-header" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ea50150761950e794dd2bb_logo-black.png" alt="Logo" />
     <div class="header-right">
+      <span id="headerName" class="header-name"></span>
       <img id="profileIcon" class="profile-icon fallback" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e956576523671093377344_account.png" alt="Profile" />
       <button id="logoutBtn" class="btn" style="display:none">Logout</button>
     </div>
@@ -789,6 +797,11 @@ if (typeof initExploreMap === "function") {
   currentAvatar.src = userData.photoURL || "https://www.gravatar.com/avatar?d=mp";
   const vehicleSelect = document.getElementById("vehicleSelect");
   if (vehicleSelect) vehicleSelect.value = userData.vehicle || "";
+  const headerName = document.getElementById("headerName");
+if (headerName) {
+  const firstName = (userData.displayName || "User").split(" ")[0];
+  headerName.textContent = firstName;
+}
 
   // Toggle editor
   profileIcon.addEventListener("click", () => {
