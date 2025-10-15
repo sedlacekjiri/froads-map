@@ -489,7 +489,22 @@ header {
   📍 Share Location
 </button>
 
-  <div id="exploreMap"><div id="froadMap"></div></div>
+  <div id="exploreMap" style="display:none;">
+  <iframe
+  id="froadsMap"
+  src="https://sedlacekjiri.github.io/froads-map/hokus-pokus.html"
+  title="F-roads Map"
+  style="
+    position:absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    border:none;
+    overflow:hidden;
+  "
+  allow="geolocation"
+  scrolling="no">
+</iframe>
+</div>
   
 
   <div id="chat"></div>
@@ -1202,7 +1217,10 @@ document.querySelectorAll('.footer-btn').forEach(btn => {
   });
 });
 
-
+// 🧩 Disable local explore init when iframe is used
+function initExploreMap() {
+  console.log("Explore map is loaded via iframe – no Leaflet init here.");
+}
 
 
   </script>
