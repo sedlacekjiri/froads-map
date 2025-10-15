@@ -134,6 +134,8 @@ header {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  padding: 10px 14px;
+  min-height: 38px;
 }
 .upload-btn:hover,
 .upload-vehicle-btn:hover {
@@ -745,7 +747,7 @@ header {
       apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
       authDomain: "froad-7d561.firebaseapp.com",
       projectId: "froad-7d561",
-      storageBucket: "froad-7d561.firebasestorage.app",
+      storageBucket: "froad-7d561.appspot.com",
       messagingSenderId: "1086299585443",
       appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
     };
@@ -767,16 +769,23 @@ header {
     const vehiclePhotoPreview = document.getElementById("vehiclePhotoPreview");
 
     vehiclePhotoInput.addEventListener("change", e => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          vehiclePhotoPreview.src = ev.target.result;
-          vehiclePhotoPreview.style.display = "block";
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // ✅ Limit 2 MB
+  if (file.size > 2 * 1024 * 1024) {
+    alert("Vehicle photo is too large. Please upload a file under 2 MB.");
+    vehiclePhotoInput.value = ""; // reset input
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    vehiclePhotoPreview.src = ev.target.result;
+    vehiclePhotoPreview.style.display = "block";
+  };
+  reader.readAsDataURL(file);
+});
 
     const mapContainer = document.getElementById("mapContainer");
     const mapDiv = document.getElementById("map");
@@ -950,6 +959,9 @@ if (headerName) {
   const firstName = (userData.displayName || "User").split(" ")[0];
   headerName.textContent = firstName;
 }
+if (userData.bio) document.getElementById("bioInput").value = userData.bio;
+if (userData.instagram) document.getElementById("instagramInput").value = userData.instagram;
+
 
   // Toggle editor
   profileIcon.addEventListener("click", () => {
@@ -1219,63 +1231,75 @@ saveProfileBtn.addEventListener("click", async () => {
   if (!user) return;
 
   const displayName = displayNameInput.value.trim();
+  const bio = document.getElementById("bioInput").value.trim();
+  const instagram = document.getElementById("instagramInput").value.trim();
   const vehicle = document.getElementById("vehicleSelect").value;
-  const file = avatarInput.files[0];
+  const avatarFile = avatarInput.files[0];
+  const vehicleFile = vehiclePhotoInput.files[0];
   const userRef = db.collection("users").doc(user.uid);
-
-  // ✅ limit 1 MB pro fotku
-  if (file && file.size > 1024 * 1024) {
-    alert("Image is too large. Please upload a file under 1 MB.");
-    return;
-  }
 
   try {
     let photoURL = user.photoURL || "";
+    let vehiclePhotoURL = "";
 
-    // ✅ nahrát novou fotku do Firebase Storage
-    if (file) {
-      const storageRef = storage.ref(`avatars/${user.uid}`);
-      await storageRef.put(file);
-      photoURL = await storageRef.getDownloadURL();
+    // ✅ Upload avatar (limit 1MB)
+    if (avatarFile) {
+      if (avatarFile.size > 1024 * 1024) {
+        alert("Profile photo is too large. Please upload under 1 MB.");
+        return;
+      }
+      const avatarRef = storage.ref(`avatars/${user.uid}`);
+      await avatarRef.put(avatarFile);
+      photoURL = await avatarRef.getDownloadURL();
       await user.updateProfile({ photoURL });
     }
 
-    // ✅ aktualizovat jméno v Auth
-    if (displayName) {
-      await user.updateProfile({ displayName });
+    // ✅ Upload vehicle photo (limit 2MB)
+    if (vehicleFile) {
+      if (vehicleFile.size > 2 * 1024 * 1024) {
+        alert("Vehicle photo is too large. Please upload under 2 MB.");
+        return;
+      }
+      const vehicleRef = storage.ref(`vehicles/${user.uid}`);
+      await vehicleRef.put(vehicleFile);
+      vehiclePhotoURL = await vehicleRef.getDownloadURL();
     }
 
-    // ✅ uložit všechno do Firestore
+    // ✅ Ulož všechna data do Firestore
     await userRef.set(
       {
         displayName: displayName || user.displayName || "",
         photoURL,
-        vehicle: vehicle || "",
+        vehicle,
+        bio,
+        instagram,
+        vehiclePhotoURL,
       },
       { merge: true }
     );
 
-    // ✅ aktualizovat UI
+    // ✅ Aktualizuj liveLocations marker, pokud existuje
+    await db.collection("liveLocations").doc(user.uid).set({
+      displayName,
+      photoURL,
+      vehicle,
+      bio,
+      instagram,
+      vehiclePhotoURL,
+      isLive: true,
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    // ✅ Aktualizuj UI
     currentAvatar.src = photoURL || "https://www.gravatar.com/avatar?d=mp";
     profileIcon.src = photoURL || "https://www.gravatar.com/avatar?d=mp";
-    profileIcon.textContent = displayName ? displayName[0].toUpperCase() : "U";
-
-    // ✅ Aktualizuj marker uživatele na mapě
-if (typeof updateUserMarker === "function") {
-  updateUserMarker({
-    uid: user.uid,
-    displayName: displayName || user.displayName || "Unknown",
-    photoURL: photoURL || user.photoURL || "https://www.gravatar.com/avatar?d=mp",
-    vehicle: vehicle || ""
-  });
-}
-
-
-    alert("✅ Profile updated successfully!");
+    vehiclePhotoPreview.src = vehiclePhotoURL || vehiclePhotoPreview.src;
+    vehiclePhotoPreview.style.display = vehiclePhotoURL ? "block" : vehiclePhotoPreview.style.display;
+    alert("✅ Profile saved!");
     profileEditor.style.display = "none";
   } catch (err) {
-    console.error("❌ Error updating profile:", err);
-    alert("Failed to update profile. Try again later.");
+    console.error("❌ Error saving profile:", err);
+    alert("Failed to save profile. Try again later.");
   }
 });
 
