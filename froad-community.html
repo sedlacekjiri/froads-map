@@ -22,6 +22,7 @@
   padding: 0;
 }
 
+/* === GLOBAL === */
 html, body {
   height: 100%;
   font-family: 'Poppins', system-ui, Inter, sans-serif;
@@ -31,6 +32,7 @@ html, body {
   flex-direction: column;
 }
 
+/* === HEADER === */
 header {
   background: var(--card);
   padding: 12px 16px;
@@ -38,8 +40,8 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 10;
   position: relative;
+  z-index: 10;
 }
 
 .logo-header {
@@ -60,69 +62,170 @@ header {
   object-fit: cover;
   cursor: pointer;
   background: #fff;
-  transition: 0.2s;
+  transition: transform 0.2s ease;
 }
-.profile-icon:hover {
-  transform: scale(1.05);
+.profile-icon:hover { transform: scale(1.05); }
+
+.header-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #000;
+  margin-left: 6px;
+  user-select: none;
 }
 
+/* === PROFILE EDITOR === */
 #profileEditor {
-  position: absolute;
+  position: fixed;
   top: 60px;
-  right: 16px;
-  width: 260px;
-  background: var(--card);
-  border: 1px solid var(--ring);
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  bottom: 70px;
+  left: 0;
+  right: 0;
   display: none;
   flex-direction: column;
-  padding: 16px;
-  z-index: 1000;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 20px;
+  background: #fff;
+  overflow-y: auto;
+  z-index: 4000;
+  box-sizing: border-box;
 }
 
-#profileEditor input[type="file"],
-#profileEditor input[type="text"] {
+/* Nadpis */
+#profileEditor h3 {
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
   margin-bottom: 12px;
-  padding: 8px;
-  border: 1px solid var(--ring);
+}
+
+/* Avatar upload */
+.avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.avatar-upload img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid #e5e5e5;
+  object-fit: cover;
+  margin-bottom: 8px;
+}
+
+/* Upload tlačítka */
+.upload-btn,
+.upload-vehicle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #fff;
+  color: #333;
+  border: 1px solid #d9d9d9;
   border-radius: 8px;
-  width: 100%;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+.upload-btn:hover,
+.upload-vehicle-btn:hover {
+  background: #f5f5f5;
 }
 
-#profileEditor .btn {
+/* Inputs */
+#profileEditor input[type="text"],
+#profileEditor select,
+#profileEditor textarea {
   width: 100%;
-  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  padding: 10px 12px;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+#bioInput {
+  min-height: 80px;
+  resize: none;
 }
 
+/* Vehicle preview */
+#vehiclePhotoPreview {
+  display: none;
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.25s ease;
+}
+
+/* Save + Logout */
+.btn-save {
+  background: #00ff99;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.btn-save:hover { background: #00e88d; }
+
+.btn-logout {
+  background: #e9e9e9;
+  color: #555;
+  border: 1px solid #d5d5d5;
+  border-radius: 10px;
+  padding: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.btn-logout:hover { background: #dcdcdc; }
+
+
+/* === MAP / EXPLORE === */
+#exploreMap,
 #mapContainer {
   position: absolute;
-  top: 60px; /* výška headeru */
-  bottom: 70px; /* výška footeru */
+  top: 60px;
+  bottom: 70px;
   left: 0;
   right: 0;
   display: none;
   z-index: 1;
 }
-
-#map {
+#map, #froadMap {
   width: 100%;
   height: 100%;
 }
 
+/* User markers */
 .user-marker,
 .leaflet-marker-icon.user-icon,
 .leaflet-marker-icon.live-user-marker {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid #fff;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   background: #ccc;
   transform: translate(-50%, -100%);
 }
-
 .user-marker img {
   width: 100%;
   height: 100%;
@@ -138,6 +241,7 @@ header {
   border-top-color: white;
 }
 
+/* Go live */
 #goLiveBtn {
   padding: 10px 16px;
   background: var(--green);
@@ -146,13 +250,33 @@ header {
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  display: none;
 }
 
-/* ==== CHAT ==== */
+/* Share location floating button */
+.share-location-btn {
+  position: absolute;
+  bottom: 90px;
+  right: 20px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 4000;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+.share-location-btn:hover { transform: scale(1.05); }
+.share-location-btn.active { background: #ff4500; }
+
+/* === CHAT === */
 #chat {
   position: absolute;
-  top: 60px; /* výška headeru */
-  bottom: calc(var(--footer-btn-height) + 70px); /* input bar + footer */
+  top: 60px;
+  bottom: calc(var(--footer-btn-height) + 70px);
   left: 0;
   right: 0;
   overflow-y: auto;
@@ -164,14 +288,12 @@ header {
   z-index: 1;
 }
 
-
 .msg {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-bottom: 12px; /* jednotný odstup mezi zprávami */
+  margin-bottom: 12px;
 }
-
 .avatar {
   width: 36px;
   height: 36px;
@@ -180,19 +302,17 @@ header {
   border: 1px solid var(--ring);
   flex-shrink: 0;
 }
-
 .bubble {
   background: #fff;
   padding: 10px 14px;
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
   gap: 6px;
   max-width: 80%;
   word-wrap: break-word;
 }
-
 .meta {
   font-size: 12px;
   color: #6b7280;
@@ -200,9 +320,10 @@ header {
   margin-bottom: 2px;
 }
 
+/* Chat input */
 #form {
   position: fixed;
-  bottom: var(--footer-btn-height); /* přizpůsobí se výšce footeru */
+  bottom: var(--footer-btn-height);
   left: 0;
   right: 0;
   display: none;
@@ -210,9 +331,8 @@ header {
   border-top: 1px solid var(--ring);
   background: var(--card);
   gap: 8px;
-  z-index: 4000; /* pod footrem, ale nad mapou */
+  z-index: 4000;
 }
-
 #form input {
   flex: 1;
   padding: 10px 14px;
@@ -224,14 +344,14 @@ header {
 #form button {
   padding: 10px 16px;
   border: none;
-  background: black;
-  color: white;
+  background: #000;
+  color: #fff;
   font-weight: bold;
   border-radius: 10px;
   cursor: pointer;
 }
 
-/* ==== LOGIN ==== */
+/* === LOGIN SCREEN === */
 #loginScreen {
   position: fixed;
   inset: 0;
@@ -239,7 +359,6 @@ header {
   display: flex;
   flex-direction: row;
 }
-
 .login-left {
   flex: 1;
   background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;
@@ -264,10 +383,7 @@ header {
   gap: 24px;
   text-align: center;
 }
-.login-box img {
-  width: 60px;
-  margin: 0 auto;
-}
+.login-box img { width: 60px; margin: 0 auto; }
 .login-box input {
   padding: 12px 16px;
   font-size: 15px;
@@ -277,22 +393,20 @@ header {
   color: var(--fg);
   outline: none;
 }
-.login-box input:focus {
-  border-color: var(--blue);
-}
+.login-box input:focus { border-color: var(--blue); }
+
 .login-email-btn {
   padding: 12px 20px;
   background: #121d12;
-  color: white;
+  color: #fff;
   font-size: 16px;
   font-weight: 500;
   border: none;
   border-radius: 999px;
   cursor: pointer;
+  transition: background 0.2s ease;
 }
-.login-email-btn:hover {
-  background: #1a2b1a;
-}
+.login-email-btn:hover { background: #1a2b1a; }
 
 .toggle-auth {
   font-size: 14px;
@@ -303,9 +417,8 @@ header {
   font-weight: 600;
   text-decoration: none;
 }
-.toggle-auth a:hover {
-  text-decoration: underline;
-}
+.toggle-auth a:hover { text-decoration: underline; }
+
 .legal-text {
   font-size: 13px;
   color: var(--fg);
@@ -316,54 +429,7 @@ header {
   font-weight: 500;
 }
 
-/* === Media Queries === */
-@media (max-width: 1024px) {
-  #loginScreen {
-    flex-direction: column;
-    background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;
-  }
-  .login-left { display: none; }
-  .login-right {
-    background: rgba(255, 255, 255, 0);
-    width: 100%;
-    padding: 32px;
-  }
-  .login-box {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-  }
-}
-
-/* === Leaflet custom popup === */
-.leaflet-popup.custom-popup .leaflet-popup-content-wrapper,
-.leaflet-popup-content-wrapper.custom-popup {
-  background: #fff !important;
-  border-radius: 14px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
-  padding: 10px 14px !important;
-  color: #222;
-}
-.leaflet-popup-tip.custom-popup {
-  background: #fff !important;
-}
-.custom-popup .popup-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.custom-popup strong {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111;
-}
-.popup-content .gps,
-.popup-content .vehicle {
-  font-size: 13px;
-  color: #555;
-  font-style: italic;
-}
-
+/* === FOOTER === */
 :root {
   --footer-font-size: 13px;
   --footer-btn-height: 70px;
@@ -382,7 +448,7 @@ header {
   display: flex;
   justify-content: space-evenly;
   align-items: center;
-  z-index: 5000; /* 🔸 posílený z-index */
+  z-index: 5000;
 }
 
 .footer-btn {
@@ -400,19 +466,16 @@ header {
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 .footer-btn img {
   width: 24px;
   height: 24px;
   margin-bottom: 4px;
   transition: all 0.3s ease;
 }
-
 .footer-btn.active {
   color: var(--active-color);
   font-weight: 600;
 }
-
 .footer-btn span {
   margin-top: 2px;
   height: 16px;
@@ -421,52 +484,89 @@ header {
   opacity: 0.85;
 }
 
-#goLiveBtn {
-  display: none;
+/* === RESPONSIVE LOGIN === */
+@media (max-width: 1024px) {
+  #loginScreen {
+    flex-direction: column;
+    background: url('https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68de881d8b749db696f9bd75_f223.jpg') center/cover no-repeat;
+  }
+  .login-left { display: none; }
+  .login-right {
+    background: rgba(255,255,255,0);
+    width: 100%;
+    padding: 32px;
+  }
+  .login-box {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  }
 }
 
-#exploreMap {
-  position: absolute;
-  top: 60px;
-  bottom: 70px;
-  left: 0;
-  right: 0;
-  display: none;
-  z-index: 1;
+/* === LEAFLET POPUPS === */
+.leaflet-popup.custom-popup .leaflet-popup-content-wrapper,
+.leaflet-popup-content-wrapper.custom-popup {
+  background: #fff !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25) !important;
+  padding: 10px 14px !important;
+  color: #222;
 }
-#froadMap {
-  width: 100%;
-  height: 100%;
+.leaflet-popup-tip.custom-popup { background: #fff !important; }
+.custom-popup .popup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-
-.share-location-btn {
-  position: absolute;
-  bottom: 90px;
-  right: 20px;
-  background: #000;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 12px 20px;
-  font-weight: 600;
-  cursor: pointer;
-  z-index: 4000;
-  transition: all 0.2s ease;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-}
-.share-location-btn:hover {
-  transform: scale(1.05);
-}
-.share-location-btn.active {
-  background: #ff4500; /* oranžová při aktivaci */
-}
-
-.header-name {
-  font-weight: 600;
+.custom-popup strong {
   font-size: 15px;
-  color: #000;
-  margin-left: 6px;
-  user-select: none;
+  font-weight: 600;
+  color: #111;
+}
+.popup-content .gps,
+.popup-content .vehicle {
+  font-size: 13px;
+  color: #555;
+  font-style: italic;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.popup-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #eee;
+}
+.popup-bio {
+  font-size: 13px;
+  color: #333;
+  margin: 6px 0;
+  line-height: 1.4;
+}
+.popup-vehicle-photo {
+  width: 100%;
+  max-height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 6px;
+  border: 1px solid #eee;
+}
+.popup-instagram-link {
+  color: #222 !important;
+  text-decoration: none !important;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+  transition: color 0.2s ease;
+}
+.popup-instagram-link:hover {
+  color: #555 !important;
+  text-decoration: underline !important;
 }
 
 
@@ -516,19 +616,23 @@ header {
   <div id="profileEditor">
   <h3>Edit Profile</h3>
 
-  <!-- Avatar náhled -->
-  <img id="currentAvatar" src="" alt="Avatar" 
-       style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:10px;" />
+  <div class="avatar-upload">
+    <img id="currentAvatar" src="https://www.gravatar.com/avatar?d=mp" alt="Avatar" />
+    <label for="avatarInput" class="upload-btn">+ Upload photo</label>
+    <input type="file" id="avatarInput" accept="image/*" hidden />
+  </div>
 
-  <!-- Výběr souboru -->
-  <input type="file" id="avatarInput" accept="image/*" />
-
-  <!-- Jméno -->
+  <label for="displayNameInput">Name</label>
   <input type="text" id="displayNameInput" placeholder="Your name" />
 
-  <!-- Auto -->
-  <select id="vehicleSelect" 
-          style="padding:8px; border:1px solid var(--ring); border-radius:8px; width:100%; margin-bottom:12px;">
+  <label for="bioInput">Bio</label>
+  <textarea id="bioInput" maxlength="150" placeholder="Short bio (max 150 characters)"></textarea>
+
+  <label for="instagramInput">Instagram Handle</label>
+  <input type="text" id="instagramInput" placeholder="@username" />
+
+  <label for="vehicleSelect">Vehicle type</label>
+  <select id="vehicleSelect">
     <option value="">Select your 4x4 vehicle</option>
     <option value="Dacia Duster">Dacia Duster</option>
     <option value="Toyota Land Cruiser">Toyota Land Cruiser</option>
@@ -539,8 +643,13 @@ header {
     <option value="Other">Other</option>
   </select>
 
-  <!-- Uložit -->
-  <button id="saveProfileBtn" class="btn">Save</button>
+  <img id="vehiclePhotoPreview" src="" alt="Vehicle photo preview" style="display:none;">
+
+<label for="vehiclePhoto" class="upload-vehicle-btn">+ Upload Vehicle Photo</label>
+<input type="file" id="vehiclePhoto" accept="image/*" hidden />
+
+  <button id="saveProfileBtn" class="btn btn-save">Save</button>
+  <button id="logoutBtn" class="btn btn-logout">Logout</button>
 </div>
 
   <div id="accessDeniedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; justify-content:center; align-items:center;">
@@ -654,6 +763,20 @@ header {
     const avatarInput = document.getElementById("avatarInput");
     const displayNameInput = document.getElementById("displayNameInput");
     const saveProfileBtn = document.getElementById("saveProfileBtn");
+    const vehiclePhotoInput = document.getElementById("vehiclePhoto");
+    const vehiclePhotoPreview = document.getElementById("vehiclePhotoPreview");
+
+    vehiclePhotoInput.addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          vehiclePhotoPreview.src = ev.target.result;
+          vehiclePhotoPreview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      }
+    });
 
     const mapContainer = document.getElementById("mapContainer");
     const mapDiv = document.getElementById("map");
@@ -805,6 +928,10 @@ if (typeof initExploreMap === "function") {
   }
 
   const userData = userDoc.data();
+  if (userData.vehiclePhotoURL) {
+  vehiclePhotoPreview.src = userData.vehiclePhotoURL;
+  vehiclePhotoPreview.style.display = "block";
+}
 
   // ✅ Access kontrola
   if (!userData.access) {
@@ -908,12 +1035,20 @@ if (headerName) {
             : "No GPS data";
 
         const popupHTML = `
-          <div class="popup-content">
-            <strong>${data.displayName || "Unknown User"}</strong>
-            <div class="gps">📍 ${gpsText}</div>
-            <div class="vehicle">🚙 ${data.vehicle || "No vehicle info"}</div>
-          </div>
-        `;
+  <div class="popup-content">
+    <div class="popup-header">
+      <img class="popup-avatar" src="${data.photoURL || 'https://www.gravatar.com/avatar?d=mp'}" alt="Avatar">
+      <div>
+        <strong>${data.displayName || 'Unknown'}</strong>
+        ${data.instagram ? `<div class="popup-instagram"><a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank" class="popup-instagram-link">@${data.instagram.replace('@','')}</a></div>` : ''}
+      </div>
+    </div>
+
+    ${data.bio ? `<div class="popup-bio">${data.bio}</div>` : ''}
+    ${data.vehicle ? `<div class="popup-vehicle">${data.vehicle}</div>` : ''}
+    ${data.vehiclePhotoURL ? `<img class="popup-vehicle-photo" src="${data.vehiclePhotoURL}" alt="Vehicle Photo">` : ''}
+  </div>`;
+
 
         if (!liveMarkers[uid]) {
           // nový marker
