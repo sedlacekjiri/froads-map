@@ -778,6 +778,12 @@ document.getElementById('mapContainer').style.display = "none";
 document.getElementById('chat').style.display = "none";
 document.getElementById('form').style.display = "none";
 
+// ✅ Skryj Share Location tlačítko při načtení (jen People ho má mít)
+const shareBtn = document.getElementById('shareLocationBtn');
+if (shareBtn) {
+  shareBtn.style.display = "none";
+}
+
 // Inicializace Explore mapy (pokud ještě není)
 if (typeof initExploreMap === "function") {
   initExploreMap();
@@ -1195,7 +1201,7 @@ document.querySelectorAll('.footer-btn').forEach(btn => {
 
     const tab = btn.dataset.tab;
 
-    // Ikony (jen ty, které ve footeru skutečně jsou)
+    // Ikony
     document.querySelector('.explore-btn .explore-icon').src =
       (tab === "explore") ? exploreIconActive : exploreIconDefault;
     document.querySelector('.map-btn .map-icon').src =
@@ -1209,13 +1215,20 @@ document.querySelectorAll('.footer-btn').forEach(btn => {
     document.getElementById('chat').style.display        = (tab === "chat") ? "block" : "none";
     document.getElementById('form').style.display        = (tab === "chat") ? "flex"  : "none";
 
+    // ✅ Tady přidej:
+    const shareBtn = document.getElementById('shareLocationBtn');
+    if (shareBtn) {
+      shareBtn.style.display = (tab === "map") ? "block" : "none";
+    }
+
     if (tab === "chat") {
       const chatDiv = document.getElementById('chat');
-      chatDiv.scrollTop = chatDiv.scrollHeight; // instantně bez scroll animace
+      chatDiv.scrollTop = chatDiv.scrollHeight;
     }
     if (tab === "explore") initExploreMap();
   });
 });
+
 
 // 🧩 Disable local explore init when iframe is used
 function initExploreMap() {
