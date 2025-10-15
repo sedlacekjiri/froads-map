@@ -425,6 +425,21 @@ header {
   display: none;
 }
 
+#exploreMap {
+  position: absolute;
+  top: 60px;
+  bottom: 70px;
+  left: 0;
+  right: 0;
+  display: none;
+  z-index: 1;
+}
+#froadMap {
+  width: 100%;
+  height: 100%;
+}
+
+
 
 
   </style>
@@ -439,6 +454,8 @@ header {
   </header>
 
   <div id="mapContainer"><div id="map"></div></div>
+  <div id="exploreMap"><div id="froadMap"></div></div>
+  
 
   <div id="chat"></div>
   <div id="form">
@@ -528,20 +545,33 @@ header {
   </div>
 
   <footer id="appFooter">
-  <button class="footer-btn map-btn active" data-tab="map">
-    <img class="map-icon" 
+  <!-- Explore ikona -->
+  <button class="footer-btn explore-btn" data-tab="explore">
+    <img class="explore-icon" 
          src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed640a5b1f7f0d0f842643_map%20(3).png"
-         alt="Map" />
+         alt="Explore" />
     <span>Explore</span>
   </button>
+
+  <!--Community -->
+  <button class="footer-btn map-btn" data-tab="map">
+    <img class="map-icon"
+         src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68efa731bab109784845d316_people.png"
+         alt="People" />
+    <span>People</span>
+  </button>
+
+  <!-- Share Location -->
   <button class="footer-btn live-btn" data-tab="live">
-    <img class="live-icon" 
+    <img class="live-icon"
          src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png"
          alt="Live" />
     <span>Share Location</span>
   </button>
+
+  <!-- Chat -->
   <button class="footer-btn chat-btn" data-tab="chat">
-    <img class="chat-icon" 
+    <img class="chat-icon"
          src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed60dbeff425a3e7d0d35e_paper-plane.png"
          alt="Chat" />
     <span>Chat</span>
@@ -690,14 +720,25 @@ auth.onAuthStateChanged(async user => {
     return;
   }
 
-  // Výchozí aktivní tab = MAPA
+  // === Výchozí aktivní tab = EXPLORE ===
 document.querySelectorAll('.footer-btn').forEach(b => b.classList.remove('active'));
-const mapBtn = document.querySelector('.footer-btn.map-btn');
-if (mapBtn) {
-  mapBtn.classList.add('active');
-  const mapIcon = mapBtn.querySelector('.map-icon');
-  if (mapIcon)
-    mapIcon.src = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed64a21a1343f06a3152d5_map-focus.png";
+const exploreBtn = document.querySelector('.footer-btn.explore-btn');
+if (exploreBtn) {
+  exploreBtn.classList.add('active');
+  const exploreIcon = exploreBtn.querySelector('.explore-icon');
+  if (exploreIcon)
+    exploreIcon.src = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed64a21a1343f06a3152d5_map-focus.png"; // aktivní Explore ikonka
+}
+
+// Zobraz Explore mapu jako výchozí sekci
+document.getElementById('exploreMap').style.display = "block";
+document.getElementById('mapContainer').style.display = "none";
+document.getElementById('chat').style.display = "none";
+document.getElementById('form').style.display = "none";
+
+// Inicializace Explore mapy (pokud ještě není)
+if (typeof initExploreMap === "function") {
+  initExploreMap();
 }
 
 
@@ -973,6 +1014,16 @@ if (mapBtn) {
 }
 
 
+let exploreMap;
+function initExploreMap() {
+  if (!exploreMap) {
+    exploreMap = L.map('froadMap').setView([50.0755, 14.4378], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 18
+    }).addTo(exploreMap);
+  }
+}
 
 
 
@@ -1083,16 +1134,22 @@ existing.bindPopup(popupHTML, { className: "custom-popup" });
 
 }
 
-  const chatIconDefault = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed60dbeff425a3e7d0d35e_paper-plane.png";
-  const chatIconActive  = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed60e5e6a6b87e493e45db_paper-plane-focus.png";
+  // === Ikony ===
+const chatIconDefault = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed60dbeff425a3e7d0d35e_paper-plane.png";
+const chatIconActive  = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed60e5e6a6b87e493e45db_paper-plane-focus.png";
 
-  const liveIconDefault = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png";
-  const liveIconActive  = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed633027976d278ff80bba_live-focus.png";
+const liveIconDefault = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png";
+const liveIconActive  = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed633027976d278ff80bba_live-focus.png";
 
-  const mapIconDefault  = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed640a5b1f7f0d0f842643_map%20(3).png";
-  const mapIconActive   = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed64a21a1343f06a3152d5_map-focus.png";
+// 🆕 Explore (nová mapa s froady)
+const exploreIconDefault = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed640a5b1f7f0d0f842643_map%20(3).png";
+const exploreIconActive  = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed64a21a1343f06a3152d5_map-focus.png";
 
-  document.querySelectorAll('.footer-btn').forEach(btn => {
+// 🧭 Community (přejmenovaná původní mapa)
+const communityIconDefault = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68efa731bab109784845d316_people.png";
+const communityIconActive  = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68efa7311faefa85ba34ed0a_people-focus.png";
+
+document.querySelectorAll('.footer-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     // === Reset aktivních tlačítek ===
     document.querySelectorAll('.footer-btn').forEach(b => b.classList.remove('active'));
@@ -1101,28 +1158,34 @@ existing.bindPopup(popupHTML, { className: "custom-popup" });
     const tab = btn.dataset.tab;
 
     // === Update ikon ===
-    document.querySelector('.chat-btn .chat-icon').src =
-      (tab === "chat") ? chatIconActive : chatIconDefault;
+    document.querySelector('.explore-btn .explore-icon').src =
+      (tab === "explore") ? exploreIconActive : exploreIconDefault;
+    document.querySelector('.map-btn .map-icon').src =
+      (tab === "map") ? communityIconActive : communityIconDefault;
     document.querySelector('.live-btn .live-icon').src =
       (tab === "live") ? liveIconActive : liveIconDefault;
-    document.querySelector('.map-btn .map-icon').src =
-      (tab === "map") ? mapIconActive : mapIconDefault;
+    document.querySelector('.chat-btn .chat-icon').src =
+      (tab === "chat") ? chatIconActive : chatIconDefault;
 
     // === Přepínání sekcí ===
+    document.getElementById('exploreMap').style.display = (tab === "explore") ? "block" : "none";
     document.getElementById('mapContainer').style.display = (tab === "map") ? "block" : "none";
     document.getElementById('chat').style.display        = (tab === "chat") ? "block" : "none";
     document.getElementById('form').style.display        = (tab === "chat") ? "flex"  : "none";
 
-    // === 💬 Nové: instantní posun na konec chatu ===
+    // === Instantní posun na konec chatu ===
     if (tab === "chat") {
       const chatDiv = document.getElementById('chat');
-      // okamžitě po přepnutí (bez animace)
-      requestAnimationFrame(() => {
-        chatDiv.scrollTop = chatDiv.scrollHeight;
-      });
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    // === Inicializace nové Explore mapy ===
+    if (tab === "explore") {
+      initExploreMap();
     }
   });
 });
+
 
 
 
