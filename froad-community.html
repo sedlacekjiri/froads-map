@@ -747,14 +747,15 @@ header {
       apiKey: "AIzaSyDDMNnJgtm-gK9OrVev7qmBRpaA8CAoDiM",
       authDomain: "froad-7d561.firebaseapp.com",
       projectId: "froad-7d561",
-      storageBucket: "froad-7d561.appspot.com",
+      storageBucket: "froad-7d561.firebasestorage.app",
       messagingSenderId: "1086299585443",
       appId: "1:1086299585443:web:10bcb67effd6a89c24f816"
     };
     firebase.initializeApp(config);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    const storage = firebase.storage();
+    const storage = firebase.storage(firebase.app(), "gs://froad-7d561.firebasestorage.app"); 
+
 
     // DOM references
     const loginScreen = document.getElementById("loginScreen");
@@ -1254,12 +1255,13 @@ saveProfileBtn.addEventListener("click", async () => {
     }
 
     // === Upload vehicle photo ===
-    if (vehicleFile) {
-      const fileName = `${Date.now()}_${vehicleFile.name}`;
-      const vehicleRef = storage.ref(`vehicles/${user.uid}/${fileName}`);
-      const snapshot = await vehicleRef.put(vehicleFile);
-      vehiclePhotoURL = await snapshot.ref.getDownloadURL();
-    }
+    if (vehicleFile && vehicleFile.name) {
+    const fileName = `${Date.now()}_${vehicleFile.name}`;
+    const vehicleRef = storage.ref(`vehicles/${user.uid}/${fileName}`);
+    const snapshot = await vehicleRef.put(vehicleFile);
+    vehiclePhotoURL = await snapshot.ref.getDownloadURL();
+  }
+
 
     await userRef.set({
       displayName,
