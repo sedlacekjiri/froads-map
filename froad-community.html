@@ -508,6 +508,7 @@ header {
 /* === LEAFLET POPUPS === */
 .leaflet-popup.custom-popup .leaflet-popup-content-wrapper,
 .leaflet-popup-content-wrapper.custom-popup {
+  max-width: 280px !important;
   background: #fff !important;
   border-radius: 14px !important;
   box-shadow: 0 4px 16px rgba(0,0,0,0.25) !important;
@@ -552,7 +553,8 @@ header {
 }
 .popup-vehicle-photo {
   width: 100%;
-  max-height: 140px;
+  height: auto;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: 8px;
   margin-top: 6px;
@@ -571,6 +573,19 @@ header {
   text-decoration: underline !important;
 }
 
+.popup-vehicle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #444;
+}
+.popup-vehicle-icon {
+  width: 24;
+  height: 24px;
+  flex-shrink: 0;
+}
 
   </style>
 </head>
@@ -634,16 +649,7 @@ header {
   <input type="text" id="instagramInput" placeholder="@username" />
 
   <label for="vehicleSelect">Vehicle type</label>
-  <select id="vehicleSelect">
-    <option value="">Select your 4x4 vehicle</option>
-    <option value="Dacia Duster">Dacia Duster</option>
-    <option value="Toyota Land Cruiser">Toyota Land Cruiser</option>
-    <option value="Jeep Wrangler Rubicon">Jeep Wrangler Rubicon</option>
-    <option value="Suzuki Jimny (new)">Suzuki Jimny (new)</option>
-    <option value="Suzuki Jimny (old)">Suzuki Jimny (old)</option>
-    <option value="Ford Econoline 4x4">Ford Econoline 4x4</option>
-    <option value="Other">Other</option>
-  </select>
+<input type="text" id="vehicleSelect" placeholder="Enter your vehicle name" />
 
   <img id="vehiclePhotoPreview" src="" alt="Vehicle photo preview" style="display:none;">
 
@@ -1058,7 +1064,12 @@ if (userData.instagram) document.getElementById("instagramInput").value = userDa
     </div>
 
     ${data.bio ? `<div class="popup-bio">${data.bio}</div>` : ''}
-    ${data.vehicle ? `<div class="popup-vehicle">${data.vehicle}</div>` : ''}
+    ${data.vehicle ? `
+  <div class="popup-vehicle">
+    <img class="popup-vehicle-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f0ff5e8cd672f046f544ec_transport%20(1).png" alt="vehicle icon">
+    ${data.vehicle}
+  </div>
+` : ''}
     ${data.vehiclePhotoURL ? `<img class="popup-vehicle-photo" src="${data.vehiclePhotoURL}" alt="Vehicle Photo">` : ''}
   </div>`;
 
