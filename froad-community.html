@@ -1005,8 +1005,9 @@ if (userData.instagram) document.getElementById("instagramInput").value = userDa
 
 
     logoutBtn.onclick = () => {
-      auth.signOut();
-    };
+  profileEditor.style.display = "none"; // 🧼 Zavřít editor
+  auth.signOut();
+};
 
     function showAccessDeniedModal() {
       document.getElementById("accessDeniedModal").style.display = "flex";
