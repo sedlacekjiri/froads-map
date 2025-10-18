@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
   <title>Froad Community + Live Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -175,7 +175,7 @@ header {
 
 /* Save + Logout */
 .btn-save {
-  background: #00ff99;
+  background: #161616;
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -184,7 +184,7 @@ header {
   cursor: pointer;
   transition: background 0.2s ease;
 }
-.btn-save:hover { background: #00e88d; }
+.btn-save:hover { background: #000000; }
 
 .btn-logout {
   background: #e9e9e9;
@@ -192,7 +192,7 @@ header {
   border: 1px solid #d5d5d5;
   border-radius: 10px;
   padding: 12px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.2s ease;
 }
@@ -586,6 +586,13 @@ header {
   height: 24px;
   flex-shrink: 0;
 }
+.verified-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
 
   </style>
 </head>
@@ -595,7 +602,6 @@ header {
     <div class="header-right">
       <span id="headerName" class="header-name"></span>
       <img id="profileIcon" class="profile-icon fallback" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68e956576523671093377344_account.png" alt="Profile" />
-      <button id="logoutBtn" class="btn" style="display:none">Logout</button>
     </div>
   </header>
 
@@ -1059,6 +1065,7 @@ if (userData.instagram) document.getElementById("instagramInput").value = userDa
       <img class="popup-avatar" src="${data.photoURL || 'https://www.gravatar.com/avatar?d=mp'}" alt="Avatar">
       <div>
         <strong>${data.displayName || 'Unknown'}</strong>
+        ${data.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
         ${data.instagram ? `<div class="popup-instagram"><a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank" class="popup-instagram-link">@${data.instagram.replace('@','')}</a></div>` : ''}
       </div>
     </div>
@@ -1146,13 +1153,17 @@ if (userData.instagram) document.getElementById("instagramInput").value = userDa
   const txt = msgInput.value.trim();
   if (!txt) return;
   const user = auth.currentUser;
-  await db.collection("messages").add({
-    text: txt,
-    uid: user.uid,
-    displayName: user.displayName || "Anonymous",
-    photoURL: user.photoURL || null,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  const userDoc = await db.collection("users").doc(user.uid).get();
+const verified = userDoc.exists && userDoc.data().verified === true;
+
+await db.collection("messages").add({
+  text: txt,
+  uid: user.uid,
+  displayName: user.displayName || "Anonymous",
+  photoURL: user.photoURL || null,
+  verified: verified,
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+});
   msgInput.value = "";
   // 🔽 Auto-scroll po odeslání
   setTimeout(() => {
@@ -1199,9 +1210,11 @@ if (userData.instagram) document.getElementById("instagramInput").value = userDa
         const bubble = document.createElement("div");
         bubble.className = "bubble";
         bubble.innerHTML = `
-          <div class="meta">${msg.displayName || "Unknown"} · ${
-          msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() : ""
-        }</div>
+          <div class="meta">
+  ${msg.displayName || "Unknown"}
+  ${msg.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
+  · ${msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() : ""}
+</div>
           <div>${msg.text || ""}</div>
         `;
 
