@@ -257,22 +257,33 @@ header {
 
 /* Share location floating button */
 .share-location-btn {
-  position: absolute;
-  bottom: 90px;
-  right: 20px;
-  background: #000;
-  color: #fff;
+  position: fixed;
+  bottom: 80px;              /* ✅ nad footerem */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  color: #000;
   border: none;
+  box-shadow: none;
   border-radius: 10px;
   padding: 12px 20px;
   font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
-  z-index: 4000;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
-  transition: transform 0.2s ease;
+  z-index: 5000;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.share-location-btn:hover { transform: scale(1.05); }
-.share-location-btn.active { background: #ff4500; }
+
+.share-location-btn .live-icon {
+  width: 18px;
+  height: 18px;
+  position: relative;
+  vertical-align: middle;
+}
+
 
 /* === CHAT === */
 #chat {
@@ -609,8 +620,10 @@ header {
 
   <!-- Floating Share Location Button -->
 <button id="shareLocationBtn" class="share-location-btn">
-  📍 Share Location
+  <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png" alt="Live Icon" class="live-icon" />
+  Share Location
 </button>
+
 
   <div id="exploreMap" style="display:none;">
   <iframe
@@ -1183,11 +1196,11 @@ await db.collection("messages").add({
     if (liveWatchId === null) {
       startLive();
       shareBtn.classList.add("active");
-      shareBtn.textContent = "🛑 Stop Sharing";
+      shareBtn.textContent = "Stop Sharing";
     } else {
       stopLive();
       shareBtn.classList.remove("active");
-      shareBtn.textContent = "📍 Share Location";
+      shareBtn.textContent = "Share Location";
     }
   });
 }
