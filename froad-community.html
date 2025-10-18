@@ -977,10 +977,13 @@ if (userData.instagram) document.getElementById("instagramInput").value = userDa
 
 
   // Toggle editor
+  if (!profileIcon.hasAttribute("data-listener")) {
+  profileIcon.setAttribute("data-listener", "true");
   profileIcon.addEventListener("click", () => {
     profileEditor.style.display =
       profileEditor.style.display === "flex" ? "none" : "flex";
   });
+}
 
   // === Zobrazení hlavní části ===
   loginScreen.style.display = "none";
