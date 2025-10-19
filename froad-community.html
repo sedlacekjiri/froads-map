@@ -166,6 +166,7 @@ header {
 #vehiclePhotoPreview {
   display: none;
   width: 100%;
+  max-height: 200px;
   border-radius: 10px;
   margin-bottom: 10px;
   object-fit: cover;
@@ -258,7 +259,7 @@ header {
 /* Share location floating button */
 .share-location-btn {
   position: fixed;
-  bottom: 80px;              /* ✅ nad footerem */
+  top: 80px;              /* ✅ nad footerem */
   left: 50%;
   transform: translateX(-50%);
   background: #ffffff;
@@ -301,36 +302,71 @@ header {
   z-index: 1;
 }
 
+/* === CHAT === */
+/* === CHAT === */
 .msg {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 12px;
+  align-items: flex-end;
+  margin: 8px 12px;
+  gap: 8px;
+  max-width: 90%;
 }
-.avatar {
-  width: 36px;
-  height: 36px;
+
+/* Avatar – vpravo u mých zpráv, vlevo u ostatních */
+.msg .avatar {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid var(--ring);
   flex-shrink: 0;
 }
+
+/* Základní styl bubliny */
 .bubble {
-  background: #fff;
   padding: 10px 14px;
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-width: 80%;
-  word-wrap: break-word;
+  max-width: 75%;
 }
+
+/* Meta – jméno + čas */
 .meta {
   font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
-  margin-bottom: 2px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+/* Ostatní zprávy */
+.msg.other {
+  justify-content: flex-start;
+}
+.msg.other .bubble {
+  background: #f4f4f4;
+  color: #111;
+}
+.msg.other .avatar {
+  order: 0;
+}
+
+/* Moje zprávy */
+.msg.me {
+  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+.msg.me .bubble {
+  background: #ff5100d6;
+  color: #fff;
+}
+.msg.me .meta {
+  color: rgba(225, 225, 225, 0.9);
+}
+.msg.me .avatar {
+  order: 1;
 }
 
 /* Chat input */
@@ -353,6 +389,12 @@ header {
   border-radius: 10px;
   background: var(--bg);
   color: var(--fg);
+  font-size: 16px;              /* 🔥 zvětší text i placeholder */
+}
+
+#form input::placeholder {
+  font-size: 14px;              /* 🔥 stejná velikost jako Send */
+  color: #777;                  /* decentní šedá */
 }
 #form button {
   padding: 10px 16px;
@@ -930,6 +972,13 @@ if (exploreBtn) {
     exploreIcon.src = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed64a21a1343f06a3152d5_map-focus.png"; // aktivní Explore ikonka
 }
 
+// ✅ Reset všech ikon do výchozího stavu
+document.querySelector('.chat-btn .chat-icon').src =
+  "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed60dbeff425a3e7d0d35e_paper-plane.png";
+document.querySelector('.map-btn .map-icon').src =
+  "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68efa731bab109784845d316_people.png";
+
+
 // Zobraz Explore mapu jako výchozí sekci
 document.getElementById('exploreMap').style.display = "block";
 document.getElementById('mapContainer').style.display = "none";
@@ -950,17 +999,30 @@ if (typeof initExploreMap === "function") {
 
   // === LOAD / INIT USER DOC ===
   const userRef = db.collection("users").doc(user.uid);
-  let userDoc = await userRef.get();
+const userDoc = await userRef.get();
 
-  if (!userDoc.exists) {
-    await userRef.set({
-      displayName: user.displayName || "",
-      photoURL: user.photoURL || "",
-      vehicle: "",
-      access: true // ✅ pro test, můžeš dát zpět na false až později
-    });
-    userDoc = await userRef.get();
-  }
+if (!userDoc.exists) {
+  // 🆕 Nový uživatel – vytvoříme čistý, výchozí profil
+  await userRef.set({
+    displayName: user.displayName || "User",
+    photoURL: "",
+    bio: "",
+    instagram: "",
+    vehicle: "",
+    vehiclePhotoURL: "",
+    verified: false,
+    access: false, // ✅ ve výchozím stavu zamítnuto, ručně schválíš
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  console.log("✅ New clean profile created for:", user.uid);
+}
+
+// 🔄 Aktualizuj Auth profil pro nový účet (aby se jméno zobrazilo i v chatu)
+await user.updateProfile({
+  displayName: "User",
+  photoURL: ""
+});
+
 
   const userData = userDoc.data();
   if (userData.vehiclePhotoURL) {
@@ -977,7 +1039,8 @@ if (typeof initExploreMap === "function") {
 
   // Prefill editor
   displayNameInput.value = userData.displayName || "";
-  currentAvatar.src = userData.photoURL || "https://www.gravatar.com/avatar?d=mp";
+  const defaultPhoto = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f42acf3f8263cdf39637b0_unknown.jpg";
+currentAvatar.src = userData.photoURL || defaultPhoto;
   const vehicleSelect = document.getElementById("vehicleSelect");
   if (vehicleSelect) vehicleSelect.value = userData.vehicle || "";
   const headerName = document.getElementById("headerName");
@@ -987,6 +1050,14 @@ if (headerName) {
 }
 if (userData.bio) document.getElementById("bioInput").value = userData.bio;
 if (userData.instagram) document.getElementById("instagramInput").value = userData.instagram;
+
+// ✅ Synchronizuj Auth profil s daty z Firestore (např. když se změní jméno)
+if (userData.displayName && user.displayName !== userData.displayName) {
+  await user.updateProfile({ displayName: userData.displayName });
+}
+if (userData.photoURL && user.photoURL !== userData.photoURL) {
+  await user.updateProfile({ photoURL: userData.photoURL });
+}
 
 
   // Toggle editor
@@ -1217,7 +1288,14 @@ await db.collection("messages").add({
       snapshot.forEach(doc => {
         const msg = doc.data();
         const msgDiv = document.createElement("div");
-        msgDiv.className = "msg";
+msgDiv.classList.add("msg");
+
+// 🔥 Rozlišení mých zpráv
+if (msg.uid === auth.currentUser?.uid) {
+  msgDiv.classList.add("me");
+} else {
+  msgDiv.classList.add("other");
+}
 
         const avatar = document.createElement("img");
         avatar.className = "avatar";
@@ -1312,6 +1390,8 @@ saveProfileBtn.addEventListener("click", async () => {
       instagram,
       vehiclePhotoURL
     }, { merge: true });
+
+    await user.updateProfile({ displayName });
 
     await db.collection("liveLocations").doc(user.uid).set({
       displayName,
