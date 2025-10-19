@@ -216,6 +216,42 @@ header {
   height: 100%;
 }
 
+/* === USER DETAIL PANEL (People marker popup replacement) === */
+#userDetailPanel {
+  position: fixed;
+  bottom: -100%;
+  left: 0;
+  width: 100%;
+  height: 70%;
+  background: #fff;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+  transition: bottom 0.3s ease;
+  z-index: 6000;
+  overflow-y: auto;
+  padding: 20px 16px;
+}
+
+#userDetailPanel.active {
+  bottom: var(--footer-btn-height);
+}
+
+.panel-handle {
+  width: 60px;
+  height: 5px;
+  background: #ccc;
+  border-radius: 4px;
+  margin: 8px auto 16px;
+}
+
+#userDetailContent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
 /* User markers */
 .user-marker,
 .leaflet-marker-icon.user-icon,
@@ -660,6 +696,13 @@ header {
 
   <div id="mapContainer"><div id="map"></div></div>
 
+  <!-- User detail slide-up panel -->
+<div id="userDetailPanel">
+  <div class="panel-handle"></div>
+  <div id="userDetailContent"></div>
+</div>
+
+
   <!-- Floating Share Location Button -->
 <button id="shareLocationBtn" class="share-location-btn">
   <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png" alt="Live Icon" class="live-icon" />
@@ -754,6 +797,7 @@ header {
           <button type="submit" class="btn login-email-btn">Log in</button>
         </form>
         <form id="signupForm" style="display: none; flex-direction: column; gap: 14px;">
+          <input type="text" id="signupFullName" placeholder="Full name *" required />
           <input type="email" id="signupEmail" placeholder="Email address *" required />
           <input type="password" id="signupPassword" placeholder="Password *" required />
           <button type="submit" class="btn login-email-btn">Create account</button>
@@ -934,21 +978,49 @@ document.getElementById("forgotPasswordLink").addEventListener("click", async (e
 });
 
 
-    // Signup
-    signupForm.addEventListener("submit", async e => {
+  // Signup
+signupForm.addEventListener("submit", async e => {
   e.preventDefault();
+  const fullName = document.getElementById("signupFullName").value.trim();
   const email = signupEmail.value.trim();
   const password = signupPassword.value.trim();
   const errorEl = document.getElementById("loginError");
+
+  if (!fullName) {
+    errorEl.textContent = "Please enter your full name.";
+    return;
+  }
+
   try {
-    await auth.createUserWithEmailAndPassword(email, password);
+    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    const user = cred.user;
+
+    // Nastav displayName v Auth
+    await user.updateProfile({ displayName: fullName });
+
+    // Vytvoř výchozí profil ve Firestore
+    await db.collection("users").doc(user.uid).set({
+      displayName: fullName,
+      email: email,
+      photoURL: "",
+      bio: "",
+      instagram: "",
+      vehicle: "",
+      vehiclePhotoURL: "",
+      verified: false,
+      access: false,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
     errorEl.textContent = "";
-    showAccessDeniedModal(); // zobraz modal po registraci
-    await auth.signOut();    // automaticky odhlásí
+    showAccessDeniedModal();
+    await auth.signOut();
   } catch (err) {
+    console.error("Signup error:", err);
     errorEl.textContent = "Looks like you already have an account! Try logging in.";
   }
 });
+
 
     // Auth listener
 auth.onAuthStateChanged(async user => {
@@ -1037,17 +1109,26 @@ await user.updateProfile({
     return;
   }
 
-  // Prefill editor
-  displayNameInput.value = userData.displayName || "";
-  const defaultPhoto = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f42acf3f8263cdf39637b0_unknown.jpg";
+// Prefill editor
+const defaultPhoto = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f42acf3f8263cdf39637b0_unknown.jpg";
+
+displayNameInput.value = userData.displayName || "";
 currentAvatar.src = userData.photoURL || defaultPhoto;
-  const vehicleSelect = document.getElementById("vehicleSelect");
-  if (vehicleSelect) vehicleSelect.value = userData.vehicle || "";
-  const headerName = document.getElementById("headerName");
+
+const vehicleSelect = document.getElementById("vehicleSelect");
+if (vehicleSelect) vehicleSelect.value = userData.vehicle || "";
+
+const headerName = document.getElementById("headerName");
 if (headerName) {
   const firstName = (userData.displayName || "User").split(" ")[0];
   headerName.textContent = firstName;
 }
+
+// === Header user photo ===
+if (profileIcon) {
+  profileIcon.src = userData.photoURL || defaultPhoto;
+}
+
 if (userData.bio) document.getElementById("bioInput").value = userData.bio;
 if (userData.instagram) document.getElementById("instagramInput").value = userData.instagram;
 
@@ -1172,7 +1253,16 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
         if (!liveMarkers[uid]) {
           // nový marker
           const m = L.marker([lat, lng], { icon }).addTo(map);
-          m.bindPopup(popupHTML, { className: "custom-popup" });
+          m.on("click", () => {
+          const panel = document.getElementById("userDetailPanel");
+          const content = document.getElementById("userDetailContent");
+          content.innerHTML = popupHTML;
+          panel.classList.add("active");
+        });
+
+        map.on("click", () => {
+          document.getElementById("userDetailPanel").classList.remove("active");
+        });
           liveMarkers[uid] = m;
         } else {
           // aktualizace markeru
@@ -1390,6 +1480,32 @@ saveProfileBtn.addEventListener("click", async () => {
       instagram,
       vehiclePhotoURL
     }, { merge: true });
+
+    // === OKAMŽITÁ AKTUALIZACE UI ===
+await user.updateProfile({
+  displayName,
+  photoURL: photoURL || vehiclePhotoURL || user.photoURL || ""
+});
+
+// Aktualizace header jména
+const headerName = document.getElementById("headerName");
+if (headerName) {
+  const firstName = (displayName || "User").split(" ")[0];
+  headerName.textContent = firstName;
+}
+
+// Aktualizace header fotky
+const profileIcon = document.getElementById("profileIcon");
+const defaultPhoto = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f42acf3f8263cdf39637b0_unknown.jpg";
+if (profileIcon) {
+  profileIcon.src = photoURL || vehiclePhotoURL || defaultPhoto;
+}
+
+// Aktualizace avatara v editoru
+if (currentAvatar) {
+  currentAvatar.src = photoURL || defaultPhoto;
+}
+
 
     await user.updateProfile({ displayName });
 
