@@ -1391,22 +1391,28 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
 
   // === Výpočet stavu "Live" nebo "last seen" ===
   const firstName = (data.displayName || "User").split(" ")[0];
-  let statusText = "Live";
-  let statusClass = "live";
+let statusText = "Live";
+let statusClass = "live";
 
-  if (!data.isLive && data.lastSeen?.toDate) {
-    const diffMs = Date.now() - data.lastSeen.toDate().getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
+// 🧠 Lokální priorita pro aktuálního uživatele
+const isCurrentUser = auth.currentUser && auth.currentUser.uid === uid;
+if (isCurrentUser && liveWatchId !== null) {
+  statusText = "Live";
+  statusClass = "live";
+  data.isLive = true; // 🧩 zajistí, že zoom nebo refresh nevrátí "Just now"
+} else if (!data.isLive && data.lastSeen?.toDate) {
+  const diffMs = Date.now() - data.lastSeen.toDate().getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) statusText = "Just now";
-    else if (diffMins < 60) statusText = `${diffMins} min`;
-    else if (diffHours < 24) statusText = `${diffHours} h`;
-    else statusText = `${diffDays} day${diffDays > 1 ? "s" : ""}`;
+  if (diffMins < 1) statusText = "Just now";
+  else if (diffMins < 60) statusText = `${diffMins} min`;
+  else if (diffHours < 24) statusText = `${diffHours} h`;
+  else statusText = `${diffDays} day${diffDays > 1 ? "s" : ""}`;
 
-    statusClass = "inactive";
-  }
+  statusClass = "inactive";
+}
 
   // === Ikona uživatele ===
   const icon = L.icon({
@@ -1436,8 +1442,15 @@ const miniPopup = L.divIcon({
   iconAnchor: [0, -10],
 });
 
+if (window.miniPopups && window.miniPopups[uid]) {
+  map.removeLayer(window.miniPopups[uid]);
+  delete window.miniPopups[uid];
+}
+
 // === Mini marker (pro bublinu) ===
 const miniMarker = L.marker([lat, lng], { icon: miniPopup, interactive: false });
+if (!window.miniPopups) window.miniPopups = {};
+window.miniPopups[uid] = miniMarker;
 
 // ✅ Zobraz mini-popup jen při větším zoomu
 function toggleMiniPopupVisibility() {
@@ -1448,9 +1461,22 @@ function toggleMiniPopupVisibility() {
   }
 }
 
-// === Spusť funkci hned a při každé změně zoomu ===
+// === Zobraz mini-popup jen při větším zoomu ===
 toggleMiniPopupVisibility();
-map.on("zoomend", toggleMiniPopupVisibility);
+
+// 🧩 Přidej globální handler pouze jednou
+if (!window._zoomHandlerAttached) {
+  map.on("zoomend", () => {
+    Object.values(window.miniPopups || {}).forEach(p => {
+      if (map.getZoom() >= 9) {
+        if (!map.hasLayer(p)) map.addLayer(p);
+      } else {
+        if (map.hasLayer(p)) map.removeLayer(p);
+      }
+    });
+  });
+  window._zoomHandlerAttached = true;
+}
 
 
    // ✅ Zobraz mini popup jen pokud je zoom dostatečný
@@ -1560,16 +1586,33 @@ function toggleMiniPopupVisibility() {
     }
 
     async function stopLive() {
-      const user = auth.currentUser;
-      if (!user) return;
-      if (liveWatchId !== null) {
-        navigator.geolocation.clearWatch(liveWatchId);
-        liveWatchId = null;
-      }
-      await db.collection("liveLocations").doc(user.uid).set({
-        isLive: false
-      }, { merge: true });
-    }
+  const user = auth.currentUser;
+  if (!user) return;
+
+  if (liveWatchId !== null) {
+    navigator.geolocation.clearWatch(liveWatchId);
+    liveWatchId = null;
+  }
+
+  const userDocRef = db.collection("liveLocations").doc(user.uid);
+
+  // ✅ Aktualizace: přepíšeme isLive = false a uložíme timestamp
+  await userDocRef.set({
+    isLive: false,
+    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  // ✅ Okamžitě aktualizujeme marker i bublinu v UI
+  if (liveMarkers[user.uid]) {
+    map.removeLayer(liveMarkers[user.uid]);
+    delete liveMarkers[user.uid];
+  }
+  if (window.miniPopups && window.miniPopups[user.uid]) {
+    map.removeLayer(window.miniPopups[user.uid]);
+    delete window.miniPopups[user.uid];
+  }
+}
+
 
     sendBtn.onclick = async () => {
   const txt = msgInput.value.trim();
@@ -1593,22 +1636,114 @@ await db.collection("messages").add({
   }, 100);
 };
 
-    function setupGoLiveButton() {
+  async function setupGoLiveButton() {
   const shareBtn = document.getElementById("shareLocationBtn");
   if (!shareBtn) return;
 
-  shareBtn.addEventListener("click", () => {
-    if (liveWatchId === null) {
-      startLive();
+    // ✅ Zkontroluj stav z Firebase při načtení a podle něj nastav tlačítko
+  const user = auth.currentUser;
+  if (user) {
+    const liveDoc = await db.collection("liveLocations").doc(user.uid).get();
+    if (liveDoc.exists && liveDoc.data().isLive) {
       shareBtn.classList.add("active");
-      shareBtn.textContent = "Stop Sharing";
+      shareBtn.innerHTML = `
+        <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed633027976d278ff80bba_live-focus.png"
+             alt="Live Icon" class="live-icon" />
+        Stop Sharing
+      `;
+      // ✅ Znovu spusť update loop (aby pokračovalo sledování polohy)
+      startLive();
     } else {
-      stopLive();
       shareBtn.classList.remove("active");
-      shareBtn.textContent = "Share Location";
+      shareBtn.innerHTML = `
+        <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png"
+             alt="Live Icon" class="live-icon" />
+        Share Location
+      `;
+    }
+  }
+
+
+  shareBtn.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    if (liveWatchId === null) {
+  // === START SHARING ===
+  await startLive();
+  shareBtn.classList.add("active");
+  shareBtn.innerHTML = `
+    <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed633027976d278ff80bba_live-focus.png"
+         alt="Live Icon" class="live-icon" />
+    Stop Sharing
+  `;
+
+
+      // ✅ Okamžitý update ve Firebase
+      await db.collection("liveLocations").doc(user.uid).set({
+        isLive: true,
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      // ✅ Okamžitý vizuální marker s pulzujícím rámečkem
+      if (liveMarkers[user.uid]) {
+        const icon = L.icon({
+          iconUrl: user.photoURL || "https://www.gravatar.com/avatar?d=mp",
+          iconSize: [44, 44],
+          iconAnchor: [22, 44],
+          className: "user-icon live-outline"
+        });
+        liveMarkers[user.uid].setIcon(icon);
+      }
+
+      
+
+     // ✅ Okamžitě přepíšeme mini-popup na „Live“
+const firstName = (user.displayName || "User").split(" ")[0];
+
+// pokud už máš mini-popup uložený, aktualizuj jeho HTML
+if (window.miniPopups && window.miniPopups[user.uid]) {
+  const popupEl = window.miniPopups[user.uid].getElement();
+  if (popupEl) {
+    popupEl.innerHTML = `
+      <div class="mini-popup-inner">
+        <span class="mini-popup-name">${firstName}</span>
+        <span class="mini-popup-status live">Live</span>
+      </div>
+    `;
+  }
+}
+
+// ✅ a do půl sekundy i update z Firestore
+setTimeout(() => setupLiveLocations(), 500);
+
+    } else {
+      // === STOP SHARING ===
+      await stopLive();
+      shareBtn.classList.remove("active");
+      shareBtn.innerHTML = `
+  <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png"
+       alt="Live Icon" class="live-icon" />
+  Share Location
+`;
+
+      // ✅ Smazání markerů a bublin
+      Object.values(liveMarkers).forEach(m => map.removeLayer(m));
+      for (const uid in liveMarkers) delete liveMarkers[uid];
+
+      if (window.miniPopups) {
+        Object.values(window.miniPopups).forEach(p => map.removeLayer(p));
+        window.miniPopups = {};
+      }
+
+      // ✅ Refresh mapy po 0.8 s (aktualizace z Firestore)
+      setTimeout(() => {
+        setupLiveLocations();
+      }, 800);
     }
   });
 }
+
 
 
 
