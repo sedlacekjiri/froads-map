@@ -858,6 +858,28 @@ header {
   background: #f3f3f3;
 }
 
+/* === Refresh Map Button === */
+#refreshMapBtn {
+  position: fixed;
+  right: 20px;
+  bottom: 160px;  /* o kousek níž než visibilityBtn */
+  background: #ffffff;
+  border: none;
+  box-shadow: none;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: none; /* jen v People sekci */
+  z-index: 1000;
+}
+#refreshMapBtn img {
+  width: 20px;
+  height: 20px;
+}
+#refreshMapBtn:hover {
+  background: #f3f3f3;
+}
 
   </style>
 </head>
@@ -911,6 +933,15 @@ header {
        class="live-icon" />
 </button>
 
+<!-- Refresh Map Button -->
+<button id="refreshMapBtn" class="share-location-btn visibility-btn" style="bottom: 160px;">
+  <img
+    id="refreshIcon"
+    src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6c02f5fc534157dd51967_refresh.png"
+    alt="Refresh Map"
+    class="live-icon"
+  />
+</button>
 
 
   <div id="exploreMap" style="display:none;">
@@ -1532,7 +1563,7 @@ const miniPopup = L.divIcon({
     </div>
   `,
   iconSize: [0, 0],
-  iconAnchor: [0, -10],
+  iconAnchor: [0, -1],
 });
 
 if (window.miniPopups && window.miniPopups[uid]) {
@@ -1882,6 +1913,26 @@ if (visibilityBtnEl) {
   });
 }
 
+// === Refresh Map Button ===
+const refreshMapBtn = document.getElementById("refreshMapBtn");
+
+if (refreshMapBtn) {
+  refreshMapBtn.addEventListener("click", () => {
+    try {
+      setupLiveLocations(); // 🌍 reload všech uživatelů
+
+      // 💫 otočení ikonky při refreshi
+      const icon = document.getElementById("refreshIcon");
+      icon.style.transition = "transform 0.5s ease";
+      icon.style.transform = "rotate(360deg)";
+      setTimeout(() => (icon.style.transform = "rotate(0deg)"), 500);
+
+      console.log("🔁 People map refreshed manually.");
+    } catch (err) {
+      console.error("❌ Error refreshing map:", err);
+    }
+  });
+}
 
 
 
