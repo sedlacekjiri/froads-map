@@ -1374,6 +1374,13 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
       const uid = change.doc.id;
       const data = change.doc.data();
 
+      // 🧠 Force local "Live" state if I'm currently sharing
+const isCurrentUser = auth.currentUser && auth.currentUser.uid === uid;
+if (isCurrentUser && liveWatchId !== null) {
+  data.isLive = true;
+  data.lastSeen = firebase.firestore.Timestamp.now(); // sync local time
+}
+
       // === Pokud marker existuje, ale už není live ===
       if ((change.type === "modified" && data && data.isLive === false) || change.type === "removed") {
         if (liveMarkers[uid]) {
@@ -1428,14 +1435,23 @@ if (isCurrentUser && liveWatchId !== null) {
   if (!liveMarkers[uid]) {
     const m = L.marker([lat, lng], { icon }).addTo(map);
 
-    // === Mini-popup (jméno + status) ===
-    // === Mini-popup přímo pod markerem ===
+   // 🧩 Mini-popup (jméno + status) – opravuje Live → Just now bug
+const isCurrentUser = auth.currentUser && auth.currentUser.uid === uid;
+let miniStatusText = statusText;
+let miniStatusClass = statusClass;
+
+// ✅ Pokud je to aktuální uživatel a sdílí, nikdy nepřepiš na "Just now"
+if (isCurrentUser && liveWatchId !== null) {
+  miniStatusText = "Live";
+  miniStatusClass = "live";
+}
+
 const miniPopup = L.divIcon({
   className: "mini-popup",
   html: `
     <div class="mini-popup-inner">
       <span class="mini-popup-name">${firstName}</span>
-      <span class="mini-popup-status ${statusClass}">${statusText}</span>
+      <span class="mini-popup-status ${miniStatusClass}">${miniStatusText}</span>
     </div>
   `,
   iconSize: [0, 0],
@@ -1467,16 +1483,33 @@ toggleMiniPopupVisibility();
 // 🧩 Přidej globální handler pouze jednou
 if (!window._zoomHandlerAttached) {
   map.on("zoomend", () => {
-    Object.values(window.miniPopups || {}).forEach(p => {
+    Object.entries(window.miniPopups || {}).forEach(([uid, marker]) => {
+      const isCurrentUser = auth.currentUser && auth.currentUser.uid === uid;
+
+      // 🔁 Po každém zoomu zkontroluj, jestli je aktivní sdílení
+      if (isCurrentUser && liveWatchId !== null) {
+        const el = marker.getElement();
+        if (el) {
+          el.innerHTML = `
+            <div class="mini-popup-inner">
+              <span class="mini-popup-name">${auth.currentUser.displayName.split(" ")[0]}</span>
+              <span class="mini-popup-status live">Live</span>
+            </div>
+          `;
+        }
+      }
+
+      // 🧭 Viditelnost podle zoomu
       if (map.getZoom() >= 9) {
-        if (!map.hasLayer(p)) map.addLayer(p);
+        if (!map.hasLayer(marker)) map.addLayer(marker);
       } else {
-        if (map.hasLayer(p)) map.removeLayer(p);
+        if (map.hasLayer(marker)) map.removeLayer(marker);
       }
     });
   });
   window._zoomHandlerAttached = true;
 }
+
 
 
    // ✅ Zobraz mini popup jen pokud je zoom dostatečný
@@ -1550,14 +1583,21 @@ function toggleMiniPopupVisibility() {
       const user = auth.currentUser;
       if (!user) return;
       const userDocRef = db.collection("liveLocations").doc(user.uid);
-      await userDocRef.set({
-        displayName: user.displayName || "",
-        photoURL: user.photoURL || "",
-        isLive: true,
-        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
+      // ✅ Nastav lokální flag ještě před geolokací
+liveWatchId = -1; // placeholder, značí že Live je aktivní, i když GPS ještě neběží
 
-      liveWatchId = navigator.geolocation.watchPosition(async pos => {
+await userDocRef.set({
+  displayName: user.displayName || "",
+  photoURL: user.photoURL || "",
+  isLive: true,
+  lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+}, { merge: true });
+
+// 🔁 Okamžitý refresh, aby bublina ukázala "Live" i po zoomu
+setupLiveLocations();
+
+// ✅ Teprve potom spusť sledování polohy
+liveWatchId = navigator.geolocation.watchPosition(async pos => {
   if (!pos.coords) {
     console.warn("No coords returned from geolocation.");
     return;
