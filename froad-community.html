@@ -837,6 +837,26 @@ header {
   color: #8a8a8a;
 }
 
+/* === Visibility Button === */
+.visibility-btn {
+  right: 20px;
+  left: auto;
+  transform: none;
+  background: #ffffff;
+  border: none;
+  box-shadow: none;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.visibility-btn img {
+  width: 20px;
+  height: 20px;
+}
+.visibility-btn:hover {
+  background: #f3f3f3;
+}
 
 
   </style>
@@ -882,6 +902,15 @@ header {
   <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png" alt="Live Icon" class="live-icon" />
   Share Location
 </button>
+
+<!-- Visibility Toggle Button -->
+<button id="visibilityBtn" class="share-location-btn visibility-btn">
+  <img id="visibilityIcon"
+       src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6a54a2914de7af9a65d54_blind.png"
+       alt="Visibility Toggle"
+       class="live-icon" />
+</button>
+
 
 
   <div id="exploreMap" style="display:none;">
@@ -1237,6 +1266,12 @@ if (shareBtn) {
   shareBtn.style.display = "none";
 }
 
+// ✅ SKRYJ I VISIBILITY TLAČÍTKO PŘI STARTU
+const visibilityBtn = document.getElementById('visibilityBtn');
+if (visibilityBtn) {
+  visibilityBtn.style.display = "none";
+}
+
 // Inicializace Explore mapy (pokud ještě není)
 if (typeof initExploreMap === "function") {
   initExploreMap();
@@ -1463,64 +1498,12 @@ if (window.miniPopups && window.miniPopups[uid]) {
   delete window.miniPopups[uid];
 }
 
-// === Mini marker (pro bublinu) ===
-const miniMarker = L.marker([lat, lng], { icon: miniPopup, interactive: false });
+// === Mini marker (pro bublinu) — vždy viditelný ===
+const miniMarker = L.marker([lat, lng], { icon: miniPopup, interactive: false }).addTo(map);
 if (!window.miniPopups) window.miniPopups = {};
 window.miniPopups[uid] = miniMarker;
 
-// ✅ Zobraz mini-popup jen při větším zoomu
-function toggleMiniPopupVisibility() {
-  if (map.getZoom() >= 9) {
-    if (!map.hasLayer(miniMarker)) map.addLayer(miniMarker);
-  } else {
-    if (map.hasLayer(miniMarker)) map.removeLayer(miniMarker);
-  }
-}
 
-// === Zobraz mini-popup jen při větším zoomu ===
-toggleMiniPopupVisibility();
-
-// 🧩 Přidej globální handler pouze jednou
-if (!window._zoomHandlerAttached) {
-  map.on("zoomend", () => {
-    Object.entries(window.miniPopups || {}).forEach(([uid, marker]) => {
-      const isCurrentUser = auth.currentUser && auth.currentUser.uid === uid;
-
-      // 🔁 Po každém zoomu zkontroluj, jestli je aktivní sdílení
-      if (isCurrentUser && liveWatchId !== null) {
-        const el = marker.getElement();
-        if (el) {
-          el.innerHTML = `
-            <div class="mini-popup-inner">
-              <span class="mini-popup-name">${auth.currentUser.displayName.split(" ")[0]}</span>
-              <span class="mini-popup-status live">Live</span>
-            </div>
-          `;
-        }
-      }
-
-      // 🧭 Viditelnost podle zoomu
-      if (map.getZoom() >= 9) {
-        if (!map.hasLayer(marker)) map.addLayer(marker);
-      } else {
-        if (map.hasLayer(marker)) map.removeLayer(marker);
-      }
-    });
-  });
-  window._zoomHandlerAttached = true;
-}
-
-
-
-   // ✅ Zobraz mini popup jen pokud je zoom dostatečný
-function toggleMiniPopupVisibility() {
-  if (map.getZoom() >= 9) {
-    if (!map.hasLayer(miniMarker)) map.addLayer(miniMarker);
-  } else {
-    if (map.hasLayer(miniMarker)) map.removeLayer(miniMarker);
-  }
-}
- 
 
     // === Kliknutí otevře panel ===
     m.on("click", () => {
@@ -1570,8 +1553,11 @@ function toggleMiniPopupVisibility() {
 
     liveMarkers[uid] = m;
   } else {
-    liveMarkers[uid].setLatLng([lat, lng]);
+  liveMarkers[uid].setLatLng([lat, lng]);
+  if (window.miniPopups && window.miniPopups[uid]) {
+    window.miniPopups[uid].setLatLng([lat, lng]);
   }
+}
 }
     });
   });
@@ -1784,6 +1770,49 @@ setTimeout(() => setupLiveLocations(), 500);
   });
 }
 
+// === Visibility toggle ===
+const visibilityBtnEl = document.getElementById("visibilityBtn");
+if (visibilityBtnEl) {
+  let isVisible = true;
+
+  visibilityBtnEl.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userDocRef = db.collection("liveLocations").doc(user.uid);
+    const liveDoc = await userDocRef.get();
+    const isLive = liveDoc.exists && liveDoc.data().isLive === true;
+
+    // ❗ Visibility lze měnit jen když NESDÍLÍM polohu
+    if (isLive) {
+      alert("You can’t change visibility while sharing location. Stop Sharing first.");
+      return;
+    }
+
+    if (isVisible) {
+      // 🔴 Skryj mojí ikonu lokálně + ulož flag
+      if (liveMarkers[user.uid]) map.removeLayer(liveMarkers[user.uid]);
+      if (window.miniPopups && window.miniPopups[user.uid]) map.removeLayer(window.miniPopups[user.uid]);
+
+      document.getElementById("visibilityIcon").src =
+        "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6a54af63bb9cb97f07730_visibility.png";
+
+      await userDocRef.set({ hidden: true }, { merge: true });
+      isVisible = false;
+    } else {
+      // 🟢 Zobraz zpátky (načti markery znovu)
+      await userDocRef.set({ hidden: false }, { merge: true });
+
+      // reinit markerů (používáš onSnapshot -> stačí re-call utilitky)
+      setupLiveLocations();
+
+      document.getElementById("visibilityIcon").src =
+        "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6a54a2914de7af9a65d54_blind.png";
+
+      isVisible = true;
+    }
+  });
+}
 
 
 
@@ -2007,7 +2036,7 @@ document.querySelectorAll('.footer-btn').forEach(btn => {
 
     const tab = btn.dataset.tab;
 
-    // Ikony
+    // Přepínání ikon (máš je nadefinované výše)
     document.querySelector('.explore-btn .explore-icon').src =
       (tab === "explore") ? exploreIconActive : exploreIconDefault;
     document.querySelector('.map-btn .map-icon').src =
@@ -2015,32 +2044,44 @@ document.querySelectorAll('.footer-btn').forEach(btn => {
     document.querySelector('.chat-btn .chat-icon').src =
       (tab === "chat") ? chatIconActive : chatIconDefault;
 
-    // Sekce
+    // Zobrazení sekcí
     document.getElementById('exploreMap').style.display = (tab === "explore") ? "block" : "none";
     document.getElementById('mapContainer').style.display = (tab === "map") ? "block" : "none";
-    document.getElementById('chat').style.display        = (tab === "chat") ? "block" : "none";
-    document.getElementById('form').style.display        = (tab === "chat") ? "flex"  : "none";
+    document.getElementById('chat').style.display = (tab === "chat") ? "flex" : "none";
+    document.getElementById('form').style.display = (tab === "chat") ? "flex" : "none";
 
-    // ✅ Tady přidej:
-    const shareBtn = document.getElementById('shareLocationBtn');
-    if (shareBtn) {
-      shareBtn.style.display = (tab === "map") ? "block" : "none";
+    // Tlačítka: znovu si je vezmu ze DOM (bez závislosti na jiném scope)
+    const shareBtnEl = document.getElementById('shareLocationBtn');
+    const visibilityBtnEl = document.getElementById('visibilityBtn');
+
+    if (tab === "map") {
+      if (shareBtnEl)      shareBtnEl.style.display = "flex";
+      if (visibilityBtnEl) visibilityBtnEl.style.display = "flex";
+    } else {
+      if (shareBtnEl)      shareBtnEl.style.display = "none";
+      if (visibilityBtnEl) visibilityBtnEl.style.display = "none";
     }
 
-    // ✅ Skryj panel uživatele mimo People
+    // User panel mimo People pryč
     const userPanel = document.getElementById("userDetailPanel");
     if (userPanel) {
       userPanel.classList.remove("active");
       userPanel.style.display = (tab === "map") ? "block" : "none";
     }
 
+    // Chat scroll fix
     if (tab === "chat") {
       const chatDiv = document.getElementById('chat');
       chatDiv.scrollTop = chatDiv.scrollHeight;
     }
-    if (tab === "explore") initExploreMap();
+
+    // Explore init
+    if (tab === "explore" && typeof initExploreMap === "function") {
+      initExploreMap();
+    }
   });
 });
+
 
 
 // 🧩 Disable local explore init when iframe is used
