@@ -308,6 +308,18 @@ header {
   background: #ccc;
   transform: translate(-50%, -100%);
 }
+/* === Pulsující zelený outline pro LIVE uživatele === */
+.leaflet-marker-icon.user-icon.live-outline {
+  box-shadow: 0 0 0 2px #3ddc97, 0 0 8px 2px rgba(61, 220, 151, 0.6);
+  animation: pulseRing 1.8s infinite;
+}
+
+@keyframes pulseRing {
+  0%   { box-shadow: 0 0 0 0 rgba(61, 220, 151, 0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(61, 220, 151, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(61, 220, 151, 0); }
+}
+
 .user-marker img {
   width: 100%;
   height: 100%;
@@ -793,7 +805,7 @@ header {
   color: #111;
 }
 
-.mini-popup-content {
+.mini-popup-inner {
   background: #fff;
   border-radius: 14px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
@@ -1398,29 +1410,58 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
 
   // === Ikona uživatele ===
   const icon = L.icon({
-    iconUrl: avatarUrl,
-    iconSize: [44, 44],
-    iconAnchor: [22, 44],
-    popupAnchor: [0, -46],
-    className: "user-icon"
-  });
+  iconUrl: avatarUrl,
+  iconSize: [44, 44],
+  iconAnchor: [22, 44],
+  popupAnchor: [0, -46],
+  className: data.isLive ? "user-icon live-outline" : "user-icon"
+});
+
 
   // === Nový nebo aktualizovaný marker ===
   if (!liveMarkers[uid]) {
     const m = L.marker([lat, lng], { icon }).addTo(map);
 
     // === Mini-popup (jméno + status) ===
-    const miniPopup = L.divIcon({
+    // === Mini-popup přímo pod markerem ===
+const miniPopup = L.divIcon({
   className: "mini-popup",
   html: `
-    <div class="mini-popup-content">
+    <div class="mini-popup-inner">
       <span class="mini-popup-name">${firstName}</span>
       <span class="mini-popup-status ${statusClass}">${statusText}</span>
     </div>
   `,
-  iconAnchor: [44 / 7, -5] // ✅ přesně vycentrováno pod střed markeru
+  iconSize: [0, 0],
+  iconAnchor: [0, -10],
 });
-    L.marker([lat, lng - 0.00005], { icon: miniPopup, interactive: false }).addTo(map);
+
+// === Mini marker (pro bublinu) ===
+const miniMarker = L.marker([lat, lng], { icon: miniPopup, interactive: false });
+
+// ✅ Zobraz mini-popup jen při větším zoomu
+function toggleMiniPopupVisibility() {
+  if (map.getZoom() >= 9) {
+    if (!map.hasLayer(miniMarker)) map.addLayer(miniMarker);
+  } else {
+    if (map.hasLayer(miniMarker)) map.removeLayer(miniMarker);
+  }
+}
+
+// === Spusť funkci hned a při každé změně zoomu ===
+toggleMiniPopupVisibility();
+map.on("zoomend", toggleMiniPopupVisibility);
+
+
+   // ✅ Zobraz mini popup jen pokud je zoom dostatečný
+function toggleMiniPopupVisibility() {
+  if (map.getZoom() >= 9) {
+    if (!map.hasLayer(miniMarker)) map.addLayer(miniMarker);
+  } else {
+    if (map.hasLayer(miniMarker)) map.removeLayer(miniMarker);
+  }
+}
+ 
 
     // === Kliknutí otevře panel ===
     m.on("click", () => {
