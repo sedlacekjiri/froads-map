@@ -249,6 +249,51 @@ header {
   box-sizing: border-box;
 }
 
+/* === PANEL SECTION STYLY === */
+
+.user-section {
+  margin-bottom: 20px;
+}
+
+.user-section h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 6px;
+  border-left: 3px solid #ff5200;
+  padding-left: 8px;
+}
+
+.user-section p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  word-wrap: break-word;
+}
+
+#userVehiclePhotoWrapper {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f4f4f4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 160px;
+}
+
+#userVehiclePhoto {
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: cover;
+  display: none; /* zobrazí se jen pokud má fotku */
+}
+
+#userVehiclePhoto.show {
+  display: block;
+}
+
 
 /* User markers */
 .user-marker,
@@ -640,7 +685,7 @@ header {
 }
 .popup-vehicle-photo {
   width: 100%;
-  height: auto;
+  height: 300px;
   aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: 8px;
@@ -677,7 +722,75 @@ header {
   width: 16px;
   height: 16px;
   margin-left: 4px;
-  vertical-align: middle;
+  position: relative;
+  top: 3px
+}
+
+
+/* === Panel header layout fix === */
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;              /* mezera mezi fotkou a texty */
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee; /* decentní oddělení od zbytku */
+}
+
+.panel-header .popup-avatar {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.panel-userinfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.panel-userinfo strong {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+.panel-userinfo .popup-instagram a {
+  color: #444;
+  font-size: 13px;
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+.panel-userinfo .popup-instagram a:hover {
+  text-decoration: underline;
+}
+
+/* === Lepší spacing mezi sekcemi === */
+.user-section {
+  margin-top: 14px;
+  margin-bottom: 24px;
+}
+.user-section h3 {
+  margin-bottom: 8px;
+}
+
+/* Verified icon alignment beside name */
+.panel-name-row {
+  display: flex;
+  align-items: baseline; /* 👈 ZAROVNÁ ikonku k textové základně místo středu */
+  gap: 6px;
+}
+
+.panel-name-row strong {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
 }
 
 
@@ -696,8 +809,26 @@ header {
 
   <!-- User detail slide-up panel -->
 <div id="userDetailPanel">
-  <div class="panel-handle"></div>
-  <div id="userDetailContent"></div>
+  <div id="userDetailContent">
+
+    <div class="user-section">
+      <h3>Bio</h3>
+      <p id="userBioText">Loading...</p>
+    </div>
+
+    <div class="user-section">
+      <h3>Vehicle</h3>
+      <p id="userVehicleText">Loading...</p>
+    </div>
+
+    <div class="user-section">
+      <h3>Vehicle photo</h3>
+      <div id="userVehiclePhotoWrapper">
+        <img id="userVehiclePhoto" src="" alt="Vehicle photo" />
+      </div>
+    </div>
+
+  </div>
 </div>
 
 
@@ -1230,11 +1361,14 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
   <div class="popup-content">
     <div class="popup-header">
       <img class="popup-avatar" src="${data.photoURL || 'https://www.gravatar.com/avatar?d=mp'}" alt="Avatar">
-      <div>
-        <strong>${data.displayName || 'Unknown'}</strong>
-        ${data.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
-        ${data.instagram ? `<div class="popup-instagram"><a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank" class="popup-instagram-link">@${data.instagram.replace('@','')}</a></div>` : ''}
-      </div>
+      <div class="panel-userinfo">
+  <div class="panel-name-row">
+    <strong>${data.displayName || 'Unknown'}</strong>
+    ${data.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
+  </div>
+  ${data.instagram ? `<div class="popup-instagram"><a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank" class="popup-instagram-link">@${data.instagram.replace('@','')}</a></div>` : ''}
+</div>
+
     </div>
 
     ${data.bio ? `<div class="popup-bio">${data.bio}</div>` : ''}
@@ -1251,12 +1385,48 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
         if (!liveMarkers[uid]) {
           // nový marker
           const m = L.marker([lat, lng], { icon }).addTo(map);
-          m.on("click", () => {
-          const panel = document.getElementById("userDetailPanel");
-          const content = document.getElementById("userDetailContent");
-          content.innerHTML = popupHTML;
-          panel.classList.add("active");
-        });
+         m.on("click", () => {
+  const panel = document.getElementById("userDetailPanel");
+  const content = document.getElementById("userDetailContent");
+
+  // Naplnění obsahu panelu
+  content.innerHTML = `
+    <div class="panel-header">
+  <img class="popup-avatar" src="${data.photoURL || 'https://www.gravatar.com/avatar?d=mp'}" alt="Avatar">
+  <div class="panel-userinfo">
+    <div class="panel-name-row">
+      <strong>${data.displayName || 'Unknown'}</strong>
+      ${data.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
+    </div>
+    ${data.instagram ? `<div class="popup-instagram"><a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank" class="popup-instagram-link">@${data.instagram.replace('@','')}</a></div>` : ''}
+  </div>
+</div>
+
+
+    <div class="user-section">
+      <h3>Bio</h3>
+      <p>${data.bio || 'No bio provided.'}</p>
+    </div>
+
+    <div class="user-section">
+      <h3>Vehicle</h3>
+      <p>${data.vehicle || 'No vehicle info.'}</p>
+    </div>
+
+    <div class="user-section">
+      <h3>Vehicle photo</h3>
+      <div id="userVehiclePhotoWrapper">
+        ${data.vehiclePhotoURL
+          ? `<img id="userVehiclePhoto" class="show" src="${data.vehiclePhotoURL}" alt="Vehicle photo" />`
+          : `<div style="background:#f4f4f4; border-radius:12px; height:160px; display:flex; justify-content:center; align-items:center; color:#888;">No vehicle photo</div>`
+        }
+      </div>
+    </div>
+  `;
+
+  panel.style.display = "block";
+  panel.classList.add("active");
+});
 
         map.on("click", () => {
           document.getElementById("userDetailPanel").classList.remove("active");
