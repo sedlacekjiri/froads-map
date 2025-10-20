@@ -1378,7 +1378,21 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
   setupLiveLocations();
   loadMessages();
   setupGoLiveButton();
+  // ✅ Zkontroluj při loginu / refreshi, jestli má uživatel hidden = true, a uprav ikonku
+try {
+  const liveDoc = await db.collection("liveLocations").doc(user.uid).get();
+  const iconEl = document.getElementById("visibilityIcon");
+
+  if (liveDoc.exists && liveDoc.data().hidden === true) {
+    iconEl.src = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6a54af63bb9cb97f07730_visibility.png"; // přeškrtnuté oko
+  } else {
+    iconEl.src = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6a54a2914de7af9a65d54_blind.png"; // otevřené oko
+  }
+} catch (err) {
+  console.error("❌ Error loading hidden state:", err);
+}
 });
+
 
 
     logoutBtn.onclick = () => {
@@ -1431,6 +1445,19 @@ if (isCurrentUser && liveWatchId !== null) {
   const lng = data.lng;
   const avatarUrl = data.photoURL || "https://www.gravatar.com/avatar?d=mp";
 
+  // 👇 SKRYJ MARKER, pokud má uživatel hidden = true
+  if (data.hidden === true) {
+    if (liveMarkers[uid]) {
+      map.removeLayer(liveMarkers[uid]);
+      delete liveMarkers[uid];
+    }
+    if (window.miniPopups && window.miniPopups[uid]) {
+      map.removeLayer(window.miniPopups[uid]);
+      delete window.miniPopups[uid];
+    }
+    return; // ⛔ Nepokračuj ve vykreslování tohoto uživatele
+  }
+
   // === Výpočet stavu "Live" nebo "last seen" ===
   const firstName = (data.displayName || "User").split(" ")[0];
 let statusText = "Live";
@@ -1448,6 +1475,21 @@ if (isCurrentUser && liveWatchId !== null) {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
+  // 🕒 Automaticky skryj uživatele po 48 hodinách neaktivity
+  if (diffHours >= 48) {
+    // ✅ Odstraň marker z mapy (uživatel starší než 48h)
+    if (liveMarkers[uid]) {
+      map.removeLayer(liveMarkers[uid]);
+      delete liveMarkers[uid];
+    }
+    if (window.miniPopups && window.miniPopups[uid]) {
+      map.removeLayer(window.miniPopups[uid]);
+      delete window.miniPopups[uid];
+    }
+    return; // ⛔ Přeskoč další vykreslování tohoto uživatele
+  }
+
+  // 🔹 Jinak pokračuj normálně – vypočítej čas od poslední aktivity
   if (diffMins < 1) statusText = "Just now";
   else if (diffMins < 60) statusText = `${diffMins} min`;
   else if (diffHours < 24) statusText = `${diffHours} h`;
@@ -1666,13 +1708,20 @@ await db.collection("messages").add({
   const shareBtn = document.getElementById("shareLocationBtn");
   if (!shareBtn) return;
 
+  // 🩹 FIX: Odeber staré event listenery při opětovném přihlášení
+  const newShareBtn = shareBtn.cloneNode(true);
+  shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+
+  // Potom používej `newShareBtn` místo `shareBtn` dál v celé funkci:
+  const btn = newShareBtn;
+
     // ✅ Zkontroluj stav z Firebase při načtení a podle něj nastav tlačítko
   const user = auth.currentUser;
   if (user) {
     const liveDoc = await db.collection("liveLocations").doc(user.uid).get();
     if (liveDoc.exists && liveDoc.data().isLive) {
-      shareBtn.classList.add("active");
-      shareBtn.innerHTML = `
+      btn.classList.add("active");
+      btn.innerHTML = `
         <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed633027976d278ff80bba_live-focus.png"
              alt="Live Icon" class="live-icon" />
         Stop Sharing
@@ -1680,8 +1729,8 @@ await db.collection("messages").add({
       // ✅ Znovu spusť update loop (aby pokračovalo sledování polohy)
       startLive();
     } else {
-      shareBtn.classList.remove("active");
-      shareBtn.innerHTML = `
+      btn.classList.remove("active");
+      btn.innerHTML = `
         <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png"
              alt="Live Icon" class="live-icon" />
         Share Location
@@ -1690,15 +1739,15 @@ await db.collection("messages").add({
   }
 
 
-  shareBtn.addEventListener("click", async () => {
+  btn.addEventListener("click", async () => {
     const user = auth.currentUser;
     if (!user) return;
 
     if (liveWatchId === null) {
   // === START SHARING ===
   await startLive();
-  shareBtn.classList.add("active");
-  shareBtn.innerHTML = `
+  btn.classList.add("active");
+  btn.innerHTML = `
     <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed633027976d278ff80bba_live-focus.png"
          alt="Live Icon" class="live-icon" />
     Stop Sharing
@@ -1746,8 +1795,8 @@ setTimeout(() => setupLiveLocations(), 500);
     } else {
       // === STOP SHARING ===
       await stopLive();
-      shareBtn.classList.remove("active");
-      shareBtn.innerHTML = `
+      btn.classList.remove("active");
+      btn.innerHTML = `
   <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed62ac5fa9fb8e0fe1bf96_live.png"
        alt="Live Icon" class="live-icon" />
   Share Location
@@ -1774,6 +1823,25 @@ setTimeout(() => setupLiveLocations(), 500);
 const visibilityBtnEl = document.getElementById("visibilityBtn");
 if (visibilityBtnEl) {
   let isVisible = true;
+
+    // 🟢 Při načtení zkontroluj stav hidden z Firestore a uprav ikonku
+  (async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const userDocRef = db.collection("liveLocations").doc(user.uid);
+    const liveDoc = await userDocRef.get();
+
+    if (liveDoc.exists && liveDoc.data().hidden === true) {
+      isVisible = false;
+      document.getElementById("visibilityIcon").src =
+        "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6a54af63bb9cb97f07730_visibility.png"; // přeškrtnuté oko
+    } else {
+      isVisible = true;
+      document.getElementById("visibilityIcon").src =
+        "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6a54a2914de7af9a65d54_blind.png"; // otevřené oko
+    }
+  })();
 
   visibilityBtnEl.addEventListener("click", async () => {
     const user = auth.currentUser;
