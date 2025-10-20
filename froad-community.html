@@ -793,6 +793,39 @@ header {
   color: #111;
 }
 
+.mini-popup-content {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  padding: 5px 10px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: #111;
+  white-space: nowrap;
+  transform: translateX(-50%); /* ✅ bublina vždy vycentrovaná */
+  position: relative;
+  left: 50%;
+}
+
+.mini-popup-name {
+  font-weight: 600;
+}
+
+.mini-popup-status.live {
+  color: #3ddc97;  /* 🌿 světle pastelová zelená */
+  font-weight: 600;
+}
+
+.mini-popup-status.inactive {
+  color: #8a8a8a;
+}
+
+
 
   </style>
 </head>
@@ -1339,105 +1372,107 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
       }
 
       // === Přidání nebo update aktivních markerů ===
-      if ((change.type === "added" || change.type === "modified") && data.isLive) {
-        const lat = data.lat;
-        const lng = data.lng;
-        const avatarUrl = data.photoURL || "https://www.gravatar.com/avatar?d=mp";
+      if (change.type === "added" || change.type === "modified") {
+  const lat = data.lat;
+  const lng = data.lng;
+  const avatarUrl = data.photoURL || "https://www.gravatar.com/avatar?d=mp";
 
-        const icon = L.icon({
-          iconUrl: avatarUrl,
-          iconSize: [44, 44],
-          iconAnchor: [22, 44],
-          popupAnchor: [0, -46],
-          className: "user-icon"
-        });
+  // === Výpočet stavu "Live" nebo "last seen" ===
+  const firstName = (data.displayName || "User").split(" ")[0];
+  let statusText = "Live";
+  let statusClass = "live";
 
-        const gpsText =
-          typeof lat === "number" && typeof lng === "number"
-            ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
-            : "No GPS data";
+  if (!data.isLive && data.lastSeen?.toDate) {
+    const diffMs = Date.now() - data.lastSeen.toDate().getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-        const popupHTML = `
-  <div class="popup-content">
-    <div class="popup-header">
-      <img class="popup-avatar" src="${data.photoURL || 'https://www.gravatar.com/avatar?d=mp'}" alt="Avatar">
-      <div class="panel-userinfo">
-  <div class="panel-name-row">
-    <strong>${data.displayName || 'Unknown'}</strong>
-    ${data.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
-  </div>
-  ${data.instagram ? `<div class="popup-instagram"><a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank" class="popup-instagram-link">@${data.instagram.replace('@','')}</a></div>` : ''}
-</div>
+    if (diffMins < 1) statusText = "Just now";
+    else if (diffMins < 60) statusText = `${diffMins} min`;
+    else if (diffHours < 24) statusText = `${diffHours} h`;
+    else statusText = `${diffDays} day${diffDays > 1 ? "s" : ""}`;
 
+    statusClass = "inactive";
+  }
+
+  // === Ikona uživatele ===
+  const icon = L.icon({
+    iconUrl: avatarUrl,
+    iconSize: [44, 44],
+    iconAnchor: [22, 44],
+    popupAnchor: [0, -46],
+    className: "user-icon"
+  });
+
+  // === Nový nebo aktualizovaný marker ===
+  if (!liveMarkers[uid]) {
+    const m = L.marker([lat, lng], { icon }).addTo(map);
+
+    // === Mini-popup (jméno + status) ===
+    const miniPopup = L.divIcon({
+  className: "mini-popup",
+  html: `
+    <div class="mini-popup-content">
+      <span class="mini-popup-name">${firstName}</span>
+      <span class="mini-popup-status ${statusClass}">${statusText}</span>
     </div>
-
-    ${data.bio ? `<div class="popup-bio">${data.bio}</div>` : ''}
-    ${data.vehicle ? `
-  <div class="popup-vehicle">
-    <img class="popup-vehicle-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f0ff5e8cd672f046f544ec_transport%20(1).png" alt="vehicle icon">
-    ${data.vehicle}
-  </div>
-` : ''}
-    ${data.vehiclePhotoURL ? `<img class="popup-vehicle-photo" src="${data.vehiclePhotoURL}" alt="Vehicle Photo">` : ''}
-  </div>`;
-
-
-        if (!liveMarkers[uid]) {
-          // nový marker
-          const m = L.marker([lat, lng], { icon }).addTo(map);
-         m.on("click", () => {
-  const panel = document.getElementById("userDetailPanel");
-  const content = document.getElementById("userDetailContent");
-
-  // Naplnění obsahu panelu
-  content.innerHTML = `
-    <div class="panel-header">
-  <img class="popup-avatar" src="${data.photoURL || 'https://www.gravatar.com/avatar?d=mp'}" alt="Avatar">
-  <div class="panel-userinfo">
-    <div class="panel-name-row">
-      <strong>${data.displayName || 'Unknown'}</strong>
-      ${data.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
-    </div>
-    ${data.instagram ? `<div class="popup-instagram"><a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank" class="popup-instagram-link">@${data.instagram.replace('@','')}</a></div>` : ''}
-  </div>
-</div>
-
-
-    <div class="user-section">
-      <h3>Bio</h3>
-      <p>${data.bio || 'No bio provided.'}</p>
-    </div>
-
-    <div class="user-section">
-      <h3>Vehicle</h3>
-      <p>${data.vehicle || 'No vehicle info.'}</p>
-    </div>
-
-    <div class="user-section">
-      <h3>Vehicle photo</h3>
-      <div id="userVehiclePhotoWrapper">
-        ${data.vehiclePhotoURL
-          ? `<img id="userVehiclePhoto" class="show" src="${data.vehiclePhotoURL}" alt="Vehicle photo" />`
-          : `<div style="background:#f4f4f4; border-radius:12px; height:160px; display:flex; justify-content:center; align-items:center; color:#888;">No vehicle photo</div>`
-        }
-      </div>
-    </div>
-  `;
-
-  panel.style.display = "block";
-  panel.classList.add("active");
+  `,
+  iconAnchor: [44 / 7, -5] // ✅ přesně vycentrováno pod střed markeru
 });
+    L.marker([lat, lng - 0.00005], { icon: miniPopup, interactive: false }).addTo(map);
 
-        map.on("click", () => {
-          document.getElementById("userDetailPanel").classList.remove("active");
-        });
-          liveMarkers[uid] = m;
-        } else {
-          // aktualizace markeru
-          liveMarkers[uid].setLatLng([lat, lng]);
-          liveMarkers[uid].setPopupContent(popupHTML);
-        }
-      }
+    // === Kliknutí otevře panel ===
+    m.on("click", () => {
+      const panel = document.getElementById("userDetailPanel");
+      const content = document.getElementById("userDetailContent");
+
+      content.innerHTML = `
+        <div class="panel-header">
+          <img class="popup-avatar" src="${data.photoURL || 'https://www.gravatar.com/avatar?d=mp'}" alt="Avatar">
+          <div class="panel-userinfo">
+            <div class="panel-name-row">
+              <strong>${data.displayName || 'Unknown'}</strong>
+              ${data.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
+            </div>
+            ${data.instagram ? `<div class="popup-instagram"><a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank" class="popup-instagram-link">@${data.instagram.replace('@','')}</a></div>` : ''}
+          </div>
+        </div>
+
+        <div class="user-section">
+          <h3>Bio</h3>
+          <p>${data.bio || 'No bio provided.'}</p>
+        </div>
+
+        <div class="user-section">
+          <h3>Vehicle</h3>
+          <p>${data.vehicle || 'No vehicle info.'}</p>
+        </div>
+
+        <div class="user-section">
+          <h3>Vehicle photo</h3>
+          <div id="userVehiclePhotoWrapper">
+            ${data.vehiclePhotoURL
+              ? `<img id="userVehiclePhoto" class="show" src="${data.vehiclePhotoURL}" alt="Vehicle photo" />`
+              : `<div style="background:#f4f4f4; border-radius:12px; height:160px; display:flex; justify-content:center; align-items:center; color:#888;">No vehicle photo</div>`
+            }
+          </div>
+        </div>
+      `;
+
+      panel.style.display = "block";
+      panel.classList.add("active");
+    });
+
+    map.on("click", () => {
+      document.getElementById("userDetailPanel").classList.remove("active");
+    });
+
+    liveMarkers[uid] = m;
+  } else {
+    liveMarkers[uid].setLatLng([lat, lng]);
+  }
+}
     });
   });
 }
