@@ -861,7 +861,8 @@ header {
 #customActionBtn {
   position: fixed;
   right: 20px;
-  background: rgba(0, 0, 0, 0.65);
+  bottom: 80px;
+  background: rgb(255, 255, 255);
   border: none;
   border-radius: 10px;
   padding: 12px
@@ -873,9 +874,15 @@ header {
   transition: transform 0.15s ease, background 0.15s ease;
 }
 #customActionBtn img {
-  width: 20px;
-  height: 20px;
-  filter: invert(1); /* bílá ikonka */
+  width: 16px;
+  height: 16px;
+}
+
+/* Posuň Satellite/Layers tlačítko níž pod Visible */
+#customActionBtn.visibility-btn {
+  top: auto !important;           /* zruší top, který zdědíš z visibility-btn */
+  bottom: 700px !important;       /* nastav si požadovanou vzdálenost od spodku */
+  right: 20px;                    /* pro jistotu ukotvení vpravo */
 }
 
 
