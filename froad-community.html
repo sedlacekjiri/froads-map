@@ -858,28 +858,27 @@ header {
   background: #f3f3f3;
 }
 
-/* === Refresh Map Button === */
-#refreshMapBtn {
+#customActionBtn {
   position: fixed;
   right: 20px;
-  bottom: 160px;  /* o kousek níž než visibilityBtn */
-  background: #ffffff;
+  background: rgba(0, 0, 0, 0.65);
   border: none;
-  box-shadow: none;
   border-radius: 10px;
-  padding: 12px;
+  padding: 12px
   cursor: pointer;
-  transition: all 0.2s ease;
   display: none; /* jen v People sekci */
-  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  z-index: 500;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
-#refreshMapBtn img {
+#customActionBtn img {
   width: 20px;
   height: 20px;
+  filter: invert(1); /* bílá ikonka */
 }
-#refreshMapBtn:hover {
-  background: #f3f3f3;
-}
+
+
 
   </style>
 </head>
@@ -933,15 +932,15 @@ header {
        class="live-icon" />
 </button>
 
-<!-- Refresh Map Button -->
-<button id="refreshMapBtn" class="share-location-btn visibility-btn" style="bottom: 160px;">
+<!-- Satellite Toggle Button -->
+<button id="customActionBtn" class="visibility-btn" style="bottom: 150px;">
   <img
-    id="refreshIcon"
-    src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6c02f5fc534157dd51967_refresh.png"
-    alt="Refresh Map"
-    class="live-icon"
+    id="customActionIcon"
+    src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f6ca8e8bd3492108cb48c8_layers.png"
+    alt="Toggle Satellite"
   />
 </button>
+
 
 
   <div id="exploreMap" style="display:none;">
@@ -1149,7 +1148,6 @@ header {
     const toSignup = document.getElementById("toSignup");
     const toLogin = document.getElementById("toLogin");
 
-    let map = null;
     const liveMarkers = {};
     let liveWatchId = null;
 
@@ -1438,15 +1436,59 @@ try {
       document.getElementById("accessDeniedModal").style.display = "none";
     }
 
-    function initMap() {
-      if (!map) {
-        map = L.map(mapDiv).setView([64.1466, -21.9426], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors',
-          maxZoom: 18
-        }).addTo(map);
+    // 🌍 Globální proměnné pro přepínání vrstev
+let map, osmLayer, satelliteLayer, isSatellite = false;
+
+function initMap() {
+  if (!map) {
+    map = L.map(mapDiv).setView([64.1466, -21.9426], 6);
+
+    // 🗺️ Standardní (OpenStreetMap)
+    osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(map); // výchozí vrstva
+
+    // 🛰️ Satelitní (Esri)
+    satelliteLayer = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics',
+        maxZoom: 19
       }
+    );
+
+    // 🔧 (nepoužíváme L.control.layers, protože máme vlastní tlačítko)
+  }
+}
+
+// === Satellite Toggle Button ===
+const customActionBtn = document.getElementById("customActionBtn");
+
+if (customActionBtn) {
+  customActionBtn.addEventListener("click", () => {
+    if (!isSatellite) {
+      map.removeLayer(osmLayer);
+      map.addLayer(satelliteLayer);
+      isSatellite = true;
+      console.log("🛰️ Satellite view ON");
+    } else {
+      map.removeLayer(satelliteLayer);
+      map.addLayer(osmLayer);
+      isSatellite = false;
+      console.log("🗺️ Map view ON");
     }
+
+    // 💫 Krátká animace ikonky
+    const icon = document.getElementById("customActionIcon");
+    icon.style.transition = "transform 0.4s ease";
+    icon.style.transform = "rotate(360deg)";
+    setTimeout(() => (icon.style.transform = "rotate(0deg)"), 400);
+  });
+}
+
+
+
 
     function setupLiveLocations() {
   db.collection("liveLocations").onSnapshot(snapshot => {
@@ -1913,27 +1955,6 @@ if (visibilityBtnEl) {
   });
 }
 
-// === Refresh Map Button ===
-const refreshMapBtn = document.getElementById("refreshMapBtn");
-
-if (refreshMapBtn) {
-  refreshMapBtn.addEventListener("click", () => {
-    try {
-      setupLiveLocations(); // 🌍 reload všech uživatelů
-
-      // 💫 otočení ikonky při refreshi
-      const icon = document.getElementById("refreshIcon");
-      icon.style.transition = "transform 0.5s ease";
-      icon.style.transform = "rotate(360deg)";
-      setTimeout(() => (icon.style.transform = "rotate(0deg)"), 500);
-
-      console.log("🔁 People map refreshed manually.");
-    } catch (err) {
-      console.error("❌ Error refreshing map:", err);
-    }
-  });
-}
-
 
 
    function loadMessages() {
@@ -2172,13 +2193,17 @@ document.querySelectorAll('.footer-btn').forEach(btn => {
     // Tlačítka: znovu si je vezmu ze DOM (bez závislosti na jiném scope)
     const shareBtnEl = document.getElementById('shareLocationBtn');
     const visibilityBtnEl = document.getElementById('visibilityBtn');
+    const customActionBtnEl = document.getElementById("customActionBtn");
+    
 
     if (tab === "map") {
       if (shareBtnEl)      shareBtnEl.style.display = "flex";
       if (visibilityBtnEl) visibilityBtnEl.style.display = "flex";
+      if (customActionBtnEl) customActionBtnEl.style.display = "flex"; // ✅ nově
     } else {
       if (shareBtnEl)      shareBtnEl.style.display = "none";
       if (visibilityBtnEl) visibilityBtnEl.style.display = "none";
+      if (customActionBtnEl) customActionBtnEl.style.display = "none"; // ✅ nově
     }
 
     // User panel mimo People pryč
