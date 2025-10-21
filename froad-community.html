@@ -944,12 +944,13 @@ header {
 }
 
 .close-profile-btn {
+  color: #000;
   position: absolute;
   top: 12px;
   right: 12px;
   background: white;
   border: none;
-  border-radius: 50%;
+  border-radius: 10px;
   width: 32px;
   height: 32px;
   font-size: 18px;
@@ -961,6 +962,133 @@ header {
 }
 .close-profile-btn:hover {
   background: #f5f5f5;
+}
+
+/* === AVATAR COMPONENT === */
+.profile-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.avatar-container img#currentAvatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #eee;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+/* Delete ikonka */
+.avatar-delete-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform: translate(1%, 1%); /* ⚙️ posun blíž dovnitř – 50 % překrytí */
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #444444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.avatar-delete-btn img {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.upload-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+.upload-icon:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.upload-icon img {
+  width: 22px;
+  height: 22px;
+  opacity: 0.8;
+}
+.upload-info {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #212121;
+  margin: 8px;
+  font-family: "Poppins", sans-serif;
+}
+.upload-info.error {
+  color: #e74c3c;
+}
+.cancel-upload {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* === FIX: Upload info bar visible above footer === */
+#uploadInfo {
+  position: fixed;
+  bottom: calc(var(--footer-btn-height) + 70px); /* těsně nad inputem */
+  left: 10px;
+  right: 10px;
+  z-index: 5000; /* nad mapou i chatem */
+  display: none; /* výchozí stav */
+}
+
+/* === Chat image modal === */
+#imageModal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.85);
+  justify-content: center;
+  align-items: center;
+}
+#imageModal img {
+  max-width: 90%;
+  max-height: 80%;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+#closeImageModal {
+  position: absolute;
+  top: 20px;
+  right: 25px;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 
@@ -1053,10 +1181,28 @@ header {
   
 
   <div id="chat"></div>
-  <div id="form">
-    <input type="text" id="msgInput" placeholder="Write a message…"/>
-    <button id="sendBtn">Send</button>
-  </div>
+
+<!-- 🖼️ Modal pro zvětšení obrázku -->
+<div id="imageModal">
+  <span id="closeImageModal">&times;</span>
+  <img id="modalImg" src="" alt="Preview">
+</div>
+
+<div id="form" class="chat-input">
+  <label for="imageUpload" class="upload-icon">
+    <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ebd2a7ebb8279bda871914_image.png" alt="Upload" />
+  </label>
+  <input type="file" id="imageUpload" accept="image/*" hidden />
+
+  <input type="text" id="msgInput" placeholder="Write a message…" />
+  <button id="sendBtn">Send</button>
+</div>
+
+<!-- 🧾 Info bar (zobrazí se po výběru fotky) -->
+<div id="uploadInfo" class="upload-info">
+  <span id="uploadText"></span>
+  <span id="cancelUpload" class="cancel-upload">✕</span>
+</div>
 
   <div id="profileEditor">
   <button id="closeProfileBtn" class="close-profile-btn">
@@ -1064,11 +1210,17 @@ header {
 </button>
   <h3>Edit Profile</h3>
 
-  <div class="avatar-upload">
+  <div class="profile-avatar">
+  <div class="avatar-container">
     <img id="currentAvatar" src="https://www.gravatar.com/avatar?d=mp" alt="Avatar" />
-    <label for="avatarInput" class="upload-btn">+ Upload photo</label>
-    <input type="file" id="avatarInput" accept="image/*" hidden />
+    <button id="deleteAvatarBtn" class="avatar-delete-btn">
+      <img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f7c2fc94b5677c444a0c31_trash.png" alt="Delete" />
+    </button>
   </div>
+  <label for="avatarInput" class="upload-btn">+ Upload photo</label>
+  <input type="file" id="avatarInput" accept="image/*" hidden />
+</div>
+
 
   <label for="displayNameInput">Name</label>
   <input type="text" id="displayNameInput" placeholder="Your name" />
@@ -1207,9 +1359,30 @@ header {
     const vehiclePhotoInput = document.getElementById("vehiclePhoto");
     const vehiclePhotoPreview = document.getElementById("vehiclePhotoPreview");
 
+    // ✅ Avatar preview po výběru fotky
+avatarInput.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Limit velikosti 2 MB
+  if (file.size > 2 * 1024 * 1024) {
+    alert("Profile photo is too large. Please upload a file under 2 MB.");
+    avatarInput.value = ""; // reset input
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    currentAvatar.src = ev.target.result; // zobrazí okamžitě fotku
+  };
+  reader.readAsDataURL(file);
+});
+
+
     vehiclePhotoInput.addEventListener("change", e => {
   const file = e.target.files[0];
   if (!file) return;
+
 
   // ✅ Limit 2 MB
   if (file.size > 2 * 1024 * 1024) {
@@ -1246,6 +1419,40 @@ header {
     let liveWatchId = null;
 
     const authTitle = document.getElementById("authTitle");
+
+
+// === Image upload for chat ===
+const imageInput = document.getElementById("imageUpload");
+const uploadInfo = document.getElementById("uploadInfo");
+const uploadText = document.getElementById("uploadText");
+const cancelUpload = document.getElementById("cancelUpload");
+
+imageInput.addEventListener("change", () => {
+  const files = imageInput.files;
+  if (files.length === 0) {
+    uploadInfo.style.display = "none";
+    return;
+  }
+
+  let totalSize = 0;
+  for (let file of files) totalSize += file.size;
+
+  if (totalSize > 2 * 1024 * 1024) {
+    uploadText.textContent = "❌ File too large (max 2 MB)";
+    uploadInfo.classList.add("error");
+  } else {
+    uploadText.textContent =
+      files.length === 1 ? "1 file uploaded" : `${files.length} files uploaded`;
+    uploadInfo.classList.remove("error");
+  }
+
+  uploadInfo.style.display = "flex";
+});
+
+cancelUpload.addEventListener("click", () => {
+  imageInput.value = "";
+  uploadInfo.style.display = "none";
+});
 
 // Toggle login / signup forms
 toSignup.querySelector("a").addEventListener("click", e => {
@@ -1882,25 +2089,51 @@ liveWatchId = navigator.geolocation.watchPosition(async pos => {
 
     sendBtn.onclick = async () => {
   const txt = msgInput.value.trim();
-  if (!txt) return;
+  const file = imageInput.files[0];
   const user = auth.currentUser;
-  const userDoc = await db.collection("users").doc(user.uid).get();
-const verified = userDoc.exists && userDoc.data().verified === true;
+  if (!user) return;
+  if (!txt && !file) return;
 
-await db.collection("messages").add({
-  text: txt,
-  uid: user.uid,
-  displayName: user.displayName || "Anonymous",
-  photoURL: user.photoURL || null,
-  verified: verified,
-  createdAt: firebase.firestore.FieldValue.serverTimestamp()
-});
+  const userDoc = await db.collection("users").doc(user.uid).get();
+  const verified = userDoc.exists && userDoc.data().verified === true;
+
+  let imageUrl = "";
+  if (file) {
+  if (file.size > 2 * 1024 * 1024) {
+    alert("Image too large. Max 2 MB.");
+    return;
+  }
+  const imgRef = storage.ref(`chatImages/${user.uid}/${Date.now()}_${file.name}`);
+  await imgRef.put(file);
+  imageUrl = await imgRef.getDownloadURL();
+}
+
+
+  await db.collection("messages").add({
+    text: txt,
+    imageUrl,
+    uid: user.uid,
+    displayName: user.displayName || "Anonymous",
+    photoURL: user.photoURL || null,
+    verified: verified,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
   msgInput.value = "";
-  // 🔽 Auto-scroll po odeslání
-  setTimeout(() => {
-    chatDiv.scrollTop = chatDiv.scrollHeight;
-  }, 100);
+imageInput.value = "";
+
+// ✅ Zachovej upload info po odeslání
+uploadInfo.classList.remove("error");
+uploadInfo.style.display = "flex";
+
+// 🧹 Po odeslání skryj info o nahraném souboru
+uploadInfo.style.display = "none";
+uploadText.textContent = "";
+imageInput.value = "";
+
+
 };
+
 
   async function setupGoLiveButton() {
   const shareBtn = document.getElementById("shareLocationBtn");
@@ -2017,6 +2250,29 @@ setTimeout(() => setupLiveLocations(), 500);
   });
 }
 
+function refreshChatAvatars() {
+  const messages = document.querySelectorAll(".msg.other, .msg.me");
+
+  messages.forEach(async msgEl => {
+    const uid = msgEl.getAttribute("data-uid");
+    if (!uid) return;
+
+    try {
+      const userDoc = await db.collection("users").doc(uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        const avatarImg = msgEl.querySelector(".avatar");
+        if (avatarImg && userData.photoURL) {
+          avatarImg.src = userData.photoURL;
+        }
+      }
+    } catch (err) {
+      console.error("Error refreshing avatar for user:", uid, err);
+    }
+  });
+}
+
+
 // === Visibility toggle ===
 const visibilityBtnEl = document.getElementById("visibilityBtn");
 if (visibilityBtnEl) {
@@ -2089,37 +2345,54 @@ if (visibilityBtnEl) {
       chatDiv.innerHTML = "";
 
       snapshot.forEach(doc => {
-        const msg = doc.data();
-        const msgDiv = document.createElement("div");
-msgDiv.classList.add("msg");
+  const msg = doc.data();
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("msg");
 
-// 🔥 Rozlišení mých zpráv
-if (msg.uid === auth.currentUser?.uid) {
-  msgDiv.classList.add("me");
-} else {
-  msgDiv.classList.add("other");
+  // 🔥 Rozlišení mých zpráv
+  if (msg.uid === auth.currentUser?.uid) {
+    msgDiv.classList.add("me");
+  } else {
+    msgDiv.classList.add("other");
+  }
+
+  // 🧠 Důležité – přidáme UID jako identifikátor
+  msgDiv.setAttribute("data-uid", msg.uid);
+
+  const avatar = document.createElement("img");
+  avatar.className = "avatar";
+  avatar.src = msg.photoURL || "https://www.gravatar.com/avatar?d=mp";
+  avatar.alt = "avatar";
+  avatar.setAttribute("data-uid", msg.uid); // 👈 přidá identifikátor
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  let content = "";
+if (msg.text) content += `<div>${msg.text}</div>`;
+if (msg.imageUrl) {
+  content += `
+    <img src="${msg.imageUrl}" 
+         alt="Sent image" 
+         class="chat-image"
+         style="margin-top:6px; max-width:200px; border-radius:10px; display:block; cursor:pointer;">
+  `;
 }
 
-        const avatar = document.createElement("img");
-        avatar.className = "avatar";
-        avatar.src = msg.photoURL || "https://www.gravatar.com/avatar?d=mp";
-        avatar.alt = "avatar";
+bubble.innerHTML = `
+  <div class="meta">
+    ${msg.displayName || "Unknown"} 
+    ${msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() : ""}
+  </div>
+  ${content}
+`;
 
-        const bubble = document.createElement("div");
-        bubble.className = "bubble";
-        bubble.innerHTML = `
-          <div class="meta">
-  ${msg.displayName || "Unknown"}
-  ${msg.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
-  · ${msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() : ""}
-</div>
-          <div>${msg.text || ""}</div>
-        `;
+  msgDiv.appendChild(avatar);
+  msgDiv.appendChild(bubble);
+  chatDiv.appendChild(msgDiv);
+});
 
-        msgDiv.appendChild(avatar);
-        msgDiv.appendChild(bubble);
-        chatDiv.appendChild(msgDiv);
-      });
+// 🧠 Tady přidej refreshChatAvatars()
+refreshChatAvatars();
 
       // 🔥 Z desktop verze: okamžitý scroll bez čekání
       setTimeout(() => {
@@ -2127,6 +2400,33 @@ if (msg.uid === auth.currentUser?.uid) {
       }, 50);
     });
 }
+
+// === Galerie obrázku v chatu ===
+const imageModal = document.getElementById("imageModal");
+const modalImg = document.getElementById("modalImg");
+const closeImageModal = document.getElementById("closeImageModal");
+
+// Kliknutí na obrázek v chatu
+document.addEventListener("click", (e) => {
+  if (e.target.classList.contains("chat-image")) {
+    modalImg.src = e.target.src;
+    imageModal.style.display = "flex";
+  }
+});
+
+// Zavření galerie
+closeImageModal.addEventListener("click", () => {
+  imageModal.style.display = "none";
+  modalImg.src = "";
+});
+
+// Zavření kliknutím mimo obrázek
+imageModal.addEventListener("click", (e) => {
+  if (e.target === imageModal) {
+    imageModal.style.display = "none";
+    modalImg.src = "";
+  }
+});
 
 
 let exploreMap;
@@ -2245,7 +2545,99 @@ if (currentAvatar) {
     saveProfileBtn.disabled = false;             // 🔹 odblokuj tlačítko
     saveProfileBtn.textContent = "Save";         // 🔹 obnov text
   }
+
+  // ✅ Po uložení profilu proveď refresh s loaderem
+const loader = document.getElementById("globalLoader");
+if (loader) loader.style.display = "flex"; // zobraz loader
+setTimeout(() => {
+  window.location.reload();
+}, 1000); // 1 sekunda, aby se Firestore stihl uložit
+
 });
+
+document.getElementById("closeProfileBtn").addEventListener("click", () => {
+  profileEditor.style.display = "none";
+  refreshChatAvatars(); // 🧠 načte nové fotky
+});
+
+
+// === DELETE AVATAR FUNCTION ===
+document.getElementById("deleteAvatarBtn").addEventListener("click", async () => {
+  const confirmDelete = confirm("Are you sure you want to delete this photo?");
+  if (!confirmDelete) return;
+
+  const user = auth.currentUser;
+  if (!user) return alert("Not logged in");
+
+  const defaultAvatar = "https://www.gravatar.com/avatar?d=mp";
+
+  // 🔄 Aktualizace UI
+  const currentAvatar = document.getElementById("currentAvatar");
+  const profileIcon = document.getElementById("profileIcon");
+  if (currentAvatar) currentAvatar.src = defaultAvatar;
+  if (profileIcon) profileIcon.src = defaultAvatar;
+
+  try {
+    // 🔄 Aktualizace ve Firestore
+    await db.collection("users").doc(user.uid).update({
+      photoURL: defaultAvatar
+    });
+
+    // 🔄 Aktualizace v Auth profilu
+    await user.updateProfile({ photoURL: defaultAvatar });
+
+    // 🔄 Aktualizace i v liveLocations (aby se přepsala fotka i v People)
+const liveDocRef = db.collection("liveLocations").doc(user.uid);
+await liveDocRef.set(
+  {
+    photoURL: defaultAvatar
+  },
+  { merge: true }
+);
+
+// 🔁 Okamžitý refresh markeru na mapě (pokud existuje)
+if (liveMarkers[user.uid]) {
+  const icon = L.icon({
+    iconUrl: defaultAvatar,
+    iconSize: [44, 44],
+    iconAnchor: [22, 44],
+    className: "user-icon live-outline"
+  });
+  liveMarkers[user.uid].setIcon(icon);
+}
+
+
+    alert("✅ Profile photo deleted.");
+  } catch (err) {
+    console.error("Error deleting avatar:", err);
+    alert("❌ Failed to delete photo. Try again later.");
+  }
+
+  // 🔄 Aktualizuj i liveLocations (aby se změna projevila hned v People sekci)
+try {
+  const liveRef = db.collection("liveLocations").doc(user.uid);
+  await liveRef.set(
+    {
+      photoURL: defaultAvatar
+    },
+    { merge: true }
+  );
+
+  // ✅ Okamžitý update markeru bez nutnosti refreshu
+  if (liveMarkers[user.uid]) {
+    const newIcon = L.icon({
+      iconUrl: defaultAvatar,
+      iconSize: [44, 44],
+      iconAnchor: [22, 44],
+      className: "user-icon live-outline"
+    });
+    liveMarkers[user.uid].setIcon(newIcon);
+  }
+} catch (err) {
+  console.error("Failed to update live marker photo:", err);
+}
+});
+
 
 document.getElementById("closeProfileBtn").addEventListener("click", () => {
   const profileEditor = document.getElementById("profileEditor");
