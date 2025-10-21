@@ -279,7 +279,7 @@ header {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 160px;
+  max-height: 250px;
 }
 
 #userVehiclePhoto {
@@ -1489,7 +1489,11 @@ if (customActionBtn) {
 // === Dynamické zarovnání Satellite tlačítka pod Visibility ===
 function positionCustomActionBtn() {
   const visBtn = document.getElementById("visibilityBtn");
-  const customBtn = document.getElementById("customActionBtn");
+const customBtn = document.getElementById("customActionBtn");
+
+requestAnimationFrame(() => {
+  positionCustomActionBtn();
+});
 
   if (!visBtn || !customBtn) return;
 
