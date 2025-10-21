@@ -861,7 +861,6 @@ header {
 #customActionBtn {
   position: fixed;
   right: 20px;
-  bottom: 150px;
   background: rgb(255, 255, 255);
   border: none;
   border-radius: 10px;
@@ -1486,6 +1485,33 @@ if (customActionBtn) {
     setTimeout(() => (icon.style.transform = "rotate(0deg)"), 400);
   });
 }
+
+// === Dynamické zarovnání Satellite tlačítka pod Visibility ===
+function positionCustomActionBtn() {
+  const visBtn = document.getElementById("visibilityBtn");
+  const customBtn = document.getElementById("customActionBtn");
+
+  if (!visBtn || !customBtn) return;
+
+  const visHeight = visBtn.offsetHeight;
+  const offset = 10; // vzdálenost mezi tlačítky
+
+  // získej aktuální vzdálenost viditelného tlačítka od spodku okna
+  const visBottom = parseFloat(window.getComputedStyle(visBtn).bottom);
+
+  // 👇 VYPOČÍTÁME pozici tak, aby custom byl POD viditelným tlačítkem
+  const newBottom = visBottom - visHeight - offset;
+
+  customBtn.style.position = "fixed";
+  customBtn.style.right = "20px";
+  customBtn.style.bottom = `${newBottom}px`;
+}
+
+// spustí se po načtení i při změně velikosti okna
+window.addEventListener("load", positionCustomActionBtn);
+window.addEventListener("resize", positionCustomActionBtn);
+
+
 
 
 
