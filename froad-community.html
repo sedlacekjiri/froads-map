@@ -1091,6 +1091,58 @@ header {
   cursor: pointer;
 }
 
+/* === CHAT GROUPS === */
+.chat-groups {
+  position: absolute;
+  top: 60px;
+  bottom: calc(var(--footer-btn-height) + 70px);
+  left: 0;
+  right: 0;
+  display: none; /* výchozí – zobrazí se až po kliknutí na Chat */
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 16px;
+  background: #fff;
+  overflow-y: auto;
+  z-index: 1;
+}
+
+.chat-groups h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #111;
+}
+
+.chat-group {
+  width: 90%;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  background: #fafafa;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.chat-group img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.chat-group span {
+  font-size: 15px;
+  font-weight: 500;
+  color: #111;
+}
+
 
 
   </style>
@@ -1181,6 +1233,52 @@ header {
   
 
   <div id="chat"></div>
+
+<!-- 🧩 Chat Group Selection -->
+<div id="chatGroups" class="chat-groups">
+  <h3>The Basecamp Chat</h3>
+  <div class="chat-group" data-group="general">
+  <span>💬 General</span>
+</div>
+
+<div class="chat-group" data-group="river">
+  <span>🌊 River Crossing</span>
+</div>
+
+  <div class="chat-group" data-group="froads">
+    <span>🌋 F-Roads</span>
+  </div>
+
+  <div class="chat-group" data-group="weather">
+    <span>🌦️ Weather Updates</span>
+  </div>
+
+  <div class="chat-group" data-group="campsites">
+    <span>🏕️ Campsites & Spots</span>
+  </div>
+
+  <div class="chat-group" data-group="cars">
+    <span>⚙️ Cars & Gear</span>
+  </div>
+
+  <div class="chat-group" data-group="alerts">
+    <span>🚧 Road Alerts & Closures</span>
+  </div>
+
+  <div class="chat-group" data-group="photos">
+    <span>📸 Photo Share / Sightings</span>
+  </div>
+
+  <div class="chat-group" data-group="help">
+    <span>🆘 Help & Rescue</span>
+  </div>
+
+  <div class="chat-group" data-group="community">
+    <span>🎉 Community & Meetups</span>
+  </div>
+</div>
+</div>
+
 
 <!-- 🖼️ Modal pro zvětšení obrázku -->
 <div id="imageModal">
@@ -1576,6 +1674,7 @@ if (exploreBtn) {
   if (exploreIcon)
     exploreIcon.src = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ed64a21a1343f06a3152d5_map-focus.png"; // aktivní Explore ikonka
 }
+
 
 // ✅ Reset všech ikon do výchozího stavu
 document.querySelector('.chat-btn .chat-icon').src =
@@ -2087,52 +2186,62 @@ liveWatchId = navigator.geolocation.watchPosition(async pos => {
 }
 
 
-    sendBtn.onclick = async () => {
+    // === Chat Send Button ===
+sendBtn.onclick = async () => {
   const txt = msgInput.value.trim();
   const file = imageInput.files[0];
   const user = auth.currentUser;
-  if (!user) return;
-  if (!txt && !file) return;
-
-  const userDoc = await db.collection("users").doc(user.uid).get();
-  const verified = userDoc.exists && userDoc.data().verified === true;
-
-  let imageUrl = "";
-  if (file) {
-  if (file.size > 2 * 1024 * 1024) {
-    alert("Image too large. Max 2 MB.");
+  if (!user) {
+    console.warn("⚠️ No user logged in, cannot send message");
     return;
   }
-  const imgRef = storage.ref(`chatImages/${user.uid}/${Date.now()}_${file.name}`);
-  await imgRef.put(file);
-  imageUrl = await imgRef.getDownloadURL();
-}
+  if (!txt && !file) {
+    console.warn("⚠️ Empty message or file");
+    return;
+  }
 
+  // 🧠 Urči aktuální skupinu (z localStorage)
+  const currentGroup = localStorage.getItem("selectedChatGroup") || "general";
 
-  await db.collection("messages").add({
-    text: txt,
-    imageUrl,
-    uid: user.uid,
-    displayName: user.displayName || "Anonymous",
-    photoURL: user.photoURL || null,
-    verified: verified,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+  try {
+    const userDoc = await db.collection("users").doc(user.uid).get();
+    const verified = userDoc.exists && userDoc.data().verified === true;
 
-  msgInput.value = "";
-imageInput.value = "";
+    let imageUrl = "";
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image too large. Max 2 MB.");
+        return;
+      }
+      const imgRef = storage.ref(`chatImages/${user.uid}/${Date.now()}_${file.name}`);
+      await imgRef.put(file);
+      imageUrl = await imgRef.getDownloadURL();
+    }
 
-// ✅ Zachovej upload info po odeslání
-uploadInfo.classList.remove("error");
-uploadInfo.style.display = "flex";
+    // ✅ Ulož do správné kolekce podle skupiny
+    await db.collection(`messages_${currentGroup}`).add({
+      text: txt || "",
+      imageUrl,
+      uid: user.uid,
+      displayName: user.displayName || "Anonymous",
+      photoURL: user.photoURL || null,
+      verified,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-// 🧹 Po odeslání skryj info o nahraném souboru
-uploadInfo.style.display = "none";
-uploadText.textContent = "";
-imageInput.value = "";
+    // 🧹 Vyčištění polí
+    msgInput.value = "";
+    imageInput.value = "";
+    uploadInfo.style.display = "none";
+    uploadText.textContent = "";
 
-
+    console.log(`✅ Message sent to messages_${currentGroup}`);
+  } catch (err) {
+    console.error("❌ Error sending message:", err);
+    alert("Failed to send message. Check console for details.");
+  }
 };
+
 
 
   async function setupGoLiveButton() {
@@ -2338,68 +2447,90 @@ if (visibilityBtnEl) {
 
 
 
-   function loadMessages() {
-  db.collection("messages")
+   function loadMessages(group = "general") {
+  console.log("Loading messages for group:", group);
+
+  const loader = document.getElementById("globalLoader");
+  if (loader) loader.style.display = "flex"; // 🧭 Zobraz loader hned
+
+  // 🔁 Pokud už běžel nějaký listener, vypneme ho
+  if (window.currentMessagesUnsub) {
+    window.currentMessagesUnsub();
+  }
+
+  // 📂 Kolekce podle skupiny
+  const groupCollection = db.collection(`messages_${group}`);
+
+  // 💬 Načti zprávy
+  window.currentMessagesUnsub = groupCollection
     .orderBy("createdAt", "asc")
     .onSnapshot(snapshot => {
       chatDiv.innerHTML = "";
 
       snapshot.forEach(doc => {
-  const msg = doc.data();
-  const msgDiv = document.createElement("div");
-  msgDiv.classList.add("msg");
+        const msg = doc.data();
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("msg");
 
-  // 🔥 Rozlišení mých zpráv
-  if (msg.uid === auth.currentUser?.uid) {
-    msgDiv.classList.add("me");
-  } else {
-    msgDiv.classList.add("other");
-  }
+        // 🔥 Rozlišení mých zpráv
+        if (msg.uid === auth.currentUser?.uid) {
+          msgDiv.classList.add("me");
+        } else {
+          msgDiv.classList.add("other");
+        }
 
-  // 🧠 Důležité – přidáme UID jako identifikátor
-  msgDiv.setAttribute("data-uid", msg.uid);
+        // 🧠 Důležité – přidáme UID jako identifikátor
+        msgDiv.setAttribute("data-uid", msg.uid);
 
-  const avatar = document.createElement("img");
-  avatar.className = "avatar";
-  avatar.src = msg.photoURL || "https://www.gravatar.com/avatar?d=mp";
-  avatar.alt = "avatar";
-  avatar.setAttribute("data-uid", msg.uid); // 👈 přidá identifikátor
+        const avatar = document.createElement("img");
+        avatar.className = "avatar";
+        avatar.src = msg.photoURL || "https://www.gravatar.com/avatar?d=mp";
+        avatar.alt = "avatar";
+        avatar.setAttribute("data-uid", msg.uid);
 
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  let content = "";
-if (msg.text) content += `<div>${msg.text}</div>`;
-if (msg.imageUrl) {
-  content += `
-    <img src="${msg.imageUrl}" 
-         alt="Sent image" 
-         class="chat-image"
-         style="margin-top:6px; max-width:200px; border-radius:10px; display:block; cursor:pointer;">
-  `;
-}
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        let content = "";
+        if (msg.text) content += `<div>${msg.text}</div>`;
+        if (msg.imageUrl) {
+          content += `
+            <img src="${msg.imageUrl}" 
+                 alt="Sent image" 
+                 class="chat-image"
+                 style="margin-top:6px; max-width:200px; border-radius:10px; display:block; cursor:pointer;">
+          `;
+        }
 
-bubble.innerHTML = `
-  <div class="meta">
-    ${msg.displayName || "Unknown"} 
-    ${msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() : ""}
-  </div>
-  ${content}
-`;
+        bubble.innerHTML = `
+          <div class="meta">
+            ${msg.displayName || "Unknown"} 
+            ${msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() : ""}
+          </div>
+          ${content}
+        `;
 
-  msgDiv.appendChild(avatar);
-  msgDiv.appendChild(bubble);
-  chatDiv.appendChild(msgDiv);
-});
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+        chatDiv.appendChild(msgDiv);
+      });
 
-// 🧠 Tady přidej refreshChatAvatars()
-refreshChatAvatars();
+      // 🧠 Aktualizuj avatary po každém snapshotu
+      refreshChatAvatars();
 
-      // 🔥 Z desktop verze: okamžitý scroll bez čekání
+      // 🔥 Scrolluj dolů po načtení
       setTimeout(() => {
         chatDiv.scrollTop = chatDiv.scrollHeight;
       }, 50);
+
+      // ✅ Skryj loader po načtení zpráv
+      if (loader) loader.style.display = "none";
+    }, err => {
+      console.error("❌ Error loading messages:", err);
+      if (loader) loader.style.display = "none";
     });
 }
+
+
 
 // === Galerie obrázku v chatu ===
 const imageModal = document.getElementById("imageModal");
@@ -2715,6 +2846,49 @@ document.querySelectorAll('.footer-btn').forEach(btn => {
     document.getElementById('mapContainer').style.display = (tab === "map") ? "block" : "none";
     document.getElementById('chat').style.display = (tab === "chat") ? "flex" : "none";
     document.getElementById('form').style.display = (tab === "chat") ? "flex" : "none";
+
+    // ✅ Oprava Leaflet mapy po přepnutí na "People"
+if (tab === "map") {
+  const loader = document.getElementById("globalLoader");
+  loader.style.display = "flex";
+  setTimeout(() => {
+    if (window.map && typeof map.invalidateSize === "function") {
+      map.invalidateSize();
+    }
+    loader.style.display = "none";
+  }, 400);
+}
+
+
+    // === Chat Groups visibility ===
+    const chatGroups = document.getElementById('chatGroups');
+    if (tab === "chat") {
+      chatGroups.style.display = "flex";
+      chatDiv.style.display = "none"; // skryje chat dokud není vybraná skupina
+      formEl.style.display = "none";
+    } else {
+      chatGroups.style.display = "none";
+    }
+
+    // === Výběr chat group ===
+    document.querySelectorAll(".chat-group").forEach(group => {
+      group.addEventListener("click", () => {
+        const selectedGroup = group.dataset.group;
+
+        // Ulož do localStorage (pro případ refreshu)
+        localStorage.setItem("selectedChatGroup", selectedGroup);
+
+        // Skryj výběr skupin, zobraz chat
+        chatGroups.style.display = "none";
+        chatDiv.style.display = "block";
+        formEl.style.display = "flex";
+
+        // Načti zprávy z konkrétní kolekce
+        loadMessages(selectedGroup);
+      });
+    });
+
+
 
     // Tlačítka: znovu si je vezmu ze DOM (bez závislosti na jiném scope)
     const shareBtnEl = document.getElementById('shareLocationBtn');
