@@ -861,7 +861,7 @@ header {
 #customActionBtn {
   position: fixed;
   right: 20px;
-  bottom: 700px;
+  bottom: 150px;
   background: rgb(255, 255, 255);
   border: none;
   border-radius: 10px;
@@ -2197,14 +2197,16 @@ document.querySelectorAll('.footer-btn').forEach(btn => {
     
 
     if (tab === "map") {
-      if (shareBtnEl)      shareBtnEl.style.display = "flex";
-      if (visibilityBtnEl) visibilityBtnEl.style.display = "flex";
-      if (customActionBtnEl) customActionBtnEl.style.display = "flex"; // ✅ nově
-    } else {
-      if (shareBtnEl)      shareBtnEl.style.display = "none";
-      if (visibilityBtnEl) visibilityBtnEl.style.display = "none";
-      if (customActionBtnEl) customActionBtnEl.style.display = "none"; // ✅ nově
-    }
+  if (shareBtnEl) shareBtnEl.style.display = "flex";
+  if (visibilityBtnEl) visibilityBtnEl.style.display = "flex";
+  const customActionBtn = document.getElementById("customActionBtn");
+  if (customActionBtn) customActionBtn.style.display = "flex";
+} else {
+  if (shareBtnEl) shareBtnEl.style.display = "none";
+  if (visibilityBtnEl) visibilityBtnEl.style.display = "none";
+  const customActionBtn = document.getElementById("customActionBtn");
+  if (customActionBtn) customActionBtn.style.display = "none";
+}
 
     // User panel mimo People pryč
     const userPanel = document.getElementById("userDetailPanel");
