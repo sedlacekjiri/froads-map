@@ -1179,8 +1179,12 @@ header {
 .chat-header .back-btn {
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
+  color: #000 !important; /* 🖤 zajistí černou barvu */
+}
+.chat-header .back-btn:focus {
+  outline: none;
 }
 
 #chatGroupTitle {
@@ -2557,14 +2561,36 @@ if (visibilityBtnEl) {
           `;
         }
 
-        bubble.innerHTML = `
+        // 🕒 Funkce pro formátování času jako 6h, 1d, 2w, ...
+function getRelativeTime(timestamp) {
+  if (!timestamp) return "";
+  const now = new Date();
+  const diffMs = now - timestamp;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffH = Math.floor(diffMin / 60);
+  const diffD = Math.floor(diffH / 24);
+  const diffW = Math.floor(diffD / 7);
+
+  if (diffMin < 1) return "now";
+  if (diffH < 1) return `${diffMin}m`;
+  if (diffD < 1) return `${diffH}h`;
+  if (diffW < 1) return `${diffD}d`;
+  return `${diffW}w`;
+}
+
+// 🧩 uvnitř renderu zpráv
+const timeText = msg.createdAt?.toDate ? getRelativeTime(msg.createdAt.toDate()) : "";
+
+bubble.innerHTML = `
   <div class="meta">
-    <strong>${msg.displayName || "Unknown"}</strong>
-    ${msg.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
-    <span class="msg-time">${msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleString() : ""}</span>
+    ${msg.displayName || "Unknown"}
+    ${msg.verified ? '<img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" class="verified-icon" />' : ''}
+    <span class="msg-time">${timeText}</span>
   </div>
   ${content}
 `;
+
 
 msgDiv.appendChild(avatar);
 msgDiv.appendChild(bubble);
