@@ -1512,7 +1512,6 @@ header {
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
   <script>
     // Firebase init
     const config = {
@@ -1740,6 +1739,11 @@ signupForm.addEventListener("submit", async e => {
     // Auth listener
 auth.onAuthStateChanged(async user => {
   if (!user) {
+    // ✅ Reset UI při novém přihlášení
+document.getElementById("chat").style.display = "none";
+document.getElementById("form").style.display = "none";
+document.getElementById("chatHeader").style.display = "none";
+document.getElementById("chatGroups").style.display = "none";
     // Not logged in
     loginScreen.style.display = "flex";
     formEl.style.display = "none";
@@ -1879,14 +1883,6 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
   formEl.style.display = "none";
   logoutBtn.style.display = "inline-block";
 
-  // 🧩 Skryj panel z People a satelitní tlačítko po přihlášení
-const userDetailPanel = document.getElementById("userDetailPanel");
-if (userDetailPanel) userDetailPanel.style.display = "none";
-
-const customActionBtn = document.getElementById("customActionBtn");
-if (customActionBtn) customActionBtn.style.display = "none";
-
-
   if (user.photoURL) {
     profileIcon.classList.remove("fallback");
     profileIcon.src = user.photoURL;
@@ -1917,9 +1913,23 @@ try {
 
 
     logoutBtn.onclick = () => {
-  profileEditor.style.display = "none"; // 🧼 Zavřít editor
+  // 🧹 Schovej vše kromě loginu
+  document.getElementById("chat").style.display = "none";
+  document.getElementById("form").style.display = "none";
+  document.getElementById("exploreMap").style.display = "none";
+  document.getElementById("mapContainer").style.display = "none";
+  document.getElementById("chatHeader").style.display = "none";
+  document.getElementById("chatGroups").style.display = "none";
+
+  // 🧼 Zavři editory, panely
+  profileEditor.style.display = "none";
+
+  // Zobraz login screen
+  loginScreen.style.display = "flex";
+
   auth.signOut();
 };
+
 
     function showAccessDeniedModal() {
       document.getElementById("accessDeniedModal").style.display = "flex";
@@ -3124,7 +3134,5 @@ backBtn.addEventListener("click", () => {
 
 
   </script>
-
-  
 </body>
 </html>
