@@ -381,7 +381,7 @@ header {
 #chat {
   position: absolute;
   top: 110px;
-  bottom: calc(var(--footer-btn-height) + 60px); /* ⬅️ bylo +10px */
+  bottom: calc(var(--footer-btn-height) + 0px); /* ⬅️ bylo +10px */
   left: 0;
   right: 0;
   overflow-y: auto;
@@ -1308,9 +1308,10 @@ header {
 <!-- 🧩 Chat Group Selection -->
 <div id="chatGroups" class="chat-groups">
   <h3>The Basecamp Chat</h3>
+  
   <div class="chat-group" data-group="general">
   <i data-lucide="message-circle"></i>
-  <div class="chat-title">General</div>
+  <span>General</span>
   <div class="desc">Casual chat and off-topic talk with other F-road travelers.</div>
 </div>
 
