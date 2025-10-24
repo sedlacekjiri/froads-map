@@ -1205,6 +1205,15 @@ header {
   font-size: 16px;
 }
 
+.chat-group.general { border-top: 3px solid #ff8a00; }
+.chat-group.river { border-top: 3px solid #00a2ff; }
+.chat-group.froads { border-top: 3px solid #22c55e; }
+.chat-group.weather { border-top: 3px solid #38bdf8; }
+.chat-group.camps { border-top: 3px solid #facc15; }
+.chat-group.cars { border-top: 3px solid #a855f7; }
+.chat-group.alerts { border-top: 3px solid #ef4444; }
+.chat-group.photos { border-top: 3px solid #f472b6; }
+.chat-group.help { border-top: 3px solid #ef4444; }
 
 
   </style>
@@ -1303,18 +1312,22 @@ header {
 <!-- 🧩 Chat Group Selection -->
 <div id="chatGroups" class="chat-groups">
   <h3>The Basecamp Chat</h3>
-  <div class="chat-group" data-group="general">
-  <span>General</span>
-  <div class="desc">Casual chat and off-topic talk with other F-road travelers.</div>
-</div>
 
-<div class="chat-group" data-group="river">
-  <span>River Crossing</span>
+  <div class="chat-group general">
+  <i data-lucide="message-circle"></i>
+  <div class="chat-title">General</div>
   <div class="desc">Discuss river levels, crossing safety, and share experiences.</div>
 </div>
 
-<div class="chat-group" data-group="froads">
-  <span>F-Roads</span>
+<div class="chat-group river">
+  <i data-lucide="message-circle"></i>
+  <div class="chat-title">River Crossing</div>
+  <div class="desc">Discuss river levels, crossing safety, and share experiences.</div>
+</div>
+
+<div class="chat-group froads">
+  <i data-lucide="message-circle"></i>
+  <div class="chat-title">F-Roads</div>
   <div class="desc">Updates, adventures, and stories from Iceland’s highlands.</div>
 </div>
 
