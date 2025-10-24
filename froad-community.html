@@ -1512,6 +1512,10 @@ header {
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet Rotate plugin -->
+  <script src="https://unpkg.com/leaflet-rotate@0.2.2/dist/leaflet-rotate.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-rotate@0.2.2/dist/leaflet-rotate.css" />
+
   <script>
     // Firebase init
     const config = {
@@ -1924,15 +1928,20 @@ let map, osmLayer, satelliteLayer, isSatellite = false;
 
 function initMap() {
   if (!map) {
-    map = L.map(mapDiv).setView([64.1466, -21.9426], 6);
+    map = L.map(mapDiv, {
+      zoomControl: false,
+      rotate: true,               // ✅ povolí rotaci
+      touchRotate: true,          // ✅ prsty
+      rotateControl: true,        // ✅ přidá ikonku kompasu
+      dragging: true,
+      zoomSnap: 0.5
+    }).setView([64.1466, -21.9426], 6);
 
-    // 🗺️ Standardní (OpenStreetMap)
     osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19
-    }).addTo(map); // výchozí vrstva
+    }).addTo(map);
 
-    // 🛰️ Satelitní (Esri)
     satelliteLayer = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       {
@@ -1940,8 +1949,6 @@ function initMap() {
         maxZoom: 19
       }
     );
-
-    // 🔧 (nepoužíváme L.control.layers, protože máme vlastní tlačítko)
   }
 }
 
