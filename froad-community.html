@@ -1879,6 +1879,14 @@ if (userData.photoURL && user.photoURL !== userData.photoURL) {
   formEl.style.display = "none";
   logoutBtn.style.display = "inline-block";
 
+  // 🧩 Skryj panel z People a satelitní tlačítko po přihlášení
+const userDetailPanel = document.getElementById("userDetailPanel");
+if (userDetailPanel) userDetailPanel.style.display = "none";
+
+const customActionBtn = document.getElementById("customActionBtn");
+if (customActionBtn) customActionBtn.style.display = "none";
+
+
   if (user.photoURL) {
     profileIcon.classList.remove("fallback");
     profileIcon.src = user.photoURL;
@@ -3116,5 +3124,7 @@ backBtn.addEventListener("click", () => {
 
 
   </script>
+
+  
 </body>
 </html>
