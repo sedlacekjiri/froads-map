@@ -1800,7 +1800,6 @@ if (typeof initExploreMap === "function") {
 const userDoc = await userRef.get();
 
 if (!userDoc.exists) {
-  // 🆕 Nový uživatel – vytvoříme čistý, výchozí profil
   await userRef.set({
     displayName: user.displayName || "User",
     photoURL: "",
@@ -1809,11 +1808,30 @@ if (!userDoc.exists) {
     vehicle: "",
     vehiclePhotoURL: "",
     verified: false,
-    access: false, // ✅ ve výchozím stavu zamítnuto, ručně schválíš
+    access: false,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
   console.log("✅ New clean profile created for:", user.uid);
+} else {
+  // 🧹 Reset cizích dat při novém přihlášení (bez access)
+  const existingData = userDoc.data();
+  if (existingData && !existingData.access) {
+    await userRef.set({
+      displayName: user.displayName || "User",
+      bio: "",
+      instagram: "",
+      vehicle: "",
+      vehiclePhotoURL: "",
+      photoURL: "",
+      verified: false
+    }, { merge: true });
+    console.log("🧼 Reset old profile data for new user:", user.uid);
+  }
 }
+
+// 🧠 Načti znovu čerstvá data po vytvoření (fix na staré hodnoty)
+const refreshedDoc = await userRef.get();
+const userData = refreshedDoc.data() || {};
 
 // 🔄 Aktualizuj Auth profil pro nový účet (aby se jméno zobrazilo i v chatu)
 await user.updateProfile({
@@ -1822,7 +1840,6 @@ await user.updateProfile({
 });
 
 
-  const userData = userDoc.data();
   if (userData.vehiclePhotoURL) {
   vehiclePhotoPreview.src = userData.vehiclePhotoURL;
   vehiclePhotoPreview.style.display = "block";
@@ -2051,6 +2068,36 @@ if (isCurrentUser && liveWatchId !== null) {
   const lng = data.lng;
   const avatarUrl = data.photoURL || "https://www.gravatar.com/avatar?d=mp";
 
+  // 🧩 Auto-refresh dat uživatele v People panelu
+const content = document.getElementById("userDetailContent");
+if (content && auth.currentUser && auth.currentUser.uid === uid) {
+  const bioEl = document.getElementById("userBioText");
+  const vehicleEl = document.getElementById("userVehicleText");
+  const vehicleImg = document.getElementById("userVehiclePhoto");
+
+  if (bioEl) bioEl.textContent = data.bio || "";
+  if (vehicleEl) vehicleEl.textContent = data.vehicle || "";
+  if (vehicleImg) {
+    if (data.vehiclePhotoURL) {
+      vehicleImg.src = data.vehiclePhotoURL;
+      vehicleImg.classList.add("show");
+    } else {
+      vehicleImg.src = "";
+      vehicleImg.classList.remove("show");
+    }
+  }
+}
+
+
+   // ✅ Bez souřadnic nic nevykresluj (a smaž případný starý marker)
+  if (typeof lat !== "number" || typeof lng !== "number") {
+    if (liveMarkers[uid]) {
+      map.removeLayer(liveMarkers[uid]);
+      delete liveMarkers[uid];
+    }
+    return;
+  }
+
   // 👇 SKRYJ MARKER, pokud má uživatel hidden = true
   if (data.hidden === true) {
     if (liveMarkers[uid]) {
@@ -2211,6 +2258,41 @@ window.miniPopups[uid] = miniMarker;
   });
 }
 
+// === 🧩 Sleduj změny v users, aby se People panel aktualizoval ===
+db.collection("users").onSnapshot(snapshot => {
+  snapshot.docChanges().forEach(change => {
+    const uid = change.doc.id;
+    const data = change.doc.data();
+
+    // Pokud má uživatel marker – aktualizuj jeho fotku
+    if (liveMarkers[uid]) {
+      const newPhoto = data.photoURL || "https://www.gravatar.com/avatar?d=mp";
+      const newIcon = L.icon({
+        iconUrl: newPhoto,
+        iconSize: [44, 44],
+        iconAnchor: [22, 44],
+        className: "user-icon live-outline"
+      });
+      liveMarkers[uid].setIcon(newIcon);
+    }
+
+    // Aktualizuj People panel (pokud je otevřený)
+    const panel = document.getElementById("userDetailPanel");
+    if (panel && panel.style.display !== "none" && panel.dataset.uid === uid) {
+      document.getElementById("userBioText").textContent = data.bio || "";
+      document.getElementById("userVehicleText").textContent = data.vehicle || "";
+
+      const vehicleImg = document.getElementById("userVehiclePhoto");
+      if (data.vehiclePhotoURL) {
+        vehicleImg.src = data.vehiclePhotoURL;
+        vehicleImg.classList.add("show");
+      } else {
+        vehicleImg.src = "";
+        vehicleImg.classList.remove("show");
+      }
+    }
+  });
+});
 
 
     async function startLive() {
@@ -2714,13 +2796,12 @@ function initExploreMap() {
 
     // === SAVE PROFILE HANDLER ===
 saveProfileBtn.addEventListener("click", async () => {
-  
 
   const user = auth.currentUser;
   if (!user) return;
 
-  saveProfileBtn.disabled = true;                // 🔹 zablokuj tlačítko
-  saveProfileBtn.textContent = "Saving...";      // 🔹 vizuální feedback
+  saveProfileBtn.disabled = true;                
+  saveProfileBtn.textContent = "Saving...";      
 
   const displayName = displayNameInput.value.trim();
   const bio = document.getElementById("bioInput").value.trim();
@@ -2731,8 +2812,12 @@ saveProfileBtn.addEventListener("click", async () => {
   const userRef = db.collection("users").doc(user.uid);
 
   try {
+    // Načti aktuální data (abychom porovnali změny)
+    const userDoc = await userRef.get();
+    const userData = userDoc.data() || {};
+
     let photoURL = user.photoURL || "";
-    let vehiclePhotoURL = vehiclePhotoPreview.src || "";
+    let vehiclePhotoURL = userData.vehiclePhotoURL || "";
 
     // === Upload avatar ===
     if (avatarFile) {
@@ -2744,15 +2829,35 @@ saveProfileBtn.addEventListener("click", async () => {
 
     // === Upload vehicle photo ===
     if (vehicleFile && vehicleFile.name) {
-    const fileName = `${Date.now()}_${vehicleFile.name}`;
-    const vehicleRef = storage.ref(`vehicles/${user.uid}/${fileName}`);
-    const snapshot = await vehicleRef.put(vehicleFile);
-    vehiclePhotoURL = await snapshot.ref.getDownloadURL();
-  }
+      const fileName = `${Date.now()}_${vehicleFile.name}`;
+      const vehicleRef = storage.ref(`vehicles/${user.uid}/${fileName}`);
+      const snapshot = await vehicleRef.put(vehicleFile);
+      vehiclePhotoURL = await snapshot.ref.getDownloadURL();
+    }
 
-  
+    // === ⚡ SAFE GUARD – žádné "file://" a žádné přepisování prázdnými hodnotami ===
+    if (vehiclePhotoPreview.src && vehiclePhotoPreview.src.startsWith("https://")) {
+      vehiclePhotoURL = vehiclePhotoPreview.src;
+    }
 
+    // 🔍 Zjisti, jestli se něco skutečně změnilo
+    const hasChanges =
+      displayName !== (userData.displayName || "") ||
+      bio !== (userData.bio || "") ||
+      instagram !== (userData.instagram || "") ||
+      vehicle !== (userData.vehicle || "") ||
+      photoURL !== (userData.photoURL || "") ||
+      vehiclePhotoURL !== (userData.vehiclePhotoURL || "");
 
+    if (!hasChanges) {
+      console.log("ℹ️ No changes to save.");
+      alert("No changes detected.");
+      saveProfileBtn.disabled = false;
+      saveProfileBtn.textContent = "Save";
+      return;
+    }
+
+    // === SAVE TO FIRESTORE ===
     await userRef.set({
       displayName,
       photoURL,
@@ -2763,65 +2868,106 @@ saveProfileBtn.addEventListener("click", async () => {
     }, { merge: true });
 
     // === OKAMŽITÁ AKTUALIZACE UI ===
-await user.updateProfile({
-  displayName,
-  photoURL: photoURL || vehiclePhotoURL || user.photoURL || ""
-});
-
-// Aktualizace header jména
-const headerName = document.getElementById("headerName");
-if (headerName) {
-  const firstName = (displayName || "User").split(" ")[0];
-  headerName.textContent = firstName;
-}
-
-// Aktualizace header fotky
-const profileIcon = document.getElementById("profileIcon");
-const defaultPhoto = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f42acf3f8263cdf39637b0_unknown.jpg";
-if (profileIcon) {
-  profileIcon.src = photoURL || vehiclePhotoURL || defaultPhoto;
-}
-
-// Aktualizace avatara v editoru
-if (currentAvatar) {
-  currentAvatar.src = photoURL || defaultPhoto;
-}
-
-
-    await user.updateProfile({ displayName });
-
-    await db.collection("liveLocations").doc(user.uid).set({
+    await user.updateProfile({
       displayName,
-      photoURL,
-      vehicle,
-      bio,
-      instagram,
-      vehiclePhotoURL,
-      lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+      photoURL: photoURL || user.photoURL || ""
+    });
+
+    const headerName = document.getElementById("headerName");
+    if (headerName) {
+      const firstName = (displayName || "User").split(" ")[0];
+      headerName.textContent = firstName;
+    }
+
+    const profileIcon = document.getElementById("profileIcon");
+    const defaultPhoto = "https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68f42acf3f8263cdf39637b0_unknown.jpg";
+    if (profileIcon) {
+      profileIcon.src = photoURL || defaultPhoto;
+    }
+
+    if (currentAvatar) {
+      currentAvatar.src = photoURL || defaultPhoto;
+    }
+
+    // ✅ Aktualizuj liveLocations jen když UŽIVATEL REÁLNĚ sdílí polohu
+const liveRef = db.collection("liveLocations").doc(user.uid);
+const liveSnap = await liveRef.get();
+
+// 🧠 Aktualizuj nebo vytvoř liveLocations záznam, i když uživatel není Live
+if (!liveSnap.exists) {
+  // nový uživatel — vytvoř dokument
+  await liveRef.set({
+    displayName,
+    photoURL,
+    vehicle,
+    bio,
+    instagram,
+    vehiclePhotoURL,
+    isLive: false,
+    hidden: false,
+    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+  });
+} else {
+  // už existuje — aktualizuj data
+  // ✅ Bezpečný fallback – zajistí, že liveLocations má vždy platná data
+const safePhoto = photoURL || "https://www.gravatar.com/avatar?d=mp";
+const safeVehiclePhoto = vehiclePhotoURL || "";
+
+await liveRef.set({
+  displayName: displayName || "User",
+  photoURL: safePhoto,
+  vehicle: vehicle || "",
+  bio: bio || "",
+  instagram: instagram || "",
+  vehiclePhotoURL: safeVehiclePhoto,
+  lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+}, { merge: true });
+
+}
+
+// pokud není isLive:true, NIC do liveLocations neukládej
+
 
     alert("✅ Profile saved!");
     profileEditor.style.display = "none";
+
   } catch (err) {
     console.error("❌ Error saving profile:", err);
     alert("Failed to save profile. Try again later.");
   } finally {
-    saveProfileBtn.disabled = false;             // 🔹 odblokuj tlačítko
-    saveProfileBtn.textContent = "Save";         // 🔹 obnov text
+    saveProfileBtn.disabled = false;             
+    saveProfileBtn.textContent = "Save";         
   }
 
   // ✅ Po uložení profilu proveď refresh s loaderem
-const loader = document.getElementById("globalLoader");
-if (loader) loader.style.display = "flex"; // zobraz loader
-setTimeout(() => {
-  window.location.reload();
-}, 1000); // 1 sekunda, aby se Firestore stihl uložit
+  const loader = document.getElementById("globalLoader");
+  if (loader) loader.style.display = "flex"; 
+  setTimeout(() => {
+    window.location.reload();
+  }, 1000);
+
+ // 🔄 Sync do liveLocations (aby se panel People hned aktualizoval)
+try {
+  const liveRef = db.collection("liveLocations").doc(auth.currentUser.uid);
+  await liveRef.set({
+    bio: updatedData.bio || "",
+    vehicle: updatedData.vehicle || "",
+    instagram: updatedData.instagram || "",
+    photoURL: updatedData.photoURL || "",
+    vehiclePhotoURL: updatedData.vehiclePhotoURL || "",
+    displayName: updatedData.displayName || auth.currentUser.displayName || "User"
+  }, { merge: true });
+  console.log("✅ LiveLocations synced after profile save");
+} catch (err) {
+  console.error("❌ Failed to sync liveLocations:", err);
+}
+ 
 
 });
 
 document.getElementById("closeProfileBtn").addEventListener("click", () => {
   profileEditor.style.display = "none";
-  refreshChatAvatars(); // 🧠 načte nové fotky
+  refreshChatAvatars(); 
 });
 
 
