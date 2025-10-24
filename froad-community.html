@@ -2279,8 +2279,8 @@ sendBtn.onclick = async () => {
   const currentGroup = localStorage.getItem("selectedChatGroup") || "general";
 
   try {
-    const userDoc = await db.collection("users").doc(user.uid).get();
-    const verified = userDoc.exists && userDoc.data().verified === true;
+    let userDoc = await db.collection("users").doc(user.uid).get();
+    let verified = userDoc.exists && userDoc.data().verified === true;
 
     let imageUrl = "";
     if (file) {
