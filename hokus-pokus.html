@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
+  
   <style>
     body, html { margin:0; padding:0; height:100%; font-family:'Poppins',sans-serif; overflow:hidden; }
     #map { position:absolute; top:0; left:0; width:100%; height:100vh; z-index:1; }
@@ -900,12 +900,15 @@ body.modal-open .leaflet-control-container{ display:block !important; }
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  
   <script>
+    
     const minZoom = 7;
     const map = L.map('map').setView([63.9, -18.9], minZoom);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OpenStreetMap contributors', maxZoom:19, minZoom
     }).addTo(map);
+    
 
     /* ---- Current Position control ---- */
 const LocateControl = L.Control.extend({
@@ -1987,6 +1990,7 @@ roadLayers.push({ polyline:visibleLine, data:rd, hitbox:bufferLine, onRoadClick 
       crossingLayer.clearLayers();
       if (selectedLayer) resetPolylineStyle(selectedLayer);
     });
+    
 
     document.getElementById('vehicleSelect').addEventListener('change', e=>{
   const selected = e.target.value;
@@ -2514,6 +2518,7 @@ document.addEventListener('DOMContentLoaded', function(){
     document.body.appendChild(ov);
   }
 });
+
 </script>
 
 <script>
@@ -2632,6 +2637,8 @@ const t = now.toLocaleTimeString('en-GB', {
     backdrop.classList.remove('open');
     body.classList.remove('modal-open');
   }
+
+  
 
   // Delegovaný posluchač: funguje i když je modal re-renderován
   document.addEventListener('click', (e)=>{
@@ -2959,7 +2966,41 @@ ${trkXml}
   }
 })();
 
+
+
+
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const panel = document.getElementById('sidePanel');
+  const closeBtn = document.getElementById('closePanel');
+  let isRoadClick = false; // flag
+
+  // Klik na cestu → otevři panel
+  map.eachLayer(layer => {
+    if (layer instanceof L.Polyline && !layer._url) { // vynech tilelayer
+      layer.on('click', () => {
+        isRoadClick = true;
+        panel.classList.add('open');
+      });
+    }
+  });
+
+  // Klik mimo panel → zavři (ale ignoruj klik na cestu)
+  document.addEventListener('click', (e) => {
+    const clickedInsidePanel = panel.contains(e.target);
+    const clickedClose = closeBtn.contains(e.target);
+
+    if (isRoadClick) { isRoadClick = false; return; } // právě klik na cestu, nech být
+    if (clickedInsidePanel || clickedClose) return;
+    if (!panel.classList.contains('open')) return;
+
+    // použij přesně tvůj systém zavírání
+    closeBtn.click();
+  });
+});
+</script>
+
 
 </body>
 </html>
