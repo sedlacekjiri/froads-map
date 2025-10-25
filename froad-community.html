@@ -452,7 +452,7 @@ header {
   flex-direction: row-reverse;
 }
 .msg.me .bubble {
-  background: #ff5100d6;
+  background: #1b1b1b;
   color: #fff;
 }
 .msg.me .meta {
@@ -1229,6 +1229,39 @@ header {
   transform: scale(1.1);
 }
 
+/* === Ranger icon === */
+.ranger-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  vertical-align: middle;
+  position: relative;
+  top: 1px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  font-size: 12px;
+  background: #f1f1f1;
+  padding: 3px 12px 3px 6px;
+  border-radius: 12px;
+  color: #333;
+}
+
+.verified-badge {
+  background-color: #e0f7ff;
+  color: #007acc;
+}
+
+.ranger-badge {
+  background-color: #e8ffe8;
+  color: #2e7d32;
+}
+
+
   </style>
 </head>
 <body>
@@ -1360,26 +1393,31 @@ header {
 <div class="chat-group" data-group="cars">
   <span>Cars & Gear</span>
   <div class="desc">4x4 discussions, repairs, tires, and travel gear recommendations.</div>
+  <div class="chat-avatars" id="avatars-cars"></div>
 </div>
 
 <div class="chat-group" data-group="alerts">
   <span>Road Alerts & Closures</span>
   <div class="desc">F-road closures, conditions, and maintenance notifications.</div>
+  <div class="chat-avatars" id="avatars-alerts"></div>
 </div>
 
 <div class="chat-group" data-group="photos">
   <span>Photo Share / Sightings</span>
   <div class="desc">Share your photos, landscapes, and wildlife moments.</div>
+  <div class="chat-avatars" id="avatars-photos"></div>
 </div>
 
 <div class="chat-group" data-group="help">
   <span>Help & Rescue</span>
   <div class="desc">Emergency contacts and real-time assistance discussions.</div>
+  <div class="chat-avatars" id="avatars-help"></div>
 </div>
 
   <div class="chat-group" data-group="community">
     <span>Community & Meetups</span>
     <div class="desc">Connect with other travelers, share tips, and organize meetups.</div>
+    <div class="chat-avatars" id="avatars-community"></div>
   </div>
 </div>
 </div>
@@ -1744,6 +1782,7 @@ signupForm.addEventListener("submit", async e => {
       vehicle: "",
       vehiclePhotoURL: "",
       verified: false,
+      ranger: false,
       access: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -1830,6 +1869,7 @@ if (!userDoc.exists) {
     vehicle: "",
     vehiclePhotoURL: "",
     verified: false,
+    ranger: false,
     access: false,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
@@ -1845,7 +1885,8 @@ if (!userDoc.exists) {
       vehicle: "",
       vehiclePhotoURL: "",
       photoURL: "",
-      verified: false
+      verified: false,
+      ranger: false,
     }, { merge: true });
     console.log("🧼 Reset old profile data for new user:", user.uid);
   }
@@ -1949,7 +1990,7 @@ try {
 }
 });
 
-// 🧠 Načti poslední avatary z každé skupiny
+// 🧠 Načti poslední avatary z každé skupiny (pouze aktivní ≤24 h)
 async function loadGroupAvatars() {
   const groups = [
     "general", "river", "froads", "weather",
@@ -1957,22 +1998,29 @@ async function loadGroupAvatars() {
   ];
 
   const defaultAvatar = "https://www.gravatar.com/avatar?d=mp";
+  const now = Date.now();
+  const cutoff = now - 24 * 60 * 60 * 1000; // 24 hodin v ms
 
   for (const group of groups) {
     try {
       const snap = await db
         .collection(`messages_${group}`)
         .orderBy("createdAt", "desc")
-        .limit(10)
+        .limit(20)
         .get();
 
-      // 🧩 Vyber poslední 3 unikátní uživatele
       const uniqueUsers = [];
       const avatars = [];
 
       snap.forEach(doc => {
         const data = doc.data();
-        if (data.photoURL && !uniqueUsers.includes(data.uid)) {
+        if (
+          data.photoURL &&
+          data.uid &&
+          data.createdAt &&
+          data.createdAt.toMillis() > cutoff &&   // 🧩 jen noví (≤24 h)
+          !uniqueUsers.includes(data.uid)
+        ) {
           uniqueUsers.push(data.uid);
           avatars.push(data.photoURL);
         }
@@ -1980,7 +2028,7 @@ async function loadGroupAvatars() {
 
       const container = document.getElementById(`avatars-${group}`);
       if (!container) continue;
-      container.innerHTML = ""; // vyčisti staré
+      container.innerHTML = "";
 
       avatars.slice(0, 3).forEach(url => {
         const img = document.createElement("img");
@@ -1993,6 +2041,10 @@ async function loadGroupAvatars() {
     }
   }
 }
+
+// 🚀 Spusť po načtení uživatele
+loadGroupAvatars();
+setInterval(loadGroupAvatars, 20000); // refresh každých 20 s
 
 // 🚀 Spusť po načtení uživatele
 loadGroupAvatars();
@@ -2283,7 +2335,8 @@ window.miniPopups[uid] = miniMarker;
           <div class="panel-userinfo">
             <div class="panel-name-row">
               <strong>${data.displayName || 'Unknown'}</strong>
-              ${data.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
+              ${data.verified ? '<span class="badge verified-badge"><img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />Verified</span>' : ''}
+              ${data.ranger ? '<span class="badge ranger-badge"><img class="ranger-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68fba159091b4ac6d4781634_ranger%20(1).png" alt="Ranger" />Ranger</span>' : ''}
             </div>
             ${data.instagram ? `<div class="popup-instagram"><a href="https://instagram.com/${data.instagram.replace('@','')}" target="_blank" class="popup-instagram-link">@${data.instagram.replace('@','')}</a></div>` : ''}
           </div>
@@ -2488,6 +2541,7 @@ sendBtn.onclick = async () => {
   try {
     let userDoc = await db.collection("users").doc(user.uid).get();
     let verified = userDoc.exists && userDoc.data().verified === true;
+    let ranger = userDoc.exists && userDoc.data().ranger === true;
 
     let imageUrl = "";
     if (file) {
@@ -2500,7 +2554,7 @@ sendBtn.onclick = async () => {
       imageUrl = await imgRef.getDownloadURL();
     }
 
-    const userData = userDoc.data();
+    const userData = userDoc.exists ? userDoc.data() : {};
 
     // ✅ Ulož do správné kolekce podle skupiny
     await db.collection(`messages_${currentGroup}`).add({
@@ -2510,6 +2564,7 @@ sendBtn.onclick = async () => {
       displayName: user.displayName || "User",
       photoURL: user.photoURL || "",
       verified: userData.verified || false,
+      ranger: userData.ranger || false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -2579,9 +2634,16 @@ sendBtn.onclick = async () => {
 
 
       // ✅ Okamžitý update ve Firebase
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      const userData = userDoc.exists ? userDoc.data() : {};
+
       await db.collection("liveLocations").doc(user.uid).set({
         isLive: true,
-        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        displayName: user.displayName || "User",
+        photoURL: user.photoURL || "",
+        verified: userData.verified || false,
+        ranger: userData.ranger || false
       }, { merge: true });
 
       // ✅ Okamžitý vizuální marker s pulzujícím rámečkem
@@ -2609,6 +2671,7 @@ if (window.miniPopups && window.miniPopups[user.uid]) {
         <span class="mini-popup-name">
           ${firstName}
           ${user.verified ? '<img class="verified-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" />' : ''}
+          ${user.ranger ? '<img class="ranger-icon" src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68fba159091b4ac6d4781634_ranger%20(1).png" alt="Ranger" />' : ''}
         </span>
         <span class="mini-popup-status live">Live</span>
       </div>
@@ -2816,7 +2879,8 @@ const timeText = msg.createdAt?.toDate ? getRelativeTime(msg.createdAt.toDate())
 bubble.innerHTML = `
   <div class="meta">
     ${msg.displayName || "Unknown"}
-    ${msg.verified ? '<img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" class="verified-icon" />' : ''}
+    ${msg.verified ? '<span class="badge verified-badge"><img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68ec104bbf6183f2f84c71b7_verified.png" alt="Verified" class="verified-icon" />Verified</span>' : ''}
+    ${msg.ranger ? '<span class="badge ranger-badge"><img src="https://cdn.prod.website-files.com/687ebffd20183c0459d68784/68fba159091b4ac6d4781634_ranger%20(1).png" alt="Ranger" class="ranger-icon" />Ranger</span>' : ''}
     <span class="msg-time">${timeText}</span>
   </div>
   ${content}
