@@ -157,12 +157,10 @@ Lepší oddělení sekce info */
   display: flex;
   flex-direction: column;
   gap: 6px;
-
-  /* přidáno kvůli scrollování a správnému chování při dragu 👇 */
   flex: 1;
-  overflow-y: auto;
-  touch-action: pan-y; /* umožní scroll uvnitř */
-  -webkit-overflow-scrolling: touch; /* plynulý scroll na iOS */
+  overflow-y: hidden; /* defaultně vypnuto */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 .info-title {
@@ -3046,6 +3044,17 @@ ${trkXml}
     ];
     distances.sort((a, b) => a.d - b.d);
     panel.style.height = `${distances[0].h}px`;
+
+    // 🧭 Povolíme scroll pouze pokud je panel na maxHeight
+const roadDetails = document.getElementById('roadDetails');
+if (roadDetails) {
+  if (distances[0].h === maxHeight) {
+    roadDetails.style.overflowY = 'auto';
+  } else {
+    roadDetails.style.overflowY = 'hidden';
+    roadDetails.scrollTop = 0; // reset scrollu
+  }
+}
 
     document.removeEventListener('mousemove', onDrag);
     document.removeEventListener('mouseup', endDrag);
