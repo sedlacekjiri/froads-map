@@ -3009,18 +3009,21 @@ ${trkXml}
 
   // ⚙️ Spouštíme drag jen když je panel otevřený
   function startDrag(e) {
-    if (!panel.classList.contains('open')) return; // <– klíčová ochrana
-    isDragging = true;
-    startY = e.touches ? e.touches[0].clientY : e.clientY;
-    const style = window.getComputedStyle(panel);
-    startHeight = parseFloat(style.height);
-    panel.style.transition = 'none';
+  // 🧠 Pokud se uvnitř panelu scrolluje (nejsi nahoře), tahání se neaktivuje
+  if (roadDetails && roadDetails.scrollTop > 0) return;
 
-    document.addEventListener('mousemove', onDrag);
-    document.addEventListener('mouseup', endDrag);
-    document.addEventListener('touchmove', onDrag, { passive: false });
-    document.addEventListener('touchend', endDrag);
-  }
+  if (!panel.classList.contains('open')) return;
+  isDragging = true;
+  startY = e.touches ? e.touches[0].clientY : e.clientY;
+  const style = window.getComputedStyle(panel);
+  startHeight = parseFloat(style.height);
+  panel.style.transition = 'none';
+
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', endDrag);
+  document.addEventListener('touchmove', onDrag, { passive: false });
+  document.addEventListener('touchend', endDrag);
+}
 
   function onDrag(e) {
     if (!isDragging) return;
