@@ -18,6 +18,8 @@
       box-shadow:0 -2px 6px rgba(0,0,0,.3);
       display:flex; flex-direction:column; overflow-y:auto;
       transition:bottom .25s ease-out; z-index:1500; overscroll-behavior:contain;
+      touch-action: none; /* vypne systémový scroll při dragování */
+      
     }
     #sidePanel.open{ bottom:0; display:block; }
     #sidePanel img{ width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:16px; }
@@ -157,6 +159,12 @@ Lepší oddělení sekce info */
   display: flex;
   flex-direction: column;
   gap: 6px;
+
+  /* přidáno kvůli scrollování a správnému chování při dragu 👇 */
+  flex: 1;
+  overflow-y: auto;
+  touch-action: pan-y; /* umožní scroll uvnitř */
+  -webkit-overflow-scrolling: touch; /* plynulý scroll na iOS */
 }
 
 .info-title {
