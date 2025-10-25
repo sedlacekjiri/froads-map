@@ -22,23 +22,24 @@
     #sidePanel.open{ bottom:0; display:block; }
     #sidePanel img{ width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:16px; }
 
-    #panelHandle {
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 38px;
-    height: 5px;
-    border-radius: 3px;
-    background: #111;
-    opacity: 0.4;
-    cursor: grab;
-    z-index: 3;
-  }
-  #panelHandle:active {
-    cursor: grabbing;
-    opacity: 0.4;
-  }
+   #panelHandle {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: #111;
+  opacity: 0.25;
+  cursor: grab;
+  z-index: 5;
+}
+
+#panelHandle:active {
+  opacity: 0.5;
+  cursor: grabbing;
+}
 
 
     @media (max-width:768px){ #sidePanel{ width:100vw; left:0; right:0; max-width:none; overflow-x:hidden; } }
@@ -157,10 +158,12 @@ Lepší oddělení sekce info */
   display: flex;
   flex-direction: column;
   gap: 6px;
+
+  /* přidáno kvůli scrollování a správnému chování při dragu 👇 */
   flex: 1;
-  overflow-y: hidden; /* defaultně vypnuto */
-  touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  touch-action: pan-y; /* umožní scroll uvnitř */
+  -webkit-overflow-scrolling: touch; /* plynulý scroll na iOS */
 }
 
 .info-title {
@@ -3009,21 +3012,18 @@ ${trkXml}
 
   // ⚙️ Spouštíme drag jen když je panel otevřený
   function startDrag(e) {
-  // 🧠 Pokud se uvnitř panelu scrolluje (nejsi nahoře), tahání se neaktivuje
-  if (roadDetails && roadDetails.scrollTop > 0) return;
+    if (!panel.classList.contains('open')) return; // <– klíčová ochrana
+    isDragging = true;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    const style = window.getComputedStyle(panel);
+    startHeight = parseFloat(style.height);
+    panel.style.transition = 'none';
 
-  if (!panel.classList.contains('open')) return;
-  isDragging = true;
-  startY = e.touches ? e.touches[0].clientY : e.clientY;
-  const style = window.getComputedStyle(panel);
-  startHeight = parseFloat(style.height);
-  panel.style.transition = 'none';
-
-  document.addEventListener('mousemove', onDrag);
-  document.addEventListener('mouseup', endDrag);
-  document.addEventListener('touchmove', onDrag, { passive: false });
-  document.addEventListener('touchend', endDrag);
-}
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchmove', onDrag, { passive: false });
+    document.addEventListener('touchend', endDrag);
+  }
 
   function onDrag(e) {
     if (!isDragging) return;
@@ -3048,16 +3048,7 @@ ${trkXml}
     distances.sort((a, b) => a.d - b.d);
     panel.style.height = `${distances[0].h}px`;
 
-    // 🧭 Povolíme scroll pouze pokud je panel na maxHeight
-const roadDetails = document.getElementById('roadDetails');
-if (roadDetails) {
-  if (distances[0].h === maxHeight) {
-    roadDetails.style.overflowY = 'auto';
-  } else {
-    roadDetails.style.overflowY = 'hidden';
-    roadDetails.scrollTop = 0; // reset scrollu
-  }
-}
+    
 
     document.removeEventListener('mousemove', onDrag);
     document.removeEventListener('mouseup', endDrag);
@@ -3066,8 +3057,11 @@ if (roadDetails) {
   }
 
   // 🧩 přidáme event jen na otevřený panel
-  panel.addEventListener('mousedown', startDrag);
-  panel.addEventListener('touchstart', startDrag, { passive: true });
+  const handle = document.getElementById('panelHandle');
+if (handle) {
+  handle.addEventListener('mousedown', startDrag);
+  handle.addEventListener('touchstart', startDrag, { passive: true });
+}
 
   // 🧹 reset výšky při zavření (aby nezůstal vysoko)
   document.getElementById('closePanel')?.addEventListener('click', () => {
