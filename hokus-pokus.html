@@ -22,6 +22,25 @@
     #sidePanel.open{ bottom:0; display:block; }
     #sidePanel img{ width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:16px; }
 
+    #panelHandle {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 38px;
+    height: 5px;
+    border-radius: 3px;
+    background: #111;
+    opacity: 0.4;
+    cursor: grab;
+    z-index: 3;
+  }
+  #panelHandle:active {
+    cursor: grabbing;
+    opacity: 0.4;
+  }
+
+
     @media (max-width:768px){ #sidePanel{ width:100vw; left:0; right:0; max-width:none; overflow-x:hidden; } }
 
     .road-label-icon div{
@@ -646,7 +665,6 @@ body.modal-open .leaflet-control-container{ display:block !important; }
 }
 
 
-
   </style>
 </head>
 
@@ -772,6 +790,7 @@ body.modal-open .leaflet-control-container{ display:block !important; }
 
 
   <div id="sidePanel">
+    <div id="panelHandle" aria-hidden="true"></div>
     <button id="closePanel">✕</button>
     <div id="roadStatusBadge" class="open">OPEN</div>
     <div id="roadImageWrapper" style="display:none;">
@@ -2970,36 +2989,80 @@ ${trkXml}
 
 
 </script>
+
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
   const panel = document.getElementById('sidePanel');
-  const closeBtn = document.getElementById('closePanel');
-  let isRoadClick = false; // flag
+  if (!panel) return;
 
-  // Klik na cestu → otevři panel
-  map.eachLayer(layer => {
-    if (layer instanceof L.Polyline && !layer._url) { // vynech tilelayer
-      layer.on('click', () => {
-        isRoadClick = true;
-        panel.classList.add('open');
-      });
-    }
+  const minHeight = 120;
+  const midHeight = window.innerHeight * 0.6;
+  const maxHeight = window.innerHeight * 0.9;
+
+  let startY = 0;
+  let startHeight = 0;
+  let isDragging = false;
+
+  // ⚙️ Spouštíme drag jen když je panel otevřený
+  function startDrag(e) {
+    if (!panel.classList.contains('open')) return; // <– klíčová ochrana
+    isDragging = true;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    const style = window.getComputedStyle(panel);
+    startHeight = parseFloat(style.height);
+    panel.style.transition = 'none';
+
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchmove', onDrag, { passive: false });
+    document.addEventListener('touchend', endDrag);
+  }
+
+  function onDrag(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    const delta = startY - y;
+    const newHeight = Math.min(maxHeight, Math.max(minHeight, startHeight + delta));
+    panel.style.height = `${newHeight}px`;
+  }
+
+  function endDrag() {
+    if (!isDragging) return;
+    isDragging = false;
+    panel.style.transition = 'height 0.25s ease-out';
+
+    const current = parseFloat(window.getComputedStyle(panel).height);
+    const distances = [
+      { h: minHeight, d: Math.abs(current - minHeight) },
+      { h: midHeight, d: Math.abs(current - midHeight) },
+      { h: maxHeight, d: Math.abs(current - maxHeight) }
+    ];
+    distances.sort((a, b) => a.d - b.d);
+    panel.style.height = `${distances[0].h}px`;
+
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup', endDrag);
+    document.removeEventListener('touchmove', onDrag);
+    document.removeEventListener('touchend', endDrag);
+  }
+
+  // 🧩 přidáme event jen na otevřený panel
+  panel.addEventListener('mousedown', startDrag);
+  panel.addEventListener('touchstart', startDrag, { passive: true });
+
+  // 🧹 reset výšky při zavření (aby nezůstal vysoko)
+  document.getElementById('closePanel')?.addEventListener('click', () => {
+    panel.style.height = '55vh'; // zpět na defaultní
   });
-
-  // Klik mimo panel → zavři (ale ignoruj klik na cestu)
-  document.addEventListener('click', (e) => {
-    const clickedInsidePanel = panel.contains(e.target);
-    const clickedClose = closeBtn.contains(e.target);
-
-    if (isRoadClick) { isRoadClick = false; return; } // právě klik na cestu, nech být
-    if (clickedInsidePanel || clickedClose) return;
-    if (!panel.classList.contains('open')) return;
-
-    // použij přesně tvůj systém zavírání
-    closeBtn.click();
-  });
-});
+})();
 </script>
+
+
+
+
+
+
 
 
 </body>
